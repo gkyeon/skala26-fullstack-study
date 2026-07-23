@@ -11,6 +11,7 @@
     --code-bg:#10131c; --code-text:#c9e6ff;
     --day1:#7c9dff; --day2:#4fd1c5; --day3:#f6ad55; --day4:#f687b3;
     --warn:#f6ad55;
+    --tk-string:#f0c674; --tk-number:#f2966d; --tk-type:#e2a8f7;
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
@@ -76,6 +77,12 @@
     font-family:"SF Mono",Menlo,Consolas,monospace; font-size:12.5px; color:var(--code-text);
     line-height:1.65; white-space:pre;
   }
+  .sqlbox .tk-k{color:var(--accent); font-weight:700;}
+  .sqlbox .tk-f{color:var(--accent2); font-weight:700;}
+  .sqlbox .tk-t{color:var(--tk-type);}
+  .sqlbox .tk-s{color:var(--tk-string);}
+  .sqlbox .tk-n{color:var(--tk-number);}
+  .sqlbox .tk-c{color:var(--muted); font-style:italic;}
   .cp{
     background:rgba(79,209,197,.07); border:1px solid rgba(79,209,197,.3); border-radius:10px;
     padding:10px 14px; margin:14px 0;
@@ -139,6 +146,7 @@
     --bg:#f7f8fc; --panel:#ffffff; --panel2:#f0f2f9; --border:#e2e5f0;
     --text:#20232e; --muted:#6b7180; --accent:#3f5fd6; --accent2:#0f9488;
     --code-bg:#f4f6fb; --code-text:#1d3b6b; --warn:#b45309;
+    --tk-string:#9a6a00; --tk-number:#c2410c; --tk-type:#7c3aed;
   }
   body.light .sec{box-shadow:0 1px 3px rgba(20,25,50,.06);}
   body.light .cp{background:rgba(15,148,136,.07); border-color:rgba(15,148,136,.28);}
@@ -322,7 +330,7 @@
 </style>
 </head>
 
-<body>
+<body class="light">
 <div class="site-topbar">
   <a href="../../index.html">🏠 Full-stack 학습 홈</a>
   <span class="crumb-sep">/</span>
@@ -333,7 +341,8 @@
     <h1>SKALA 스마트 데이터</h1>
     <p class="sub">이해 및 활용 · 복습노트</p>
     <div class="toolbar">
-      <button class="theme-btn" id="themeBtn">☀ 라이트 모드</button>
+      <button class="theme-btn" id="themeBtn">🌙 다크 모드</button>
+      <button class="theme-btn" id="exerciseNavBtn">✏️ 연습문제</button>
     </div>
     <input class="search" id="searchBox" type="text" placeholder="검색 (예: 인덱스, JOIN, VACUUM...)">
     <div class="day-group"><div class="day-title d1">Day 1 — 관계형 모델 & SQL 기초</div>
@@ -2123,6 +2132,31 @@ LIMIT 10;</textarea>
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  const SQL_KEYWORDS = new Set(['SELECT','FROM','WHERE','JOIN','INNER','LEFT','RIGHT','FULL','OUTER','CROSS','NATURAL','LATERAL','ON','GROUP','BY','ORDER','HAVING','LIMIT','OFFSET','INSERT','INTO','VALUES','UPDATE','SET','DELETE','CREATE','TABLE','ALTER','DROP','ADD','COLUMN','PRIMARY','KEY','FOREIGN','REFERENCES','UNIQUE','NOT','NULL','DEFAULT','CHECK','CONSTRAINT','INDEX','VIEW','MATERIALIZED','WITH','RECURSIVE','AS','AND','OR','IN','IS','LIKE','BETWEEN','EXISTS','ANY','ALL','UNION','INTERSECT','EXCEPT','DISTINCT','CASE','WHEN','THEN','ELSE','END','BEGIN','COMMIT','ROLLBACK','TRANSACTION','SAVEPOINT','GRANT','REVOKE','PROCEDURE','FUNCTION','TRIGGER','RETURNS','LANGUAGE','DECLARE','EXECUTE','EXPLAIN','ANALYZE','VACUUM','CASCADE','RESTRICT','PARTITION','OVER','ROWS','RANGE','PRECEDING','FOLLOWING','ASC','DESC','USING','NOWAIT','SKIP','LOCKED','TRUE','FALSE','FOR','LOOP','RETURN','IF','ELSIF','WHILE','NEW','OLD','EVENT','ROLE','USER','TO','WITHIN'].map(w=>w));
+  const SQL_FUNCS = new Set(['COUNT','SUM','AVG','MIN','MAX','RANK','DENSE_RANK','ROW_NUMBER','LAG','LEAD','COALESCE','NULLIF','CAST','EXTRACT','NOW','ROUND','UPPER','LOWER','SUBSTRING','CONCAT','LENGTH','TO_CHAR','GENERATE_SERIES']);
+  const SQL_TYPES = new Set(['VARCHAR','TEXT','INT','INTEGER','BIGINT','SMALLINT','NUMERIC','DECIMAL','BOOLEAN','JSONB','JSON','SERIAL','BIGSERIAL','TIMESTAMP','TIMESTAMPTZ','DATE','UUID','REAL','FLOAT','DOUBLE','CHAR']);
+
+  function highlightSql(raw){
+    const escaped = escapeHtml(raw);
+    const re = /(--[^\n]*|#[^\n]*|\/\/[^\n]*)|('(?:[^'\\]|\\.)*')|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_][A-Za-z0-9_]*\b)/g;
+    return escaped.replace(re, (m, comment, str, num, word)=>{
+      if(comment) return '<span class="tk-c">'+comment+'</span>';
+      if(str) return '<span class="tk-s">'+str+'</span>';
+      if(num) return '<span class="tk-n">'+num+'</span>';
+      if(word){
+        const up = word.toUpperCase();
+        if(SQL_KEYWORDS.has(up)) return '<span class="tk-k">'+word+'</span>';
+        if(SQL_FUNCS.has(up)) return '<span class="tk-f">'+word+'</span>';
+        if(SQL_TYPES.has(up)) return '<span class="tk-t">'+word+'</span>';
+      }
+      return m;
+    });
+  }
+
+  document.querySelectorAll('.sqlbox code').forEach(code=>{
+    code.innerHTML = highlightSql(code.textContent);
+  });
+
   function renderResults(results){
     if(!results || results.length===0){
       pgResult.innerHTML = '<div class="pg-info">실행 완료 — 반환된 행이 없습니다 (SELECT가 아니거나 결과 없음).</div>';
@@ -2223,6 +2257,13 @@ LIMIT 10;</textarea>
   }
   document.querySelectorAll('.ex-item').forEach(btn=>{
     btn.addEventListener('click', ()=> loadExercise(parseInt(btn.dataset.idx)));
+  });
+
+  // ---- Sidebar shortcut: jump straight to exercise list without opening drawer first ----
+  document.getElementById('exerciseNavBtn').addEventListener('click', ()=>{
+    openDrawer();
+    tabExercise.click();
+    pgDrawer.scrollIntoView({behavior:'smooth', block:'end'});
   });
 
   // ---- Quiz interactivity ----
