@@ -1,0 +1,1863 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKALA | 데이터 분석을 위한 Python 이해 - 복습노트</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#161925; --panel2:#1c2030; --border:#2a2f42;
+    --text:#e6e8ef; --muted:#9aa0b4; --accent:#7c9dff; --accent2:#4fd1c5;
+    --code-bg:#10131c; --code-text:#c9e6ff;
+    --day1:#7c9dff; --day2:#4fd1c5; --day3:#f6ad55; --day4:#f687b3;
+    --warn:#f6ad55;
+    --tk-string:#f0c674; --tk-number:#f2966d; --tk-type:#e2a8f7;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6;
+  }
+  .layout{display:flex; min-height:100vh;}
+  .sidebar{
+    width:280px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--border);
+    position:sticky; top:0; height:100vh; overflow-y:auto; padding:20px 14px;
+  }
+  .sidebar h1{font-size:15px; margin:0 6px 4px; color:var(--text); font-weight:700;}
+  .sidebar .sub{font-size:11.5px; color:var(--muted); margin:0 6px 16px;}
+  .search{
+    width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:13px; margin-bottom:14px;
+  }
+  .search:focus{outline:none; border-color:var(--accent);}
+  .day-group{margin-bottom:10px;}
+  .day-title{
+    font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
+    padding:8px 6px 4px; font-weight:700;
+  }
+  .day-title.d1{color:var(--day1);} .day-title.d2{color:var(--day2);}
+  .day-title.d3{color:var(--day3);} .day-title.d4{color:var(--day4);}
+  .navlink{
+    display:block; padding:6px 8px; border-radius:6px; color:var(--muted); text-decoration:none;
+    font-size:13px; margin:1px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .navlink:hover{background:var(--panel2); color:var(--text);}
+  .navlink.active{background:rgba(124,157,255,.15); color:var(--accent); font-weight:600;}
+  main{flex:1; padding:32px 40px 120px; max-width:980px;}
+  .page-head{margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border);}
+  .page-head h1{font-size:26px; margin:0 0 8px;}
+  .page-head p{color:var(--muted); font-size:14px; margin:0;}
+  .badges{margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;}
+  .badges span{font-size:11.5px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted);}
+  .sec{margin-bottom:56px; padding-top:8px; scroll-margin-top:20px;}
+  .sec-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .day-badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; color:#0b0d14;}
+  .day-badge.day1{background:var(--day1);} .day-badge.day2{background:var(--day2);}
+  .day-badge.day3{background:var(--day3);} .day-badge.day4{background:var(--day4);}
+  .sec h2{font-size:21px; margin:0; display:flex; gap:8px; align-items:baseline;}
+  .sec h2 .num{color:var(--muted); font-weight:500;}
+  .subtitle{color:var(--muted); font-size:13.5px; margin:6px 0 18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .sec h3{font-size:16px; margin:22px 0 8px; color:var(--text);}
+  .sec h4{font-size:13.5px; margin:14px 0 6px; color:var(--accent2); font-weight:700;}
+  .b{margin:4px 0 14px; padding-left:20px;}
+  .b li{margin:4px 0; font-size:14px;}
+  .b li::marker{color:var(--accent);}
+  p{font-size:14px; margin:8px 0;}
+  .sqlbox{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:10px;
+    margin:12px 0; overflow:hidden;
+  }
+  .sqlhead{
+    font-size:11px; color:var(--muted); padding:7px 12px; border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,.02); letter-spacing:.03em; text-transform:uppercase;
+  }
+  .sqlbox pre{margin:0; padding:12px 14px; overflow-x:auto;}
+  .sqlbox code{
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:12.5px; color:var(--code-text);
+    line-height:1.65; white-space:pre;
+  }
+  .sqlbox .tk-k{color:var(--accent); font-weight:700;}
+  .sqlbox .tk-f{color:var(--accent2); font-weight:700;}
+  .sqlbox .tk-t{color:var(--tk-type);}
+  .sqlbox .tk-s{color:var(--tk-string);}
+  .sqlbox .tk-n{color:var(--tk-number);}
+  .sqlbox .tk-c{color:var(--muted); font-style:italic;}
+  .cp{
+    background:rgba(79,209,197,.07); border:1px solid rgba(79,209,197,.3); border-radius:10px;
+    padding:10px 14px; margin:14px 0;
+  }
+  .cphead{color:var(--accent2); font-size:12.5px; font-weight:700; margin-bottom:6px;}
+  .cp ul{margin:0; padding-left:18px;}
+  .cp li{font-size:13px; margin:3px 0; color:#d5f5f0;}
+  table.t{border-collapse:collapse; width:100%; margin:12px 0; font-size:13px;}
+  table.t th{
+    background:var(--panel2); text-align:left; padding:8px 10px; border:1px solid var(--border);
+    color:var(--accent2); font-size:12px;
+  }
+  table.t td{padding:8px 10px; border:1px solid var(--border); color:var(--text); vertical-align:top;}
+  .note{
+    font-size:12.5px; color:var(--warn); background:rgba(246,173,85,.08);
+    border-left:3px solid var(--warn); padding:8px 12px; margin:12px 0; border-radius:4px;
+  }
+  .divider{border:none; border-top:1px solid var(--border); margin:40px 0;}
+  .day-header{
+    margin:60px 0 24px; padding:14px 0; border-bottom:2px solid var(--border);
+  }
+  .day-header h1{font-size:22px; margin:0 0 4px;}
+  .day-header p{color:var(--muted); font-size:13px; margin:0;}
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-thumb{background:#333850; border-radius:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  .top-btn{
+    position:fixed; bottom:24px; right:24px; background:var(--accent); color:#0b0d14;
+    border:none; border-radius:999px; width:44px; height:44px; font-size:18px; cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,.4); display:none;
+  }
+  @media (max-width:900px){
+    .sidebar{position:fixed; z-index:20; transform:translateX(-100%); transition:transform .2s;}
+    .sidebar.open{transform:translateX(0);}
+    main{padding:20px;}
+  }
+
+  /* ===== Readability upgrade ===== */
+  body{ font-size:15px; }
+  main{ padding:36px 48px 160px; max-width:900px; }
+  .sec{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:22px 26px 26px; margin-bottom:28px; box-shadow:0 1px 0 rgba(255,255,255,.02) inset;
+  }
+  .sec-head{margin-bottom:2px;}
+  .sec h2{font-size:20px;}
+  .subtitle{font-size:13.5px; line-height:1.55; margin-bottom:16px;}
+  p, .b li, .cp li, table.t td{font-size:14.5px; line-height:1.75;}
+  .b{padding-left:22px;}
+  .b li{margin:6px 0;}
+  .sqlbox code{font-size:13px; line-height:1.8;}
+  h4{letter-spacing:.01em;}
+  .day-header{
+    background:linear-gradient(180deg, rgba(124,157,255,.08), transparent);
+    border-radius:12px; padding:20px 22px; border-bottom:none; border:1px solid var(--border);
+  }
+  .day-header h1{font-size:23px;}
+
+  /* ===== Light theme ===== */
+  body.light{
+    --bg:#f7f8fc; --panel:#ffffff; --panel2:#f0f2f9; --border:#e2e5f0;
+    --text:#20232e; --muted:#6b7180; --accent:#3f5fd6; --accent2:#0f9488;
+    --code-bg:#f4f6fb; --code-text:#1d3b6b; --warn:#b45309;
+    --tk-string:#9a6a00; --tk-number:#c2410c; --tk-type:#7c3aed;
+  }
+  body.light .sec{box-shadow:0 1px 3px rgba(20,25,50,.06);}
+  body.light .cp{background:rgba(15,148,136,.07); border-color:rgba(15,148,136,.28);}
+  body.light .cp li{color:#0d4b45;}
+  body.light .sqlbox{border-color:#dde1ee;}
+  body.light table.t th{background:#eef1fa;}
+  body.light .day-header{background:linear-gradient(180deg, rgba(63,95,214,.06), transparent);}
+
+  /* ===== Top toolbar ===== */
+  .toolbar{display:flex; gap:8px; margin-bottom:14px;}
+  .theme-btn{
+    flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:12.5px; cursor:pointer;
+  }
+  .theme-btn:hover{border-color:var(--accent);}
+
+  /* ===== Copy button (injected via JS into sqlhead) ===== */
+  .sqlhead{display:flex; align-items:center; justify-content:space-between;}
+  .copy-btn{
+    font-size:11px; padding:3px 10px; border-radius:6px; border:1px solid var(--border);
+    background:transparent; color:var(--muted); cursor:pointer; letter-spacing:0; text-transform:none;
+    font-weight:600;
+  }
+  .copy-btn:hover{border-color:var(--accent2); color:var(--accent2);}
+  .copy-btn.copied{border-color:var(--accent2); color:var(--accent2);}
+
+  /* ===== Width upgrade (full monitor) ===== */
+  main{ max-width: 1180px; padding:40px 56px 160px; }
+  @media (min-width:1500px){ main{ max-width: 1320px; } }
+  @media (min-width:1800px){ main{ max-width: 1440px; } }
+  .sidebar{ width:300px; }
+
+  /* ===== TL;DR beginner box ===== */
+  .tldr{
+    display:flex; gap:12px; align-items:flex-start; background:rgba(124,157,255,.09);
+    border:1px solid rgba(124,157,255,.35); border-radius:12px; padding:14px 16px; margin:14px 0 18px;
+  }
+  .tldr .icon{font-size:18px; line-height:1.4;}
+  .tldr .txt{font-size:14px; line-height:1.7; color:var(--text);}
+  .tldr .txt b{color:var(--accent);}
+  body.light .tldr{background:rgba(63,95,214,.06); border-color:rgba(63,95,214,.25);}
+
+  /* ===== Quiz blocks ===== */
+  .quiz-wrap{
+    margin:36px 0 60px; background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:24px 28px 28px;
+  }
+  .quiz-wrap h2{font-size:19px; margin:0 0 4px; display:flex; align-items:center; gap:8px;}
+  .quiz-wrap > p{color:var(--muted); font-size:13px; margin:0 0 18px;}
+  .quiz-score{
+    display:inline-block; background:var(--panel2); border:1px solid var(--border); border-radius:999px;
+    padding:4px 14px; font-size:12.5px; color:var(--accent2); font-weight:700; margin-bottom:16px;
+  }
+  .quiz-q{
+    border-top:1px dashed var(--border); padding:16px 0;
+  }
+  .quiz-q:first-of-type{border-top:none;}
+  .quiz-qtext{font-size:14.5px; margin:0 0 10px; font-weight:600;}
+  .quiz-qtext .qtype{
+    font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:5px; margin-right:8px;
+    background:var(--panel2); color:var(--muted); vertical-align:middle;
+  }
+  .quiz-opts{display:flex; flex-wrap:wrap; gap:8px;}
+  .quiz-opt{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:8px 14px; font-size:13px; cursor:pointer; text-align:left;
+  }
+  .quiz-opt:hover{border-color:var(--accent);}
+  .quiz-opt.correct{background:rgba(79,209,197,.18); border-color:var(--accent2); color:var(--accent2); font-weight:700;}
+  .quiz-opt.incorrect{background:rgba(246,135,179,.15); border-color:#f687b3; color:#f687b3;}
+  .quiz-opt[disabled]{cursor:default;}
+  .quiz-short{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .quiz-short input{
+    flex:1; min-width:180px; padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--code-bg); color:var(--text); font-size:13px;
+  }
+  .quiz-check{
+    background:var(--accent); color:#0b0d14; border:none; border-radius:7px; padding:8px 16px;
+    font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+  .quiz-feedback{font-size:12.5px; margin-top:8px; font-weight:600;}
+  .quiz-feedback.ok{color:var(--accent2);}
+  .quiz-feedback.no{color:#f687b3;}
+  .quiz-exp{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-weight:400; font-size:12.5px;
+    line-height:1.6; color:var(--text); background:var(--panel2); border:1px solid var(--border);
+  }
+
+  /* ===== Site topbar (links back to course home) ===== */
+  .site-topbar{
+    display:flex; align-items:center; gap:10px; padding:9px 18px; background:var(--panel2);
+    border-bottom:1px solid var(--border); font-size:12.5px; position:sticky; top:0; z-index:30;
+  }
+  .site-topbar a{color:var(--muted); text-decoration:none;}
+  .site-topbar a:hover{color:var(--accent);}
+  .site-topbar .crumb-sep{color:var(--border);}
+  .site-topbar .crumb-cur{color:var(--text); font-weight:600;}
+</style>
+</head>
+
+<body class="light">
+<div class="site-topbar">
+  <a href="../../index.html">🏠 Full-stack 학습 홈</a>
+  <span class="crumb-sep">/</span>
+  <span class="crumb-cur">데이터 분석을 위한 Python 이해</span>
+</div>
+<div class="layout">
+  <nav class="sidebar" id="sidebar">
+    <h1>SKALA 데이터 분석 Python</h1>
+    <p class="sub">이해 및 활용 · 복습노트</p>
+    <div class="toolbar">
+      <button class="theme-btn" id="themeBtn">🌙 다크 모드</button>
+    </div>
+    <input class="search" id="searchBox" type="text" placeholder="검색 (예: 컴프리헨션, Pydantic, DuckDB...)">
+    <div class="day-group"><div class="day-title d1">Day 1 — 실행구조·자료구조·함수·타입·품질·비동기</div>
+<a class="navlink" href="#s1" data-sec="1">1. 실행 구조와 개발 환경</a>
+<a class="navlink" href="#s2" data-sec="2">2. 자료구조와 컴프리헨션</a>
+<a class="navlink" href="#s3" data-sec="3">3. 함수·파일·예외 처리</a>
+<a class="navlink" href="#s4" data-sec="4">4. 타입 힌트와 데이터 모델링</a>
+<a class="navlink" href="#s5" data-sec="5">5. 코드 품질과 기초 테스트</a>
+<a class="navlink" href="#s6" data-sec="6">6. 비동기와 병렬 처리 입문</a>
+<a class="navlink" href="#s7" data-sec="7">7. Day 1 종합 실습</a>
+<a class="navlink" href="#quiz-day1" style="color:var(--accent2);">✅ Day1 퀴즈</a>
+</div>
+<div class="day-group"><div class="day-title d2">Day 2 — Pandas/Polars·시각화·통계/ML·자동화·구조화</div>
+<a class="navlink" href="#s8" data-sec="8">8. Pandas 2.x 실전</a>
+<a class="navlink" href="#s9" data-sec="9">9. Polars + DuckDB</a>
+<a class="navlink" href="#s10" data-sec="10">10. 데이터 시각화</a>
+<a class="navlink" href="#s11" data-sec="11">11. 기초 통계와 ML 파이프라인 연결</a>
+<a class="navlink" href="#s12" data-sec="12">12. 분석 자동화와 파이프라인 설계</a>
+<a class="navlink" href="#s13" data-sec="13">13. 분석 코드 구조화와 공유</a>
+<a class="navlink" href="#s14" data-sec="14">14. Day 2 종합 실습</a>
+<a class="navlink" href="#quiz-day2" style="color:var(--accent2);">✅ Day2 퀴즈</a>
+</div>
+  </nav>
+  <main>
+    <div class="page-head">
+      <h1>데이터 분석을 위한 Python 이해 — 복습노트</h1>
+      <p>Full-stack Engineering(AI캠퍼스) · 2일 과정 · Python 데이터 분석 전체 13개 세션 요약</p>
+      <div class="badges">
+        <span>Python 3.11+</span><span>Pandas·Polars·DuckDB</span><span>비동기/병렬</span>
+        <span>타입힌트·Pydantic</span><span>코드품질·테스트</span><span>시각화·통계·ML Pipeline</span>
+        <span>🖥 Day별 퀴즈 포함</span>
+      </div>
+    </div>
+    <div class="day-header" id="day1"><h1>Day 1 — 실행 구조·자료구조·함수·타입·품질·비동기</h1><p>Python 실행 원리부터 자료구조, 함수·예외·타입, 코드 품질, 비동기/병렬까지</p></div>
+
+<section class="sec" id="s1" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">1.</span> 실행 구조와 개발 환경</h2>
+  </div>
+  <p class="subtitle">인터프리터 · AST · 바이트코드 · PVM · venv</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 파이썬은 소스코드를 기계어로 바로 바꾸지 않고, 중간에 <b>바이트코드</b>라는 요약본을 만든 다음 그걸 <b>PVM</b>(가상머신)이 한 줄씩 실행해요. 이 흐름을 알면 왜 컴프리헨션이 빠른지, 왜 에러 traceback이 그렇게 생기는지 이해가 쉬워져요.</div></div>
+
+  <h4>Python — 왜 데이터 분석의 표준 언어인가?</h4>
+  <ul class="b">
+    <li><b>인터프리터 언어</b>: 소스코드를 한 줄씩 읽어 즉시 실행. 대화형(REPL) 탐색이 가능해 데이터 분석에 최적</li>
+    <li><b>방대한 생태계</b>: NumPy, Pandas, scikit-learn, Polars, DuckDB — 데이터 분석에 필요한 모든 것이 pip 로 설치</li>
+    <li><b>2026 AI/ML 표준</b>: TensorFlow·PyTorch·LangChain·RAG 파이프라인까지 Python 중심, 전체 커리큘럼 기반 언어</li>
+    <li><b>읽기 쉬운 문법</b>: 들여쓰기 기반 블록 구조, 분석 코드를 비전공자도 읽을 수 있을 만큼 간결</li>
+  </ul>
+
+  <h4>Python 실행 구조 — Python은 인터프리터 언어다</h4>
+  <p>파이썬은 컴파일 언어가 아닌 인터프리터 언어다. 사용자가 .py 파일로 작성한 코드를 한 줄씩 읽고 바로 실행한다. 그러나 단순한 한 줄씩 실행 구조가 아니라, 중간에 <b>바이트코드(Bytecode)</b>라는 중간 표현 단계가 존재한다. 인터프리터의 역할: 소스코드 → 파서(Parser) → AST(Abstract Syntax Tree) → 바이트코드 생성기 → Python Virtual Machine(PVM).</p>
+  <div class="sqlbox"><div class="sqlhead">dis 모듈 — 바이트코드 확인</div><pre><code>import dis
+def add(x, y):
+    return x + y
+dis.dis(add)  # 바이트코드 출력</code></pre></div>
+
+  <h4>Python 실행 흐름 — 소스코드에서 결과까지</h4>
+  <ul class="b">
+    <li>소스코드(.py, 개발자 작성) → 파서(Parser, 문법분석) → AST(추상 구문 트리) → 바이트코드(.pyc, 중간표현) → PVM 실행(결과출력)</li>
+    <li>CPython은 소스를 직접 기계어로 변환하지 않고 바이트코드를 거친다 → 이식성과 재사용성 확보</li>
+  </ul>
+
+  <h4>[참고] AST(Abstract Syntax Tree) &amp; dis</h4>
+  <p>우리가 만든 코드를 기계가 실행할 수 있는 형태로 바꾸는 과정(컴파일), 코드에 문제가 없는지 분석하는 과정에서 AST가 핵심적인 역할을 한다.</p>
+  <ul class="b">
+    <li><b>코드 분석 및 이해</b>: 코드의 구조를 명확하게 보여줌 — 컴파일러·인터프리터가 코드 의미 분석 및 오류 검증</li>
+    <li><b>코드 변환 및 최적화</b>: 코드 구조를 트리 형태로 조작해 더 효율적인 코드로 최적화, 다른 버전의 언어로 변환</li>
+    <li><b>다양한 개발도구 활용</b>: 린터(Linter, 문법 오류 수정) · 포매터(Formatter, 스타일 통일) · 트랜스파일러(Transpiler, 최신 문법 변환)</li>
+    <li>dis 모듈은 함수가 어떤 바이트코드로 컴파일되는지 출력한다 — LOAD_FAST·BINARY_OP·RETURN_VALUE 등의 명령어 구조로 컴프리헨션이 for 루프보다 빠른 이유를 바이트코드로 확인할 수 있다</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">ast.dump()로 구문 트리 확인</div><pre><code>import ast, dis
+tree = ast.parse('x = a + b')
+print(ast.dump(tree, indent=2))
+def add(x, y): return x + y
+dis.dis(add)
+# LOAD_FAST 0 (x)
+# LOAD_FAST 1 (y)
+# BINARY_OP 0 (+)
+# RETURN_VALUE</code></pre></div>
+
+  <h4>바이트코드 명령어 표</h4>
+  <table class="t"><thead><tr>
+    <th>줄번호</th><th>바이트오프셋</th><th>명령어</th><th>인자</th><th>의미</th>
+  </tr></thead><tbody>
+    <tr><td>3</td><td>0</td><td>RESUME</td><td>0</td><td>Python 3.11 이후 도입된 실행 초기화 명령어(디버깅/프레임 시작용)</td></tr>
+    <tr><td>4</td><td>2</td><td>LOAD_FAST</td><td>0(x)</td><td>지역 변수 x를 스택에 Push</td></tr>
+    <tr><td></td><td>4</td><td>LOAD_FAST</td><td>1(y)</td><td>지역변수 y를 스택에 Push</td></tr>
+    <tr><td></td><td>6</td><td>BINARY_OP</td><td>0(+)</td><td>스택에서 두 값을 pop한 후 + 연산 수행, 결과를 Push</td></tr>
+    <tr><td></td><td>10</td><td>RETURN_VALUE</td><td>-</td><td>연산결과 반환</td></tr>
+  </tbody></table>
+  <div class="note">x와 y를 스택에 올리고 x + y 연산을 수행한 뒤 결과를 반환(return)하는 구조 — Python의 PVM은 스택 기반 가상 머신이다.</div>
+
+  <h4>Python 바이트코드 &amp; PVM</h4>
+  <ul class="b">
+    <li>확인 예제: <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">python -m py_compile hello.py</code> → <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">__pycache__/hello.cpython-311.pyc</code> 생성됨</li>
+    <li>바이트코드는 파이썬 소스코드가 파싱 후 생성하는 중간표현(Intermediate Representation), pyc 파일에 저장되며 PVM에서 실행 — 실행 속도 향상(재사용 가능), OS와 독립적으로 동작</li>
+    <li><b>PVM 역할</b>: 바이트코드를 하나씩 읽어 해석하고 실행하는 엔진, 일종의 스택 기반 가상 머신 — 각 명령은 스택 기반으로 동작하며 바이트코드는 opcode + 인자(argument) 구조</li>
+  </ul>
+
+  <h4>Python 실행 파이프라인</h4>
+  <table class="t"><thead><tr>
+    <th>단계</th><th>처리 내용</th><th>관련 모듈/처리내용</th>
+  </tr></thead><tbody>
+    <tr><td>1. 소스 코드</td><td>py 파일 → Lexer(어휘 분석) → Token 스트림</td><td>개발자가 만든 py</td></tr>
+    <tr><td>2. 파싱</td><td>Token → AST() 생성, 문법 오류 감지</td><td>ast 모듈</td></tr>
+    <tr><td>3. 컴파일</td><td>AST → 바이트코드(.pyc) 생성, __pycache__ 저장</td><td>py_compile 모듈</td></tr>
+    <tr><td>4. PVM 실행</td><td>바이트코드를 opcode 단위로 해석/실행(스택 기반)</td><td>CPython 인터프리터</td></tr>
+    <tr><td>5. 결과 반환</td><td>실행 결과 출력, 예외 처리</td><td>프로그램 종료</td></tr>
+  </tbody></table>
+
+  <h4>Python 메모리 모델</h4>
+  <ul class="b">
+    <li>메모리 관리 구조: Stack(함수 호출, 지역 변수 등), Heap(객체, 클래스 인스턴스, 리스트 등), Reference Counting + Garbage Collector(메모리 자동 해제)</li>
+    <li>모든 값은 객체(object)로 표현되며, 각 객체는 메타정보 포함 — type(자료형 정보), refcount(참조 수), value(데이터 값)</li>
+  </ul>
+  <table class="t"><thead><tr><th>전략</th><th>설명</th></tr></thead><tbody>
+    <tr><td>Reference Counting</td><td>객체마다 참조 수 저장, 0이 되면 삭제</td></tr>
+    <tr><td>Cycle Detector</td><td>순환 참조 탐지 후 수동 해제</td></tr>
+    <tr><td>GC 모듈</td><td>gc.collect() 등으로 수동 개입 가능</td></tr>
+  </tbody></table>
+  <table class="t"><thead><tr><th>개념</th><th>설명</th></tr></thead><tbody>
+    <tr><td>__pycache__</td><td>바이트코드 캐싱 디렉토리</td></tr>
+    <tr><td>sys.getrefcount()</td><td>참조 수 확인</td></tr>
+    <tr><td>gc 모듈</td><td>가비지 컬렉터 제어</td></tr>
+    <tr><td>dis 모듈</td><td>바이트코드 분석</td></tr>
+  </tbody></table>
+
+  <h4>macOS + VS Code 개발 환경 설정 — 단계별 실습</h4>
+  <p>macOS 기준 전체 환경 구성 흐름 — 이 환경이 2일간 모든 실습의 기반이다.</p>
+  <div class="sqlbox"><div class="sqlhead">venv 기반 개발 환경 구성 (bash)</div><pre><code># 1. Python 3.11 설치 확인 (Homebrew)
+$ brew install python@3.11
+$ python3.11 --version  # Python 3.11.x
+
+# 2. 프로젝트 폴더 생성 + venv
+$ mkdir data-project && cd data-project
+$ python3.11 -m venv .venv
+$ source .venv/bin/activate  # 활성화
+(.venv) $  # 프롬프트 변경 확인
+
+# 3. 분석 패키지 한 번에 설치
+# .venv/ 는 .gitignore에 추가, requirements.txt는 반드시 커밋</code></pre></div>
+
+  <h4>실행 구조 이해의 목적</h4>
+  <ul class="b">
+    <li><b>패키지 설치 오류 해결</b>: pip install 실패, ModuleNotFoundError — venv 활성화 여부, 인터프리터 경로를 알아야 즉시 해결</li>
+    <li><b>성능 최적화의 출발점</b>: 바이트코드를 이해하면 왜 컴프리헨션이 빠른지, 왜 Polars가 Pandas보다 빠른지 직관적으로 납득</li>
+    <li><b>에러 메시지 독해력</b>: Traceback은 PVM 실행 스택을 보여준다 — 스택 구조를 알면 오류 원인을 파일·라인·표현식 단위로 찾음</li>
+    <li><b>후속 과목 연결</b>: LangChain·RAG·AI Agent는 모두 Python 런타임 위에서 동작 — 환경 격리(venv)와 의존성 관리가 기본</li>
+  </ul>
+</section>
+
+
+<section class="sec" id="s2" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">2.</span> 자료구조와 컴프리헨션</h2>
+  </div>
+  <p class="subtitle">list · dict · set · deque · Counter · 컴프리헨션 · 제너레이터</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>list</b>는 순서가 있는 상자, <b>dict</b>는 이름표가 붙은 서랍장, <b>set</b>은 중복을 자동으로 걸러주는 통이에요. <b>컴프리헨션</b>은 for 루프를 한 줄로 압축한 것이고, <b>제너레이터</b>는 필요할 때마다 하나씩 값을 꺼내줘서 메모리를 아껴요.</div></div>
+
+  <h4>자료구조 선택 기준 — 시간복잡도와 사용처</h4>
+  <table class="t"><thead><tr>
+    <th>자료구조</th><th>접근</th><th>삽입/삭제</th><th>특징</th><th>데이터 분석 사용처</th>
+  </tr></thead><tbody>
+    <tr><td>list</td><td>O(1)</td><td>O(n) 중간 / O(1) 끝</td><td>순서·중복 허용, 동적 배열</td><td>행 리스트, 변환 결과 누적</td></tr>
+    <tr><td>dict</td><td>O(1)</td><td>O(1)</td><td>키-값, 3.7+ 삽입 순서 보장</td><td>컬럼 매핑, 집계 결과 저장</td></tr>
+    <tr><td>set</td><td>O(1)</td><td>O(1)</td><td>중복 제거, 해시 기반</td><td>중복값 제거, 카테고리 추출</td></tr>
+    <tr><td>tuple</td><td>O(1)</td><td>불변</td><td>불변, dict 키 사용 가능</td><td>레코드, 함수 반환값</td></tr>
+    <tr><td>deque</td><td>O(n)</td><td>O(1) 양끝</td><td>양방향 큐, Linked List of arrays</td><td>슬라이딩 윈도우, 스트림 버퍼</td></tr>
+  </tbody></table>
+
+  <h4>list — 가장 많이 쓰이는 순차 자료구조</h4>
+  <ul class="b">
+    <li>동적 배열(내부적으로 C 배열로 구현), append: O(1) amortized / insert: O(n)</li>
+    <li>슬라이싱: a[start:end:step] — 원본 유지 / 정렬: sort() 원본 변경 vs sorted() 새 리스트</li>
+    <li>중첩 리스트: 2D 데이터·행렬 표현</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">list 핵심 패턴</div><pre><code>a = [1, 2, 3, 4, 5]
+a[1:3]      # [2, 3]
+a[::-1]     # 역순
+a[::2]      # 홀수 인덱스
+a.sort()               # 원본 변경
+sorted(a, reverse=True)  # 새 리스트
+matrix = [[1,2],[3,4],[5,6]]
+cols = [row[1] for row in matrix]  # [2,4,6]</code></pre></div>
+
+  <h4>dict·set·Counter — 집계와 중복 처리</h4>
+  <ul class="b">
+    <li>dict(해시 테이블, O(1) 조회·삽입), set(중복 제거, 교집합·합집합·차집합)</li>
+    <li>Counter(빈도 집계 전문, value_counts 대안), defaultdict(키 없을 때 기본값 자동 생성)</li>
+    <li>OrderedDict(삽입 순서 보장, 3.7+ dict와 동일)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Counter / defaultdict / set 연산</div><pre><code>from collections import Counter, defaultdict
+c = Counter(['서울','부산','서울','대구','서울'])
+c.most_common(3)  # [('서울',3),...]
+group = defaultdict(list)
+for row in rows:
+    group[row['region']].append(row['sales'])
+a = {'서울','부산','대구'}
+b = {'서울','인천'}
+a &amp; b  # 교집합: {'서울'}
+a - b  # 차집합: {'부산','대구'}</code></pre></div>
+
+  <h4>컴프리헨션 — 분석 코드 핵심 패턴</h4>
+  <ul class="b">
+    <li>리스트 컴프리헨션(변환+필터 동시), 딕셔너리 컴프리헨션(키-값 매핑), 집합 컴프리헨션(중복 제거)</li>
+    <li>중첩 컴프리헨션(2D→1D flatten), for 루프보다 2–3배 빠름(바이트코드 최적화)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">컴프리헨션 전체 패턴</div><pre><code>evens = [x for x in data if x % 2 == 0]
+scaled = [x * 1.1 for x in prices]
+word_len = {w: len(w) for w in words}
+inv_map = {v: k for k,v in mapping.items()}
+regions = {row['region'] for row in rows}
+flat = [x for row in matrix for x in row]
+labels = ['정상' if x&gt;0 else '오류' for x in codes]</code></pre></div>
+
+  <h4>제너레이터 — 대용량 메모리 효율 처리</h4>
+  <ul class="b">
+    <li>yield(값을 하나씩 생성, 일시 중단) — 전체 데이터를 메모리에 올리지 않음</li>
+    <li>CSV 수백만 행 스트리밍 처리에 핵심, generator expression(() 괄호 사용), itertools.islice/chain 등과 조합</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">제너레이터 — 메모리 비교</div><pre><code>def read_rows(path):
+    with open(path) as f:
+        next(f)  # 헤더 스킵
+        for line in f:
+            yield line.strip().split(',')
+for row in read_rows('large.csv'):
+    process(row)
+total = sum(float(r[2]) for r in read_rows('f.csv'))
+import sys
+lst = [x**2 for x in range(10_000_000)]  # 400MB+
+gen = (x**2 for x in range(10_000_000))  # ~120 byte</code></pre></div>
+
+  <h4>dataclass·TypedDict — 데이터 레코드 모델링</h4>
+  <ul class="b">
+    <li>dataclass(클래스 보일러플레이트 자동 생성) — __init__·__repr__·__eq__ 자동 구현, field()로 기본값·팩토리 설정</li>
+    <li>TypedDict(dict에 타입 힌트 추가) — Pandas DataFrame 행을 타입 안전하게 표현</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">dataclass &amp; TypedDict</div><pre><code>from dataclasses import dataclass, field
+from typing import TypedDict, Optional
+@dataclass
+class SalesRecord:
+    date: str
+    region: str
+    amount: float
+    tags: list = field(default_factory=list)
+r = SalesRecord('2024-01','서울', 1500.0)
+class Row(TypedDict):
+    region: str
+    sales: float
+    category: Optional[str]</code></pre></div>
+
+  <h4>자료구조가 데이터 분석 코드의 기반인 이유</h4>
+  <ul class="b">
+    <li><b>DataFrame은 dict의 확장</b>: Pandas DataFrame 내부는 dict[컬럼명 → numpy 배열] — dict를 이해하면 Pandas 동작 원리가 보임</li>
+    <li><b>컴프리헨션 = 빠른 전처리</b>: 필터링·변환을 한 줄로 표현, Pandas apply 대비 간단한 변환은 컴프리헨션이 더 빠를 때도 있음</li>
+    <li><b>Counter로 value_counts 대체</b>: Pandas 없이도 Counter 하나로 빈도 집계 가능, 스크립트 레벨 분석에서 의존성 최소화</li>
+    <li><b>제너레이터 = 스트리밍 파이프라인</b>: 수백만 행 CSV를 한꺼번에 올리지 않고 행 단위로 처리, 메모리 한계를 극복하는 핵심 패턴</li>
+  </ul>
+
+  <h4>[실습 1] 자료구조 집계·컴프리헨션·제너레이터</h4>
+  <p>Python_Practice1_Data.json(Sales) 활용</p>
+  <ul class="b">
+    <li>① 리스트/딕셔너리 컴프리헨션: amount ≥ 1000인 거래만 필터링, 지역별 총매출 dict를 컴프리헨션으로 계산</li>
+    <li>② Counter + defaultdict: Counter로 지역별 거래 건수를, defaultdict로 카테고리별 amount 리스트</li>
+    <li>③ 제너레이터 — 메모리 비교: amount &gt; 1000 인 행만 yield 하는 제너레이터 작성, 리스트 버전과 메모리 크기 비교</li>
+    <li>④ 종합 - 월별 카테고리 매출 집계: month·category 기준 그룹핑해 총매출 dict 완성(컴프리헨션+defaultdict)</li>
+  </ul>
+  <div class="cp"><div class="cphead">✔ Checkpoint</div><ul>
+    <li>region_total 값 정확(assert 통과) / Counter.most_common() 순서 정확</li>
+    <li>generator sys.getsizeof &lt; list 확인 / top3 금액 내림차순 정렬 정확</li>
+  </ul></div>
+  <div class="note">감점 대상: 컴프리헨션 대신 for 루프만 사용(-2) / defaultdict 대신 if key not in dict 패턴(-1) / 제너레이터를 list로 변환해 비교(메모리 차이 미확인, -2) / Counter 대신 직접 루프로 카운팅(-1)</div>
+</section>
+
+
+<section class="sec" id="s3" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">3.</span> 함수·파일·예외 처리</h2>
+  </div>
+  <p class="subtitle">functools · 데코레이터 · pathlib · CSV/JSON/Parquet · logging</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>*args/**kwargs</b>는 인자를 몇 개 받을지 모를 때 쓰는 가변 인자예요. <b>데코레이터</b>는 함수에 옷을 입히듯 기능을 덧씌우는 것(시간측정, 재시도 등). <b>try-except-finally</b>는 "실패해도 뒷정리는 반드시 하는" 안전장치예요.</div></div>
+
+  <h4>함수 고급 패턴 — *args, **kwargs, 클로저</h4>
+  <ul class="b">
+    <li>*args(가변 위치 인자, tuple로 저장), **kwargs(가변 키워드 인자, dict로 저장)</li>
+    <li>클로저(내부 함수가 외부 함수 변수 기억), lambda(간단한 한 줄 변환 함수)</li>
+    <li>functools.partial(인자 고정해 새 함수 생성)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">가변인자 · 클로저 · partial</div><pre><code>def agg(*args, **kwargs):
+    print(f'값: {args}')
+    print(f'옵션: {kwargs}')
+agg(1,2,3, method='mean')
+def make_multiplier(n):
+    def multiply(x): return x * n
+    return multiply
+double = make_multiplier(2)
+double(5)  # 10
+from functools import partial
+def scale(x, factor): return x * factor
+double2 = partial(scale, factor=2)
+list(map(double2, [1,2,3,4]))  # [2,4,6,8]</code></pre></div>
+
+  <h4>데코레이터 — 분석 파이프라인 공통 기능 분리</h4>
+  <ul class="b">
+    <li>데코레이터(함수를 인자로 받아 기능 추가), @timer(실행 시간 측정), @retry(실패 시 재시도, API 수집에서 필수)</li>
+    <li>@lru_cache(동일 입력 결과 캐싱), functools.wraps(원본 함수 메타데이터 보존)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">@timer / @lru_cache</div><pre><code>import time
+from functools import wraps, lru_cache
+def timer(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        t = time.perf_counter()
+        result = func(*args, **kwargs)
+        print(f'{func.__name__}: {time.perf_counter()-t:.3f}s')
+        return result
+    return wrapper
+@timer
+def load_data(path):
+    return pd.read_parquet(path)
+@lru_cache(maxsize=128)
+def expensive_stats(key): ...</code></pre></div>
+
+  <h4>파일 읽기·쓰기 — CSV·JSON·Parquet·pathlib</h4>
+  <ul class="b">
+    <li>pathlib.Path(macOS 경로 처리 표준), with(파일 자동 닫기)</li>
+    <li>csv.DictReader(헤더를 키로 행 읽기), json.load/json.dump(API 응답 처리)</li>
+    <li>Parquet(컬럼형 포맷, CSV보다 10× 빠른 읽기)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">pathlib + CSV/JSON/Parquet</div><pre><code>from pathlib import Path
+import json, csv
+data_dir = Path('data')
+with open(data_dir/'resp.json') as f:
+    data = json.load(f)
+with open(data_dir/'sales.csv') as f:
+    rows = list(csv.DictReader(f))
+import pandas as pd
+df = pd.read_parquet(data_dir/'sales.parquet')
+df.to_parquet(data_dir/'out.parquet')</code></pre></div>
+
+  <h4>예외 처리 — 파이프라인 안정성 패턴</h4>
+  <ul class="b">
+    <li>try-except-else-finally 완전 구조, 특정 예외 계층으로 정밀하게 잡기</li>
+    <li>사용자 정의 예외(도메인 오류 표현), finally(파일/연결 반드시 닫기), raise(상위로 예외 전파 패턴)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">사용자 정의 예외 &amp; try-except-finally</div><pre><code>class DataValidationError(ValueError):
+    def __init__(self, col, val):
+        super().__init__(f'{col}={val} 검증 실패')
+def safe_load(path):
+    try:
+        df = pd.read_parquet(path)
+        if df.empty: raise DataValidationError('rows','0')
+        return df
+    except FileNotFoundError:
+        logger.error(f'파일 없음: {path}')
+        return None
+    except DataValidationError as e:
+        logger.warning(str(e))
+        return None
+    finally:
+        logger.info(f'로딩 시도: {path}')</code></pre></div>
+
+  <h4>logging — print() 대신 프로덕션 로깅</h4>
+  <ul class="b">
+    <li>5단계 레벨(DEBUG·INFO·WARNING·ERROR·CRITICAL), basicConfig(빠른 기본 설정)</li>
+    <li>FileHandler(파일에 저장), TimedRotatingFileHandler(날짜별 회전) — 분석 파이프라인에서 실행 흐름 추적</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">logging — 핸들러 구성</div><pre><code>import logging
+from logging.handlers import TimedRotatingFileHandler
+logger = logging.getLogger('pipeline')
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+fh = TimedRotatingFileHandler('logs/pipeline.log', when='midnight', backupCount=7, encoding='utf-8')
+fh.setLevel(logging.DEBUG)
+fmt = logging.Formatter('%(asctime)s|%(levelname)s|%(message)s')
+[h.setFormatter(fmt) for h in [ch,fh]]
+[logger.addHandler(h) for h in [ch,fh]]</code></pre></div>
+
+  <h4>.env 기반 환경변수 — 보안과 이식성</h4>
+  <ul class="b">
+    <li>.env 파일(API 키·DB 비밀번호 분리) — 코드에 하드코딩 금지(GitHub 노출 위험)</li>
+    <li>python-dotenv(load_dotenv()로 로드), os.getenv()(환경변수 읽기), 운영/개발/로컬 환경별 .env 분리 전략</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">.env + python-dotenv</div><pre><code># .env: API_KEY=sk-xxxx / DB_URL=postgresql://... / ENV=development
+from dotenv import load_dotenv
+import os
+load_dotenv()
+api_key = os.getenv('API_KEY')
+db_url = os.getenv('DB_URL')
+env = os.getenv('ENV', 'development')
+# .gitignore 에 반드시 추가: .env / .env.local / .env.production</code></pre></div>
+</section>
+
+
+<section class="sec" id="s4" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">4.</span> 타입 힌트와 데이터 모델링</h2>
+  </div>
+  <p class="subtitle">타입 힌트 · Union·Optional·Literal · Pydantic v2 · mypy</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 타입 힌트는 "이 함수는 숫자를 넣으면 숫자를 돌려줘요"라고 미리 적어두는 주석 같은 거예요. <b>Pydantic</b>은 이 약속을 실제로 검사해서, 잘못된 데이터가 들어오면 바로 에러를 내주는 도구예요.</div></div>
+
+  <h4>타입 힌트 기초 — 분석 코드 가독성 향상</h4>
+  <ul class="b">
+    <li>기본(str·int·float·bool·None), 컬렉션(list[str]·dict[str,Any]·tuple[int,...])</li>
+    <li>함수 시그니처(매개변수+반환 타입) — 타입 힌트는 런타임에 영향 없음(주석 역할), VS Code Pylance가 실시간으로 타입 검사</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">타입 힌트 기본 문법</div><pre><code>from typing import Any
+def clean_name(s: str) -&gt; str:
+    return s.strip().lower()
+def compute_avg(values: list[float]) -&gt; float:
+    return sum(values) / len(values)
+def lookup(d: dict[str, Any], key: str, default: float = 0.0) -&gt; float:
+    return float(d.get(key, default))
+def parse(val: str | int | None) -&gt; str:
+    return str(val) if val is not None else ''</code></pre></div>
+
+  <h4>Optional·Union·Literal·Any</h4>
+  <ul class="b">
+    <li>Optional[X] = X|None(결측치 표현), Union[X,Y](여러 타입 허용, 3.10+: X|Y)</li>
+    <li>Literal(특정 값만 허용, enum 대안), Any(모든 타입 허용, 사용 최소화), Callable(함수를 인자로 받을 때)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Optional / Literal / Callable</div><pre><code>from typing import Optional, Union, Literal, Callable
+def get_val(d: dict, key: str) -&gt; Optional[float]:
+    return d.get(key)
+def fill_strategy(method: Literal['mean','median','drop']) -&gt; None: ...
+def apply_fn(data: list[float], fn: Callable[[float], float]) -&gt; list[float]:
+    return [fn(x) for x in data]</code></pre></div>
+
+  <h4>Pydantic v2 — 데이터 검증과 직렬화</h4>
+  <ul class="b">
+    <li>BaseModel(스키마 정의+자동 검증), Field(gt/lt/ge/le/regex/description)</li>
+    <li>model_validate()(dict→객체 변환), model_dump()(객체→dict/JSON), ValidationError(어느 필드가 왜 틀렸는지)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Pydantic v2 BaseModel</div><pre><code>from pydantic import BaseModel, Field
+from typing import Optional
+class SalesRecord(BaseModel):
+    date: str
+    region: str
+    amount: float = Field(gt=0, description='양수')
+    category: Optional[str] = None
+r = SalesRecord(**{'date':'2024','region':'서울','amount':1500})
+r.model_dump()
+try:
+    SalesRecord(date='', region='서울', amount=-100)
+except Exception as e:
+    print(e)</code></pre></div>
+
+  <h4>mypy + VS Code Pylance — 정적 타입 검사 도구</h4>
+  <p>런타임 전 타입 오류를 IDE와 CLI에서 동시에 잡아낸다. CI에 통합하면 코드 품질 자동 게이트.</p>
+  <div class="sqlbox"><div class="sqlhead">mypy 오류 예시</div><pre><code>def compute_avg(values: list[float]) -&gt; float:
+    return sum(values) / len(values)
+result = compute_avg(['a', 'b', 'c'])  # list[str] ← 오류!
+# $ mypy analysis.py
+# analysis.py:4: error: Argument 1 has incompatible type 'list[str]'; expected 'list[float]'</code></pre></div>
+  <div class="note">→ 데이터 분석 코드의 컬럼 타입 오류, 결측치 처리 누락을 사전에 차단</div>
+
+  <h4>Pydantic을 분석 파이프라인에 활용하기</h4>
+  <ul class="b">
+    <li>CSV 행 → BaseModel로 일괄 검증, API JSON 응답 → 스키마 검증 후 저장</li>
+    <li>잘못된 행 건너뛰기 vs 오류 집계, model_json_schema()(OpenAPI 스키마 자동 생성)</li>
+    <li>후속 과목(FastAPI) API 스키마와 동일한 구조</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">CSV → Pydantic 검증 파이프라인</div><pre><code>from pydantic import BaseModel, ValidationError
+import csv
+class Record(BaseModel):
+    date: str
+    amount: float
+    region: str
+valid, errors = [], []
+with open('sales.csv') as f:
+    for i, row in enumerate(csv.DictReader(f)):
+        try:
+            valid.append(Record(**row))
+        except ValidationError as e:
+            errors.append({'row': i, 'error': str(e)})
+print(f'유효: {len(valid)}건, 오류: {len(errors)}건')</code></pre></div>
+
+  <h4>타입 시스템이 데이터 분석 코드를 바꾸는 이유</h4>
+  <ul class="b">
+    <li><b>컬럼명 오타 사전 차단</b>: amount vs Amount — Pydantic ValidationError가 런타임 전에 잡아냄, 수백만 행 처리 후 발견보다 낫다</li>
+    <li><b>팀 협업 계약서</b>: 함수 시그니처에 타입이 있으면 teammate가 잘못된 인자를 전달하기 어려움, 문서 없이도 인터페이스 명확</li>
+    <li><b>IDE 자동완성 품질 향상</b>: 타입 정보 → Pylance가 정확한 자동완성과 오류 하이라이팅 제공</li>
+    <li><b>후속 과목 직접 연결</b>: FastAPI·SpringBoot 연동 시 JSON 스키마 정의가 필수, Pydantic BaseModel이 그 역할을 담당</li>
+  </ul>
+
+  <h4>[실습 2] 파일 I/O·예외 처리·Pydantic 검증 파이프라인</h4>
+  <p>Python_Practice1_Data.json 활용</p>
+  <ul class="b">
+    <li>① 예외 처리+파일 읽기: 함수명 safe_load_csv() — 파일 없으면 None 반환·logger.error, 성공 시 dict 리스트 반환·logger.info, finally에서 '로딩 종료' 출력</li>
+    <li>② Pydantic v2 스키마 정의: SalesRecord 모델 완성 — month·region: 비어있으면 안됨, amount: 0 초과, category: 없어도 됨</li>
+    <li>③ 검증 파이프라인(valid/errors 분리): raw_data를 순회하며 SalesRecord로 변환, 성공→valid, 실패→errors({row, error}) 리스트</li>
+    <li>④ 결과 파일 저장+재로딩 확인: valid 레코드를 CSV로, errors를 JSON으로 저장하고 다시 읽어 건수 검증</li>
+  </ul>
+  <div class="cp"><div class="cphead">✔ Checkpoint</div><ul>
+    <li>safe_load_csv 동작+assert None 통과 / ValidationError 발생 시 오류 내용 출력</li>
+    <li>valid 4건 / errors 3건 assert 통과 / 재로딩 후 len(reloaded)==4 통과</li>
+  </ul></div>
+  <div class="note">감점 대상: try-except 없이 파일 읽기(-3) / finally 블록 누락(-1) / ValidationError 대신 Exception으로(-1) / model_dump() 대신 dict 직접 구성(-1) / json.dump ensure_ascii=False 미설정(한글 깨짐,-1)</div>
+</section>
+
+
+<section class="sec" id="s5" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">5.</span> 코드 품질과 기초 테스트</h2>
+  </div>
+  <p class="subtitle">Ruff · pytest · coverage · pre-commit · VS Code 디버거</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>Ruff</b>는 코드 스타일을 자동으로 검사·정리해주는 도구, <b>pytest</b>는 "내 함수가 진짜 맞게 동작하는지" 자동으로 확인해주는 도구예요. 둘 다 팀으로 협업할 때 필수예요.</div></div>
+
+  <h4>Ruff — 2026 Python 린팅·포매팅 표준</h4>
+  <ul class="b">
+    <li>flake8+black+isort를 하나로 대체, Rust 작성(기존 도구 대비 10–100× 빠름)</li>
+    <li>E·F·I·UP 규칙(에러·경고·임포트·업그레이드), --fix(자동 수정 가능한 오류 일괄 처리)</li>
+    <li>VS Code 저장 시 자동 포맷 설정 가능</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Ruff 설치 &amp; pyproject.toml</div><pre><code># bash
+$ pip install ruff
+$ ruff check .
+$ ruff check --fix .
+$ ruff format .
+
+# pyproject.toml
+[tool.ruff]
+line-length = 88
+select = ['E','F','I','UP']
+ignore = ['E501']
+[tool.ruff.format]
+quote-style = 'double'
+indent-style = 'space'</code></pre></div>
+
+  <h4>pytest 기초 — 분석 함수 단위 테스트</h4>
+  <ul class="b">
+    <li>test_*.py 파일, test_ 함수 자동 인식, assert 문으로 기댓값 검증</li>
+    <li>fixture(공통 데이터·설정 공유), parametrize(여러 입력 케이스 한번에), pytest -v(상세 결과)/-x(첫 실패 즉시 중단)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">pytest fixture &amp; assert</div><pre><code>import pytest
+import pandas as pd
+from src.clean import clean_nulls
+@pytest.fixture
+def sample_df():
+    return pd.DataFrame({'a':[1,None,3],'b':['x','y',None]})
+def test_clean_removes_nulls(sample_df):
+    result = clean_nulls(sample_df, cols=['a'])
+    assert result['a'].isna().sum() == 0
+def test_shape_preserved(sample_df):
+    result = clean_nulls(sample_df)
+    assert result.shape[0] == 3
+# $ pytest tests/ -v
+# $ pytest tests/ -x</code></pre></div>
+
+  <h4>pytest-cov — 테스트 커버리지 측정</h4>
+  <p>어떤 코드 경로가 테스트되지 않았는지 파악한다. MLOps 과목의 CI 파이프라인에서 필수 지표.</p>
+  <div class="sqlbox"><div class="sqlhead">pytest-cov 실행 결과</div><pre><code>$ pip install pytest-cov
+$ pytest tests/ --cov=src --cov-report=term-missing
+# Name           Stmts Miss Cover Missing
+# src/clean.py    25    3   88%  42-44, 67
+# src/features.py 38    0  100%
+# TOTAL           63    3   95%</code></pre></div>
+  <div class="note">→ 커버리지 80% 이상 목표, GitHub Actions CI와 동일한 설정</div>
+
+  <h4>pre-commit·requirements.txt·재현 환경</h4>
+  <ul class="b">
+    <li>pre-commit(커밋 전 Ruff·mypy 자동 실행), 오류 있으면 커밋 차단(팀 코드 품질 유지)</li>
+    <li>requirements.txt(pip freeze로 버전 고정), pip install -r(동일 환경 1분 내 재현), pyproject.toml(현대적 프로젝트 설정 방식)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">pre-commit 설정 &amp; requirements.txt</div><pre><code># bash
+$ pip install pre-commit
+
+# .pre-commit-config.yaml
+repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  hooks:
+  - id: ruff
+    args: [--fix]
+  - id: ruff-format
+
+$ pre-commit install
+$ pre-commit run --all-files
+$ pip freeze &gt; requirements.txt
+$ pip install -r requirements.txt
+# .gitignore 필수 항목: .venv/ .env __pycache__/ *.pyc .coverage</code></pre></div>
+
+  <h4>VS Code 디버거와 코드 품질 도구 통합 활용</h4>
+  <ul class="b">
+    <li><b>중단점 활용</b>: F9로 중단점 설정 → F5 실행 → 변수 인스펙터로 DataFrame 내용 실시간 확인, print 디버깅 탈출</li>
+    <li><b>Ruff 저장 자동 포맷</b>: settings.json에 editor.formatOnSave: true + editor.defaultFormatter: charliermarsh.ruff 설정</li>
+    <li><b>pytest Test Explorer</b>: VS Code Python Test Explorer 확장 설치 → 사이드바에서 테스트 실행·결과 확인, TDD 워크플로</li>
+    <li><b>Pylance 타입 검사</b>: python.analysis.typeCheckingMode: basic 설정, 저장할 때마다 타입 오류 빨간 밑줄로 즉시 표시</li>
+  </ul>
+
+  <h4>코드 품질 도구가 데이터 분석 팀에 필요한 이유</h4>
+  <ul class="b">
+    <li><b>분석 코드도 팀이 공유한다</b>: 혼자 만든 분석 스크립트도 GitHub에 올리는 순간 팀 자산, Ruff·pytest가 없으면 리뷰가 어렵다</li>
+    <li><b>재현 가능한 분석 = 신뢰</b>: 6개월 뒤 같은 결과가 나오는 분석이 좋은 분석, requirements.txt + 테스트가 재현성을 보장</li>
+    <li><b>MLOps CI/CD 기반</b>: DevOps·MLOps 과목에서 GitHub Actions로 pytest+Ruff를 자동 실행, 지금 배운 설정을 그대로 사용</li>
+    <li><b>디버거 &gt; print() 탈출</b>: DataFrame 상태를 print로 찍는 건 비효율, 중단점으로 컬럼·타입·값 즉시 확인</li>
+  </ul>
+</section>
+
+
+<section class="sec" id="s6" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">6.</span> 비동기와 병렬 처리 입문</h2>
+  </div>
+  <p class="subtitle">asyncio · httpx · GIL · multiprocessing · cProfile</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>동시성(asyncio)</b>은 기다리는 동안 다른 일을 하는 것(API 호출처럼 대기가 많을 때), <b>병렬성(multiprocessing)</b>은 여러 명이 동시에 각자 일하는 것(계산이 많을 때)이에요. <b>GIL</b> 때문에 계산량이 많은 작업엔 threading이 소용없어요.</div></div>
+
+  <h4>동시성 vs 병렬성 — 개념과 선택 기준</h4>
+  <table class="t"><thead><tr>
+    <th>항목</th><th>동시성(Concurrency)</th><th>병렬성(Parallelism)</th>
+  </tr></thead><tbody>
+    <tr><td>도구</td><td>asyncio + httpx</td><td>multiprocessing</td></tr>
+    <tr><td>실행방식</td><td>한 스레드, 대기 중 다른 작업 실행</td><td>여러 프로세스, 진짜 동시 실행</td></tr>
+    <tr><td>적합한 작업</td><td>I/O bound: API 호출, 파일 읽기</td><td>CPU bound: 수치 계산, 이미지 처리</td></tr>
+    <tr><td>GIL 영향</td><td>영향 없음(대기 중 전환)</td><td>GIL 우회(별도 프로세스)</td></tr>
+    <tr><td>데이터 분석 적용</td><td>공공 API 대량 수집, 비동기 DB 쿼리</td><td>대용량 파일 병렬 전처리, 모델 훈련</td></tr>
+  </tbody></table>
+
+  <h4>GIL(Global Interpreter Lock) — Python 동시성의 핵심 제약</h4>
+  <ul class="b">
+    <li>CPython은 한 번에 하나의 스레드만 Python 실행 — CPU bound 작업에서 threading은 효과 없음</li>
+    <li>I/O bound(GIL이 대기 중 해제→threading 효과적), NumPy(C 확장으로 GIL 해제 후 병렬 연산)</li>
+    <li>Python 3.13+ GIL 옵션 제거 실험 진행 중</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">GIL과 CPU bound vs I/O bound</div><pre><code>import threading
+def cpu_task():  # threading 효과 없음(GIL 때문)
+    return sum(range(10**7))
+import time
+def io_task():  # threading 효과 있음
+    time.sleep(1)
+import numpy as np
+A = np.random.rand(1000, 1000)
+B = np.random.rand(1000, 1000)
+C = np.dot(A, B)  # BLAS: GIL 없이 멀티스레드</code></pre></div>
+
+  <h4>asyncio + httpx — 비동기 API 데이터 수집</h4>
+  <ul class="b">
+    <li>async def/await(비동기 함수 정의와 호출), asyncio.gather()(여러 태스크 동시 실행)</li>
+    <li>httpx.AsyncClient(비동기 HTTP 클라이언트), return_exceptions=True(일부 실패 허용), asyncio.run()(이벤트 루프 시작)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">asyncio.gather로 동시 수집</div><pre><code>import asyncio, httpx
+async def fetch(client, url):
+    try:
+        r = await client.get(url, timeout=10)
+        return r.json()
+    except Exception as e:
+        return {'error': str(e)}
+async def fetch_all(urls):
+    async with httpx.AsyncClient() as c:
+        tasks = [fetch(c, u) for u in urls]
+        return await asyncio.gather(*tasks, return_exceptions=True)
+urls = [f'https://api.example.com/data/{i}' for i in range(100)]
+results = asyncio.run(fetch_all(urls))
+# 순차: ~100초 → 비동기: ~2초</code></pre></div>
+
+  <h4>multiprocessing — CPU bound 병렬 처리</h4>
+  <ul class="b">
+    <li>ProcessPoolExecutor(간편한 병렬 처리 API), Pool.map(리스트를 여러 프로세스로 병렬 처리)</li>
+    <li>max_workers(CPU 코어 수 기준 설정), chunk 분할(대용량 파일을 N등분해 병렬 처리)</li>
+    <li>주의: 프로세스 간 데이터 전달 비용 고려</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">ProcessPoolExecutor</div><pre><code>from concurrent.futures import ProcessPoolExecutor
+import multiprocessing as mp
+def process_chunk(chunk):
+    return [transform(row) for row in chunk]
+def split_chunks(data, n):
+    size = len(data) // n
+    return [data[i*size:(i+1)*size] for i in range(n)]
+n_cores = mp.cpu_count()
+chunks = split_chunks(all_data, n_cores)
+with ProcessPoolExecutor(max_workers=n_cores) as exe:
+    results = list(exe.map(process_chunk, chunks))</code></pre></div>
+
+  <h4>timeit·cProfile·memory_profiler — 성능 측정</h4>
+  <ul class="b">
+    <li>timeit(코드 조각 실행 시간 정밀 측정), cProfile(함수별 호출 횟수·시간 분석)</li>
+    <li>sys.getsizeof(객체 메모리 크기, shallow), memory_profiler(라인별 메모리 추적, @profile)</li>
+    <li>VS Code — cProfile 결과를 시각화 확장으로 활용</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">timeit / cProfile / getsizeof</div><pre><code>import timeit, cProfile, sys
+t = timeit.timeit("''.join(my_list)", setup="my_list=['a']*1000", number=10000)
+cProfile.run('heavy_analysis(df)', sort='cumtime')
+lst = list(range(10000))
+gen = (x for x in range(10000))
+print(sys.getsizeof(lst))  # ~87KB
+print(sys.getsizeof(gen))  # ~104B</code></pre></div>
+
+  <h4>비동기·병렬 처리가 데이터 분석가에게 필요한 이유</h4>
+  <ul class="b">
+    <li><b>API 수집 속도 100× 향상</b>: 공공 API 100개를 순차 호출하면 100초, asyncio 동시 호출하면 ~2초</li>
+    <li><b>대용량 전처리 병렬화</b>: 수십 GB CSV를 multiprocessing으로 분할 처리, macOS M1 8코어 → 이론상 8× 속도 향상</li>
+    <li><b>병목 찾기 → 올바른 최적화</b>: 느리다고 느낌으로 최적화하면 안 됨, cProfile로 어느 함수가 느린지 먼저 측정</li>
+    <li><b>후속 과목 기반 — 모두 async</b>: LangChain·RAG·AI Agent 과목은 전부 async 기반 코드, 지금 개념 없이는 코드 구조 이해가 어려움</li>
+  </ul>
+</section>
+
+
+<section class="sec" id="s7" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">7.</span> Day 1 종합 실습 — 데이터 수집 미니 파이프라인</h2>
+  </div>
+  <p class="subtitle">venv → asyncio+httpx 수집 → Pydantic 검증 → CSV/Parquet 저장 → pytest/ruff</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: Day 1에서 배운 걸 다 이어붙여서 "외부 API 3개를 동시에 불러와서, 검증하고, 저장까지" 하는 미니 파이프라인을 처음부터 끝까지 직접 만들어보는 실습이에요.</div></div>
+
+  <h4>사용 API</h4>
+  <ul class="b">
+    <li><b>Open-Meteo</b>(서울 3일 시간대별 기온·강수확률): https://api.open-meteo.com/v1/forecast?latitude=37.5665&amp;longitude=126.9780&amp;hourly=temperature_2m,precipitation_probability&amp;forecast_days=3&amp;timezone=Asia/Seoul</li>
+    <li><b>Countries.dev</b>(한국 국가 정보): https://countries.dev/alpha/KOR</li>
+    <li><b>ip-api</b>(IP 기반 지역 정보): http://ip-api.com/json/8.8.8.8</li>
+  </ul>
+
+  <h4>실습 준비 — 5단계</h4>
+  <ul class="b">
+    <li><b>① 환경 준비</b>: venv 생성 및 활성화 후 필요한 패키지를 requirements.txt로 관리하여 설치</li>
+    <li><b>② 비동기 수집</b>: asyncio+httpx를 사용해 위 3개 API를 동시에 수집하는 파이프라인 작성(asyncio.gather() 활용)</li>
+    <li><b>③ 스키마 검증</b>: 수집한 JSON에서 필요한 필드를 추출하여 Pydantic v2 모델로 타입·범위 검증</li>
+    <li><b>④ 저장 및 성능 비교</b>: 검증 통과한 데이터를 CSV와 Parquet 두 형식으로 저장하고 읽기/쓰기 시간 측정·비교</li>
+    <li><b>⑤ 테스트 및 Git 커밋</b>: pytest로 스키마 검증 테스트 작성, ruff로 코드 스타일 검사 결과 정리</li>
+  </ul>
+
+  <h4>채점 기준 — 100점</h4>
+  <table class="t"><thead><tr><th>항목</th><th>배점</th><th>내용</th></tr></thead><tbody>
+    <tr><td>환경 구성+비동기 수집</td><td>35</td><td>venv 활성화 상태에서 requirements.txt로 설치 완료. 3개 API 모두 asyncio.gather()로 동시 수집, 응답 정상 확인</td></tr>
+    <tr><td>스키마 검증+저장 비교</td><td>45</td><td>Pydantic v2 모델 정의, 타입 오류 시 예외 처리 포함. CSV·Parquet 모두 저장, 성능 측정 결과 출력</td></tr>
+    <tr><td>테스트·커밋</td><td>10</td><td>pytest 1건 이상 통과, ruff check 오류 없음, Git 커밋 이력 존재</td></tr>
+    <tr><td>완성도</td><td>10</td><td>주석처리 누락 시 감점처리</td></tr>
+  </tbody></table>
+  <div class="cp"><div class="cphead">✔ 제출물</div><ul>
+    <li>폴더 포함 전체 코드(캠퍼스명_반_이름_실습명.zip)</li>
+    <li>실행결과 화면 Capture + Code 분석 결과 본인 의견(PDF)</li>
+    <li>1차 기한: Day1 과정 종료 전까지 / 2차 기한: Day2 시작 1시간 전</li>
+  </ul></div>
+</section>
+
+
+<div class="quiz-wrap" id="quiz-day1">
+  <h2>✅ Day 1 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="1">0 / 7 정답</div>
+
+  <div class="quiz-q" data-qid="d1q0" data-type="ox" data-answer="false" data-exp="CPython은 소스를 바로 기계어로 컴파일하지 않고, 바이트코드로 변환한 뒤 PVM(Python Virtual Machine)이 이를 해석·실행해요.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Python은 소스코드를 파싱한 뒤 바로 기계어로 컴파일해 실행한다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q1" data-type="ox" data-answer="true" data-exp="GIL은 한 번에 하나의 스레드만 파이썬 코드를 실행하게 하므로, CPU bound 작업에서는 threading을 써도 속도 향상이 거의 없어요. 이럴 땐 multiprocessing을 사용해야 해요.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>GIL 때문에 CPU bound 작업에서는 threading을 사용해도 속도 향상이 거의 없다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q2" data-type="ox" data-answer="false" data-exp="제너레이터는 반대로 값을 한 번에 다 올리지 않고 yield로 하나씩 생성해 메모리를 절약하는 게 핵심이에요.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>제너레이터는 전체 데이터를 한 번에 메모리에 올려 처리 속도를 높인다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q3" data-type="mc" data-answer="바이트코드 수준에서 최적화된 반복 처리 때문에" data-exp="컴프리헨션은 바이트코드 수준에서 최적화되어 일반 for 루프보다 빠르게 동작해요. C 구현이나 멀티스레드, GIL 해제와는 무관해요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>다음 중 컴프리헨션이 for 루프보다 빠른 이유로 가장 적절한 것은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="바이트코드 수준에서 최적화된 반복 처리 때문에">바이트코드 수준에서 최적화된 반복 처리 때문에</button>
+      <button class="quiz-opt" data-val="파이썬이 컴프리헨션만 C로 구현했기 때문에">파이썬이 컴프리헨션만 C로 구현했기 때문에</button>
+      <button class="quiz-opt" data-val="컴프리헨션은 멀티스레드로 실행되기 때문에">컴프리헨션은 멀티스레드로 실행되기 때문에</button>
+      <button class="quiz-opt" data-val="GIL이 컴프리헨션에서는 해제되기 때문에">GIL이 컴프리헨션에서는 해제되기 때문에</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q4" data-type="mc" data-answer="I/O bound API 호출" data-exp="asyncio는 대기 시간이 많은 I/O bound 작업(API 호출 등)에서 효과적이에요. CPU bound 작업은 multiprocessing이 적합해요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>asyncio + httpx 조합이 가장 효과적인 작업 유형은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="CPU bound 수치 계산">CPU bound 수치 계산</button>
+      <button class="quiz-opt" data-val="I/O bound API 호출">I/O bound API 호출</button>
+      <button class="quiz-opt" data-val="이미지 압축 처리">이미지 압축 처리</button>
+      <button class="quiz-opt" data-val="대규모 행렬곱 연산">대규모 행렬곱 연산</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q5" data-type="short" data-accept='["yield", "Yield"]' data-exp="yield 키워드로 값을 하나씩 생성하고, 그 지점에서 함수 실행을 일시 중단해요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>제너레이터에서 값을 하나씩 생성할 때 사용하는 키워드는? (영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q6" data-type="short" data-accept='["AST", "ast"]' data-exp="Abstract Syntax Tree(AST)는 소스코드의 문법 구조를 트리로 표현한 것으로, 린터·포매터·트랜스파일러가 이를 활용해요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>파이썬 실행 시 소스코드를 트리 구조로 추상화한 것을 무엇이라 하는가? (영문 약자)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+<div class="day-header" id="day2"><h1>Day 2 — Pandas/Polars·시각화·통계/ML·자동화·구조화</h1><p>Pandas 2.x부터 Polars+DuckDB, 시각화, 통계·ML Pipeline, 자동화, 코드 구조화까지</p></div>
+
+<section class="sec" id="s8" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">8.</span> Pandas 2.x 실전</h2>
+  </div>
+  <p class="subtitle">DataFrame · EDA · 결측치·이상치 · groupby · pivot · merge · CoW</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>DataFrame</b>은 코드로 다루는 엑셀 시트예요. info()/describe()로 훑어보고, 결측치·이상치를 손질한 다음, groupby로 묶어서 집계해요. Pandas 2.x는 기본적으로 <b>CoW(Copy-on-Write)</b>가 켜져 있어서, 자른 결과를 바로 수정하면 경고가 떠요 — copy()를 붙이는 습관이 중요해요.</div></div>
+
+  <h4>Pandas — 데이터 분석 표준 라이브러리</h4>
+  <ul class="b">
+    <li><b>DataFrame: 2D 레이블 표</b> — 엑셀 시트를 코드로, 행·열에 레이블이 있고 컬럼마다 다른 타입 가능, 내부는 NumPy 배열</li>
+    <li><b>Series: 1D 레이블 배열</b> — DataFrame의 한 컬럼, 인덱스 기반 정렬·조인이 강점</li>
+    <li><b>Pandas 2.x 핵심 변경</b> — Copy-on-Write 기본 활성화, ArrowDtype 지원, 메모리 효율 향상/nullable 정수·문자열</li>
+    <li><b>언제 Pandas?</b> — 수백만 행 이하 EDA·탐색, 시각화 라이브러리 연동, Jupyter 탐색 위주</li>
+  </ul>
+
+  <h4>DataFrame 기초 EDA — 처음 마주칠 때</h4>
+  <ul class="b">
+    <li>read_csv/parquet(데이터 로딩), info()(컬럼·타입·결측치·메모리 한눈에), describe()(수치형 기술통계 자동)</li>
+    <li>head/tail/sample()(행 샘플 확인), dtypes(타입 확인)/astype()(타입 변환)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">기초 EDA 패턴</div><pre><code>import pandas as pd
+df = pd.read_csv('sales.csv')
+df.shape
+df.info()
+df.describe()
+df.describe(include='all')
+df['date'] = pd.to_datetime(df['date'])
+df['region'] = df['region'].astype('category')
+df['amount']
+df[['region','amount']]
+df.loc[df['amount']&gt;1000]</code></pre></div>
+
+  <h4>결측치·이상치 탐지 및 처리</h4>
+  <ul class="b">
+    <li>isna().sum()(컬럼별 결측치 수·비율), MCAR/MAR/MNAR(결측 메커니즘 이해)</li>
+    <li>fillna(수치=평균/중앙값, 범주형=최빈값), dropna(subset 지정으로 특정 컬럼만)</li>
+    <li>IQR(사분위 범위로 이상치 탐지·제거)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">결측치 처리 &amp; IQR 이상치 제거</div><pre><code>df.isna().sum()
+df.isna().sum() / len(df) * 100
+df['amount'].fillna(df['amount'].median())
+df['category'].fillna(df['category'].mode()[0])
+df.dropna(subset=['date','amount'])
+Q1 = df['amount'].quantile(0.25)
+Q3 = df['amount'].quantile(0.75)
+IQR = Q3 - Q1
+lo, hi = Q1 - 1.5*IQR, Q3 + 1.5*IQR
+df_clean = df[df['amount'].between(lo, hi)]</code></pre></div>
+
+  <h4>groupby·pivot_table·merge — 집계와 결합</h4>
+  <ul class="b">
+    <li>groupby+agg()(다중 집계 한 번에), named aggregation(결과 컬럼명 지정)</li>
+    <li>pivot_table(엑셀 피벗 테이블과 동일), merge(SQL JOIN: inner/left/right/outer), join(인덱스 기준 결합, merge 간편 버전)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">groupby named aggregation / pivot_table / merge</div><pre><code>monthly = df.groupby('month').agg(
+    revenue=('amount','sum'), cnt=('amount','count'), avg=('amount','mean')
+).reset_index()
+pivot = df.pivot_table(values='amount', index='region', columns='category', aggfunc='sum', fill_value=0)
+result = pd.merge(df_sales, df_cust, on='customer_id', how='left')</code></pre></div>
+
+  <h4>Pandas 2.x — Copy-on-Write(CoW) 동작 이해</h4>
+  <p>2.0부터 기본 활성화. 뷰(View)를 수정하면 경고/오류 → 명시적 copy() 또는 assign() 사용이 필요하다.</p>
+  <div class="sqlbox"><div class="sqlhead">CoW 경고 발생 vs 안전한 패턴</div><pre><code>df_seoul = df[df['region'] == '서울']
+df_seoul['amount'] = df_seoul['amount'] * 1.1  # 경고!
+df_seoul = df[df['region'] == '서울'].copy()
+df_seoul['amount'] *= 1.1
+df.loc[df['region'] == '서울', 'amount'] *= 1.1</code></pre></div>
+  <div class="note">→ assign() + query() 체이닝 패턴이 가장 안전하고 가독성도 좋다</div>
+
+  <h4>apply vs vectorized 연산 — 성능 차이</h4>
+  <ul class="b">
+    <li>apply()(행/열 단위로 Python 함수 적용), 벡터화 연산(NumPy 수준 속도, C 레벨)</li>
+    <li>apply()는 편리하지만 느림(Python 루프), str 접근자(.str.lower()/.str.contains()), dt 접근자(.dt.year/.dt.month 날짜 처리)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">apply() vs 벡터화 연산 (str/dt 접근자)</div><pre><code>df['upper'] = df['name'].apply(lambda x: x.upper())  # 느림
+df['upper'] = df['name'].str.upper()  # 빠름
+df['date'] = pd.to_datetime(df['date'])
+df['year'] = df['date'].dt.year
+df['month'] = df['date'].dt.month
+df['weekday'] = df['date'].dt.day_name()
+# apply: ~3.2s, str.upper(): ~0.08s (40× 빠름)</code></pre></div>
+</section>
+
+
+<section class="sec" id="s9" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">9.</span> Polars + DuckDB</h2>
+  </div>
+  <p class="subtitle">Lazy API · scan_csv · DuckDB SQL · Arrow · 도구 선택 기준</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: Pandas는 싱글스레드라 대용량에서 느려질 수 있어요. <b>Polars</b>는 멀티스레드로 훨씬 빠르고, <b>DuckDB</b>는 CSV/Parquet 파일에 로딩 없이 바로 SQL을 쓸 수 있어요. <b>Lazy API</b>는 "일단 계획만 세우고 collect() 부를 때 실제로 실행"하는 방식이라 더 똑똑하게 최적화돼요.</div></div>
+
+  <h4>왜 Polars와 DuckDB인가 — 2026 표준</h4>
+  <ul class="b">
+    <li><b>Pandas의 한계</b>: 싱글스레드, 수백만 행 이상에서 속도 저하, 메모리 사용량이 원본 데이터의 5–10×, CoW 전까지 복사 많음</li>
+    <li><b>Polars — Rust + Arrow</b>: 멀티스레드 자동 활용, Lazy API로 쿼리 최적화, Pandas 대비 5–20× 빠름, Apache Arrow 기반</li>
+    <li><b>DuckDB — 파일 직접 SQL</b>: CSV·Parquet 파일을 로딩 없이 SQL 분석, 서버 없음, 로컬 DWH급 성능</li>
+    <li><b>Arrow 생태계 제로카피</b>: Polars↔DuckDB↔PyArrow↔Pandas 간 Arrow 포맷으로 제로카피 변환, 데이터 이동 비용 최소</li>
+  </ul>
+
+  <h4>Polars — Eager API vs Lazy API</h4>
+  <ul class="b">
+    <li>Eager(즉시 실행, 탐색·소규모에 적합), Lazy(scan_ 함수, 실행 계획 수립 후 collect())</li>
+    <li>Lazy 장점(predicate pushdown/projection pushdown), collect()(실제 실행 트리거), schema_overrides(컬럼 타입 명시, 성능↑)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Polars Lazy 체인 — scan_csv→filter→group_by→agg→collect</div><pre><code>import polars as pl
+df = pl.read_csv('sales.csv')
+result = df.filter(pl.col('amount') &gt; 0)
+result = (
+    pl.scan_csv('large.csv', schema_overrides={'amount': pl.Float64})
+    .filter(pl.col('region') == '서울')
+    .filter(pl.col('amount') &gt; 0)
+    .group_by('category')
+    .agg([pl.col('amount').sum().alias('total'), pl.count().alias('cnt')])
+    .sort('total', descending=True)
+    .collect()
+)</code></pre></div>
+
+  <h4>Polars 핵심 문법 — Pandas와 비교</h4>
+  <ul class="b">
+    <li>pl.col()(컬럼 참조, Pandas: df['col']), filter()(행 필터, Pandas: df[mask]), select()(컬럼 선택·변환)</li>
+    <li>with_columns()(컬럼 추가·수정, Pandas: assign), group_by+agg(groupby+agg와 동일)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Polars 기본 문법 + Pandas 상호 변환</div><pre><code>df.filter(pl.col('amount') &gt; 0).select(['region','amount'])
+df.with_columns((pl.col('amount') * 1.1).alias('adjusted'))
+df.with_columns(
+    pl.col('region').str.to_uppercase(),
+    pl.col('date').str.to_date('%Y-%m-%d')
+)
+df_pd = df.to_pandas()
+df_pl = pl.from_pandas(df_pd)</code></pre></div>
+
+  <h4>DuckDB — CSV·Parquet에 직접 SQL</h4>
+  <ul class="b">
+    <li>duckdb.sql()(파일에 바로 SQL), *.csv,*.parquet 와일드카드 지원, JOIN·GROUP BY·WINDOW 함수 모두 지원</li>
+    <li>.df()→Pandas/.pl()→Polars 변환, CREATE TABLE AS SELECT(영구 저장)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">DuckDB — 파일에 직접 SQL 실행</div><pre><code>import duckdb
+result = duckdb.sql("""
+    SELECT region, SUM(amount) AS total, AVG(amount) AS avg, COUNT(*) AS cnt
+    FROM 'data/*.csv' WHERE year = 2024 AND amount &gt; 0
+    GROUP BY region ORDER BY total DESC""").df()
+duckdb.sql("""
+    SELECT s.*, c.tier FROM 'sales.parquet' s
+    JOIN 'customers.csv' c ON s.cid = c.id""").show()</code></pre></div>
+
+  <h4>도구 선택 가이드 — Pandas vs Polars vs DuckDB</h4>
+  <table class="t"><thead><tr>
+    <th>항목</th><th>Pandas</th><th>Polars</th><th>DuckDB</th>
+  </tr></thead><tbody>
+    <tr><td>API 스타일</td><td>즉시 실행(Eager)</td><td>Lazy(쿼리 최적화)</td><td>SQL</td></tr>
+    <tr><td>멀티스레딩</td><td>X (GIL)</td><td>자동</td><td>자동</td></tr>
+    <tr><td>메모리 효율</td><td>보통</td><td>높음(Arrow)</td><td>높음(스트리밍)</td></tr>
+    <tr><td>적합 크기</td><td>~수백만 행</td><td>수천만 행+</td><td>파일 직접 쿼리</td></tr>
+    <tr><td>학습 곡선</td><td>낮음(표준)</td><td>중간</td><td>낮음(SQL)</td></tr>
+    <tr><td>Pandas 연동</td><td>기본</td><td>Arrow 변환</td><td>.df() 변환</td></tr>
+    <tr><td>권장</td><td>EDA, 탐색</td><td>대용량 처리</td><td>파일 직접 분석</td></tr>
+  </tbody></table>
+
+  <h4>Apache Arrow — 제로카피 데이터 변환 생태계</h4>
+  <ul class="b">
+    <li><b>Arrow란?</b> — 컬럼형 인메모리 포맷, 모든 데이터 도구가 Arrow를 중간 포맷으로 사용하면 직렬화 비용 0</li>
+    <li><b>Polars↔DuckDB 제로카피</b> — pl.scan_parquet → DuckDB.execute() → pl.DataFrame, 데이터 복사 없이 도구 전환</li>
+    <li><b>Parquet의 장점</b> — 컬럼형 저장 → 필요한 컬럼만 읽음, CSV 대비 10× 빠른 읽기, 5× 작은 파일 크기</li>
+    <li>예시: 원본 CSV 수집 → Parquet 변환 저장 → DuckDB/Polars로 분석, 탐색은 Pandas로 최종 검토</li>
+  </ul>
+
+  <h4>[실습 3] Pandas EDA·Polars Lazy·DuckDB SQL 비교</h4>
+  <p>sales_100k.csv 활용</p>
+  <ul class="b">
+    <li>① Pandas EDA(기초 탐색+이상치 처리): sales_100k.csv 로딩, 기본 EDA 수행 후 IQR 방법으로 이상치 제거. between(Q1-1.5*IQR, Q3+1.5*IQR)는 IQR 기준 정상 범위</li>
+    <li>② Pandas groupby named aggregation: region·category별 총매출·평균·건수를 named aggregation으로 계산하고 총매출 내림차순 정렬 — total=('amount','sum') 형태로 결과 컬럼명 직접 지정</li>
+    <li>③ Polars Lazy API로 동일 집계 작성: scan_csv → filter → group_by → agg → sort → collect</li>
+    <li>④ DuckDB SQL + 세 도구 성능 비교: DuckDB로 동일 집계를 SQL로 작성하고, timeit으로 세 도구의 실행 시간 비교</li>
+  </ul>
+  <div class="cp"><div class="cphead">✔ Checkpoint</div><ul>
+    <li>df.info(), isnull().sum() 출력 후 IQR 방법으로 이상치 제거, 제거 전·후 행수 출력</li>
+    <li>region·category별 total·mean·count named aggregation 계산, 총매출 내림차순 정렬</li>
+    <li>scan_csv→filter→group_by→agg→sort→collect 체인 완성 및 결과 출력</li>
+    <li>동일 집계를 SQL GROUP BY로 작성, 결과 DataFrame으로 출력 / timeit으로 세 도구 실행시간 측정, 동일 반복횟수로 결과 출력</li>
+  </ul></div>
+  <div class="note">감점 대상: IQR 공식 오류(-20) / named aggregation 미사용(-20) / Polars Eager 사용(scan_csv 대신 read_csv, -20) / collect() 누락(-20) / timeit 반복횟수 미통일(-20)</div>
+</section>
+
+
+<section class="sec" id="s10" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">10.</span> 데이터 시각화</h2>
+  </div>
+  <p class="subtitle">Matplotlib · Seaborn · Plotly Express · Altair · 시각화 선택</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 숫자표만 보면 놓치는 패턴을 그래프로 그리면 한눈에 보여요. 보고서엔 <b>Matplotlib/Seaborn</b>, 발표·공유엔 클릭·줌이 되는 <b>Plotly</b>, 빠른 탐색엔 <b>Altair</b>를 쓰면 돼요.</div></div>
+
+  <h4>데이터 시각화가 분석의 핵심인 이유</h4>
+  <ul class="b">
+    <li><b>Anscombe의 사중주</b>: 평균·분산·상관계수가 동일한 4개 데이터셋이 시각화하면 완전히 다른 패턴 — 수치만으로 분석은 위험</li>
+    <li><b>EDA의 첫 번째 도구</b>: 히스토그램·박스플롯으로 분포 파악, 산점도로 상관관계, 히트맵으로 결측치 패턴 확인</li>
+    <li><b>의사결정자 설득</b>: 수치 표보다 인터랙티브 차트 한 장이 더 빠르게 설득 — Plotly 차트는 직접 필터·줌 가능</li>
+    <li><b>모델 평가 시각화</b>: Confusion Matrix·학습 곡선·Feature Importance — 모델을 숫자가 아닌 그림으로 이해</li>
+  </ul>
+
+  <h4>Matplotlib — 기초부터 서브플롯까지</h4>
+  <ul class="b">
+    <li>Figure(전체 캔버스)/Axes(개별 그래프), 라인·막대·산점도·히스토그램 기본</li>
+    <li>subplot()으로 여러 차트 나란히, 색상·스타일·범례·제목·그리드 설정, savefig()로 PNG/PDF 고해상도 저장</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Matplotlib 서브플롯 예시</div><pre><code>import matplotlib.pyplot as plt
+fig, axes = plt.subplots(1,2,figsize=(12,5))
+axes[0].plot(months, revenue, color='steelblue', lw=2, marker='o', label='매출')
+axes[0].set_title('월별 매출 추이')
+axes[0].legend(); axes[0].grid(alpha=0.3)
+axes[1].bar(regions, values, color='teal', alpha=0.8)
+axes[1].set_title('지역별 매출')
+plt.tight_layout()
+plt.savefig('report.png', dpi=150, bbox_inches='tight')</code></pre></div>
+
+  <h4>Seaborn — 통계 시각화 특화 라이브러리</h4>
+  <ul class="b">
+    <li>Matplotlib 기반의 high-level 인터페이스, hue·size·style로 다차원 정보 인코딩</li>
+    <li>boxplot·violinplot(분포 비교), heatmap(상관행렬·결측치 패턴), pairplot(모든 변수 쌍 산점도 한번에)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Seaborn heatmap / boxplot / histplot</div><pre><code>import seaborn as sns
+corr = df.select_dtypes('number').corr()
+fig, axes = plt.subplots(2,2,figsize=(12,10))
+sns.heatmap(corr, annot=True, cmap='coolwarm', fmt='.2f', ax=axes[0,0])
+sns.boxplot(data=df, x='region', y='amount', hue='category', ax=axes[0,1])
+sns.histplot(data=df, x='amount', kde=True, ax=axes[1,0])</code></pre></div>
+
+  <h4>Plotly Express — 인터랙티브 시각화</h4>
+  <ul class="b">
+    <li>px.scatter·bar·line·histogram·box(한 줄), color·size·hover_name(다차원 인코딩)</li>
+    <li>facet_col/row(그룹별 분할 서브플롯), fig.write_html()(HTML로 공유 가능), update_layout(제목·축·폰트 커스터마이징)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Plotly Express — 인터랙티브 차트</div><pre><code>import plotly.express as px
+fig = px.scatter(df, x='gdp', y='happiness', color='region', size='population', hover_name='country', title='GDP vs 행복지수')
+fig2 = px.bar(monthly_df, x='month', y='revenue', color='category', facet_col='region', title='지역·카테고리별 월 매출')
+fig.write_html('analysis.html')</code></pre></div>
+
+  <h4>Altair 선언형 시각화 + 시각화 도구 선택 기준</h4>
+  <ul class="b">
+    <li>Grammar of Graphics 기반 선언형 문법, mark_point/bar/line+encode() 체이닝</li>
+    <li>인터랙션 내장(.interactive()), EDA 빠른 프로토타이핑에 최적, Streamlit(분석 결과 웹 공유, 소개 수준)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Altair 선언형 차트</div><pre><code>import altair as alt
+chart = (alt.Chart(df).mark_point().encode(
+    x='gdp:Q', y='happiness:Q', color='region:N', tooltip=['country','gdp','happiness']
+).interactive())
+chart.save('chart.html')
+# 도구 선택: 보고서·논문→Matplotlib/Seaborn / 인터랙티브 대시보드→Plotly / 빠른 EDA→Altair / 웹 공유→Streamlit</code></pre></div>
+
+  <h4>시각화 도구 선택 — 상황별 가이드</h4>
+  <ul class="b">
+    <li><b>Matplotlib: 커스터마이징 최강</b> — 학술 논문·보고서 품질 차트, 모든 요소를 픽셀 수준으로 제어, 다른 라이브러리의 기반</li>
+    <li><b>Seaborn: 통계 시각화 특화</b> — 분포·상관·그룹 비교에 최적, hue 파라미터 하나로 다차원 정보 표현, Matplotlib보다 코드 짧음</li>
+    <li><b>Plotly: 인터랙티브 공유</b> — 줌·필터·호버를 HTML 파일 하나로 공유 가능, 비전공자 발표에서 임팩트 최대</li>
+    <li><b>Altair: 선언형 빠른 EDA</b> — 데이터 구조를 선언하면 차트가 완성, 탐색 단계에서 수십 개 차트를 빠르게 만들 때</li>
+  </ul>
+</section>
+
+
+<section class="sec" id="s11" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">11.</span> 기초 통계와 ML 파이프라인 연결</h2>
+  </div>
+  <p class="subtitle">기술통계 · 상관분석 · CRISP-DM · sklearn Pipeline · joblib</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 모델 돌리기 전에 데이터를 통계적으로 먼저 이해해야 해요(평균·분산·상관·검정). <b>CRISP-DM</b>은 "문제 정의→데이터 이해→준비→모델링→평가→배포"의 실무 흐름이고, <b>sklearn Pipeline</b>은 전처리+모델을 하나로 묶어 재현 가능하게 만들어줘요.</div></div>
+
+  <h4>기술통계 — 데이터를 숫자로 이해하기</h4>
+  <ul class="b">
+    <li>중심 경향(평균·중앙값·최빈값 차이), 산포도(분산·표준편차·IQR·범위)</li>
+    <li>분포 모양(왜도skewness·첨도kurtosis), 상관계수(-1~+1, 선형 관계 강도), Pandas describe()+corr() 실전</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">기술통계 &amp; 정규분포 검정</div><pre><code>import numpy as np
+from scipy import stats
+df.describe()
+df['amount'].skew()
+df['amount'].kurt()
+df['amount'].median()
+corr = df[['amount','visits','age']].corr()
+import seaborn as sns
+sns.histplot(df['amount'], kde=True)
+_, p = stats.shapiro(df['amount'].dropna())
+print(f'정규분포 검정 p값: {p:.4f}')</code></pre></div>
+
+  <h4>가설 검정 기초 — t-test와 카이제곱</h4>
+  <ul class="b">
+    <li>귀무가설(H0) vs 대립가설(H1) 설정, 유의수준 α=0.05(p값 기준)</li>
+    <li>t-test(두 그룹 평균 차이 검정), 카이제곱(범주형 변수 독립성 검정), p&lt;0.05 → H0 기각(통계적 유의)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">t-test / chi2_contingency</div><pre><code>from scipy import stats
+group_a = df[df['group']=='A']['amount']
+group_b = df[df['group']=='B']['amount']
+t, p = stats.ttest_ind(group_a, group_b)
+if p &lt; 0.05: print('통계적으로 유의미한 차이 있음')
+else: print('차이 없음(우연일 수 있음)')
+from scipy.stats import chi2_contingency
+ct = pd.crosstab(df['region'], df['purchased'])
+chi2, p, dof, expected = chi2_contingency(ct)</code></pre></div>
+
+  <h4>CRISP-DM — 실무 데이터 분석 방법론</h4>
+  <p>업무 이해(문제 정의) → 데이터 이해(EDA 탐색) → 데이터 준비(전처리·피처) → 모델링(알고리즘) → 평가(성능 측정) → 배포(서비스 적용)</p>
+  <div class="note">기술 중심이 아닌 문제 해결 중심 — 좋은 분석은 올바른 문제 정의에서 시작된다.</div>
+
+  <h4>sklearn Pipeline — 전처리 + 모델 통합</h4>
+  <ul class="b">
+    <li>Pipeline(전처리→모델을 하나의 객체로), ColumnTransformer(수치·범주 컬럼 분리 처리)</li>
+    <li>fit()(학습)/predict()(예측)/transform()(변환), joblib.dump/load(파이프라인 직렬화)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">ColumnTransformer + Pipeline + joblib</div><pre><code>from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.linear_model import Ridge
+import joblib
+preproc = ColumnTransformer([
+    ('num', StandardScaler(), num_cols),
+    ('cat', OneHotEncoder(), cat_cols)])
+model = Pipeline([('prep', preproc), ('reg', Ridge(alpha=1.0))])
+model.fit(X_train, y_train)
+print(f'R2: {model.score(X_test, y_test):.3f}')
+joblib.dump(model, 'model.pkl')
+loaded = joblib.load('model.pkl')</code></pre></div>
+
+  <h4>통계와 ML 파이프라인이 연결되는 이유</h4>
+  <ul class="b">
+    <li><b>통계 없이 ML은 블랙박스</b>: 평균·분산·상관계수를 모르면 피처 선택, 이상치 처리, 결과 해석이 불가능 — 모델보다 데이터 이해가 먼저</li>
+    <li><b>CRISP-DM — 기술보다 프로세스</b>: 좋은 분석은 알고리즘이 아니라 올바른 문제 정의에서 시작, 데이터 준비가 대부분 80~90% 차지</li>
+    <li><b>후속 과목 직접 연결</b>: Feature Engineering·머신러닝에서 대부분 sklearn Pipeline을 그대로 사용</li>
+    <li><b>재현 가능한 모델 관리</b>: joblib으로 Pipeline 전체 저장 → 배포 환경에서 동일한 전처리+예측 보장, MLOps의 기본</li>
+  </ul>
+
+  <h4>[실습 4] 시각화 4종·통계 검정·sklearn Pipeline</h4>
+  <p>sales_100k.csv — 실습3 연계</p>
+  <ul class="b">
+    <li>① EDA 시각화 4종(2×2 서브플롯): fig, axes=plt.subplots(2,2)로 히스토그램+KDE/박스플롯/월별 라인/상관 히트맵 작성</li>
+    <li>② 통계 검정 — t-test+카이제곱: 서울 vs 부산 평균 매출 차이를 t-test로, 지역×카테고리 독립성을 카이제곱 검정으로 확인</li>
+    <li>③ sklearn Pipeline 구성+저장: ColumnTransformer+Pipeline 완성, 훈련·평가·저장·재로딩 순서대로 수행</li>
+    <li>④ Plotly 인터랙티브 차트 저장: 지역·카테고리별 총매출을 Plotly Express 막대 차트로 만들고 HTML로 저장</li>
+  </ul>
+  <div class="cp"><div class="cphead">✔ Checkpoint</div><ul>
+    <li>2×2 서브플롯으로 4종 차트 구성(히스토그램·박스플롯·바차트·히트맵 등 한 figure)</li>
+    <li>t-test 적용, t통계량·p-value 출력 및 유의미 여부 해석</li>
+    <li>두 범주형 변수로 분할표 생성 후 chi2_contingency 적용, p-value 출력 및 해석</li>
+    <li>전처리+모델 Pipeline 객체로 구성, fit·predict·score 실행 후 joblib으로 모델 저장 / Plotly 인터랙티브 차트 .html 파일로 저장</li>
+  </ul></div>
+  <div class="note">감점 대상: 서브플롯 미사용(-20) / p-value 해석 누락(-20) / Pipeline 미사용(-20) / 모델 저장 누락(-20) / Plotly 차트 파일 미저장(-20)</div>
+</section>
+
+
+<section class="sec" id="s12" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">12.</span> 분석 자동화와 파이프라인 설계</h2>
+  </div>
+  <p class="subtitle">schedule · Jinja2 리포트 · LLM API 개념 · 파이프라인 원칙</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 매주 같은 리포트를 손으로 만드는 대신, 코드가 정해진 시간에 알아서 만들게 하는 게 자동화예요. <b>schedule</b>은 "언제 실행할지", <b>Jinja2</b>는 "결과를 어떤 모양으로 찍어낼지" 담당해요.</div></div>
+
+  <h4>왜 분석을 자동화해야 하는가</h4>
+  <ul class="b">
+    <li><b>반복 분석의 현실</b>: 매주 같은 매출 리포트를 수작업으로 만드는 분석가의 경우 자동화하면 수십 분 → 0분</li>
+    <li><b>데이터 최신성</b>: 어제 시황 및 뉴스, 산업 현황 수치 변화 등이 반영된 데이터로 만든 리포트는 오늘 오전 5시에 이미 완성돼 있어야 한다(증권가 애널리스트 사례)</li>
+    <li><b>오류 감소</b>: 수작업 복붙 오류 제거, 동일한 코드가 동일한 결과를 항상 생성 → 신뢰성</li>
+    <li><b>확장성</b>: 10개 지역 리포트를 만드나 100개를 만드나 코드는 동일, 규모 확장 비용 거의 없음</li>
+  </ul>
+
+  <h4>schedule + cron — 반복 분석 자동화</h4>
+  <ul class="b">
+    <li>schedule(Python 내 간단한 스케줄러), 매일·매주·매시간 등 다양한 주기 설정, 오류 발생 시 로깅+알림 패턴</li>
+    <li>macOS launchd/cron으로 OS 레벨 스케줄, subprocess로 외부 스크립트 실행 연동</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">schedule로 주기적 리포트 실행</div><pre><code>import schedule, time, logging
+def run_daily_report():
+    try:
+        df = load_and_clean('sales.csv')
+        stats = compute_stats(df)
+        render_report(stats)
+        logging.info('리포트 완료')
+    except Exception as e:
+        logging.error(f'실패: {e}')
+schedule.every().day.at('08:00').do(run_daily_report)
+schedule.every().monday.at('09:00').do(weekly_summary)
+schedule.every(1).hours.do(check_new_data)
+while True:
+    schedule.run_pending()
+    time.sleep(60)</code></pre></div>
+
+  <h4>Jinja2 — 분석 리포트 자동 생성</h4>
+  <ul class="b">
+    <li>Jinja2(Python 대표 템플릿 엔진), {{ 변수 }}·{% for %}·{% if %} 문법</li>
+    <li>분석 결과·차트를 HTML 템플릿에 주입, webbrowser.open()으로 바로 열기, pdfkit 연동으로 PDF 변환 가능</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Jinja2 템플릿 렌더링</div><pre><code>from jinja2 import Environment, FileSystemLoader
+from pathlib import Path
+from datetime import datetime
+env = Environment(loader=FileSystemLoader('templates'))
+tmpl = env.get_template('report.html')
+html = tmpl.render(
+    title='월간 판매 분석', generated=datetime.now().strftime('%Y-%m-%d'),
+    summary=stats.to_dict(), chart_html=fig.to_html(full_html=False),
+    top5=df.nlargest(5,'amount').to_dict('records'))
+out = Path('output/report.html')
+out.write_text(html, encoding='utf-8')
+import webbrowser
+webbrowser.open(str(out.resolve()))</code></pre></div>
+
+  <h4>LLM API 활용 개요 — 개념과 구조 중심</h4>
+  <ul class="b">
+    <li>HTTP POST 방식(모든 벤더 유사한 구조), 요청(메시지 배열+모델 파라미터)</li>
+    <li>응답(content 배열, text 타입), 토큰 기반 과금(입력+출력 토큰 합산), 비동기 활용(httpx로 대량 처리)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">httpx로 LLM API 비동기 호출</div><pre><code>import httpx, os, asyncio
+async def call_llm(text: str) -&gt; str:
+    async with httpx.AsyncClient() as c:
+        r = await c.post('https://api.{vendor}.com/v1/messages',
+            headers={'Authorization': f'Bearer {os.getenv("API_KEY")}'},
+            json={'model': 'model-name', 'max_tokens': 500,
+                  'messages':[{'role':'user','content':text}]}, timeout=30)
+        return r.json()['content'][0]['text']
+result = asyncio.run(call_llm(f'다음 데이터 이상치 설명: {outliers}'))</code></pre></div>
+
+  <h4>분석 파이프라인 설계 — ETL 구조 원칙</h4>
+  <p>좋은 파이프라인: 각 단계 분리+오류 기록+재현 가능+테스트 가능</p>
+  <div class="sqlbox"><div class="sqlhead">단계 분리된 ETL 파이프라인 골격</div><pre><code>def run_pipeline(config: dict) -&gt; dict:
+    logger.info(f'파이프라인 시작: {config}')
+    raw = extract(config['source'])  # E: Extract
+    logger.info(f'수집 완료: {len(raw)}건')
+    validated, errors = validate(raw, schema=SalesRecord)  # V: Validate
+    logger.warning(f'검증 오류: {len(errors)}건') if errors else None</code></pre></div>
+  <div class="note">→ 각 단계를 독립적으로 pytest로 테스트 가능, 실패 시 어느 단계인지 즉시 파악할 수 있다.</div>
+</section>
+
+
+<section class="sec" id="s13" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">13.</span> 분석 코드 구조화와 공유</h2>
+  </div>
+  <p class="subtitle">Jupyter vs .py · 프로젝트 구조 · 모듈화 · GitHub</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 탐색은 Jupyter 노트북에서, 반복 실행할 검증된 코드는 .py 모듈(src/)로 옮기는 게 원칙이에요. 6개월 뒤 동료(또는 미래의 나)가 README만 읽고 바로 실행할 수 있으면 좋은 구조예요.</div></div>
+
+  <h4>Jupyter Notebook vs .py 스크립트 — 언제 무엇을?</h4>
+  <ul class="b">
+    <li><b>Jupyter(.ipynb)</b>: EDA·데이터 탐색 단계, 시각화가 중심인 분석, 한 번 실행으로 끝나는 분석, 보고서로 변환해야 할 때(nbconvert), 교육·튜토리얼 자료 작성</li>
+    <li><b>Python(.py)</b>: 반복 실행 자동화 스크립트, Git 버전 관리+pytest 테스트, 팀 협업·코드 리뷰 대상, CI/CD 파이프라인 통합, 라이브러리(src/) 코드</li>
+  </ul>
+
+  <h4>분석 프로젝트 폴더 구조(예시)</h4>
+  <p>6개월 뒤 동료(또는 미래의 나)가 README만 읽고 바로 실행할 수 있어야 좋은 구조다.</p>
+  <div class="sqlbox"><div class="sqlhead">data-project/ 폴더 구조</div><pre><code>data-project/
+├── data/
+│   ├── raw/           # 원본 데이터 (절대 수정 금지)
+│   ├── processed/     # 전처리 완료 데이터
+│   └── external/      # 외부 참조 데이터
+├── notebooks/          # EDA·실험용 Jupyter 노트북
+│   ├── 01_eda.ipynb
+│   └── 02_feature_exploration.ipynb
+├── src/                 # 재사용 가능한 Python 모듈
+│   ├── __init__.py
+│   └── clean.py         # 전처리 함수</code></pre></div>
+
+  <h4>모듈화 — 노트북 코드를 재사용 가능한 패키지로</h4>
+  <ul class="b">
+    <li>__init__.py(폴더를 Python 패키지로 만들기), 공통 전처리 함수→src/clean.py로 분리</li>
+    <li>시각화 함수→src/viz.py로 분리, 노트북에서 sys.path로 src 모듈 임포트, 절대 임포트 vs 상대 임포트 차이</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">src/clean.py — 재사용 모듈</div><pre><code># src/clean.py
+from typing import Optional
+import pandas as pd
+def clean_nulls(df: pd.DataFrame, cols: Optional[list] = None, strategy: str = 'median') -&gt; pd.DataFrame:
+    cols = cols or df.select_dtypes('number').columns.tolist()
+    if strategy == 'median':
+        return df.fillna(df[cols].median())
+    elif strategy == 'drop':
+        return df.dropna(subset=cols)
+    return df
+# notebooks/01_eda.ipynb 에서: import sys; sys.path.insert(0, '..'); from src.clean import clean_nulls</code></pre></div>
+
+  <h4>README.md 작성 + GitHub 공유</h4>
+  <ul class="b">
+    <li>README(프로젝트 목적·환경·실행 방법), 배지(badge, 테스트 통과·커버리지 표시)</li>
+    <li>nbconvert(노트북→HTML 변환·공유), Git add·commit·push 기본 워크플로, GitHub Actions(pytest 자동 실행)</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">README 구성 + nbconvert + CI</div><pre><code># README.md: 프로젝트 개요, 개발 환경 설정(git clone, venv, pip install -r requirements.txt), 실행 방법(pytest tests/, python src/run_pipeline.py)
+$ jupyter nbconvert --to html notebooks/01_eda.ipynb
+# .github/workflows/test.yml 에 pytest 자동화</code></pre></div>
+
+  <h4>분석 코드 구조화의 핵심 원칙</h4>
+  <ul class="b">
+    <li><b>탐색과 재사용 분리</b>: 노트북은 탐색·실험용, 검증된 함수는 src/로 이동해 재사용 가능한 모듈로 관리 — 두 역할을 섞지 말 것</li>
+    <li><b>재현성 = 신뢰성</b>: requirements.txt+.env 예시+README 실행 가이드 — 이 셋만 있으면 누구나 동일한 결과 재현 가능</li>
+    <li><b>데이터는 git에 올리지 않는다</b>: data/raw/는 .gitignore에 추가, 대신 데이터 출처(URL·스크립트)를 README에 기록</li>
+    <li><b>점진적 개선</b>: 처음부터 완벽한 구조를 만들 필요 없음 — 분석이 반복되면 함수화하고, 함수가 쌓이면 모듈화</li>
+  </ul>
+</section>
+
+
+<section class="sec" id="s14" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">14.</span> Day 2 종합 실습 — End2End 데이터 분석 프로젝트</h2>
+  </div>
+  <p class="subtitle">Pandas/Polars → 시각화 → 통계분석 → sklearn Pipeline → 자동화·발표</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 데이터 3종 중 하나를 골라, 지금까지 배운 전 과정(로딩→전처리→시각화→통계→ML Pipeline→리포트 자동생성)을 처음부터 끝까지 팀으로 완성해보는 최종 실습이에요.</div></div>
+
+  <h4>사용 데이터셋(팀별로 아래 중 적용)</h4>
+  <ul class="b">
+    <li><b>NYC Yellow Taxi</b>: https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2026-05.parquet</li>
+    <li><b>Stack Overflow Survey 2024</b>: https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2024/results.csv (전체 아카이브: https://github.com/StackExchange/Survey/tree/main/packages/archive/2024, 안내: https://survey.stackoverflow.co/)</li>
+    <li><b>Adult Census Income</b>: archive.ics.uci.edu 의 adult.data 활용</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Adult Census Income 로딩 예시</div><pre><code>url = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
+cols = ["age","workclass","fnlwgt","education","education-num","marital-status","occupation","relationship","race","sex","capital-gain","capital-loss","hours-per-week","native-country","income"]
+df = pd.read_csv(url, header=None, names=cols, na_values=" ?", skipinitialspace=True)
+print(df.shape)  # (32561, 15)</code></pre></div>
+
+  <h4>실습 내용</h4>
+  <ul class="b">
+    <li><b>데이터 준비</b>: 선택한 데이터셋을 Pandas와 Polars 양쪽으로 로딩하여 결과 비교, 결측치·중복 처리 및 기본 EDA 수행</li>
+    <li><b>시각화</b>: Seaborn으로 정적 차트, Plotly로 인터랙티브 차트 각 1개 이상(분포·상관관계·그룹 비교 중 택일)</li>
+    <li><b>통계 분석</b>: 기술통계(평균·표준편차·분위수) 산출, 변수 간 상관계수 계산, scipy.stats.ttest_ind로 t-test 수행 및 p-value 해석</li>
+    <li><b>ML Pipeline</b>: sklearn.pipeline.Pipeline으로 전처리+모델 학습 구성, 평가 지표 출력, joblib으로 모델 저장</li>
+    <li><b>자동화·발표</b>: 분석 결과를 report.md로 자동 생성, 팀별 발표(5분)</li>
+  </ul>
+
+  <h4>채점 기준 — 100점</h4>
+  <table class="t"><thead><tr><th>항목</th><th>배점</th></tr></thead><tbody>
+    <tr><td>데이터 준비+시각화</td><td>35 (Pandas·Polars 모두 사용, 결측치처리+EDA 결과 출력 / Seaborn 정적차트·Plotly 인터랙티브 차트 각1개 이상, 제목·축레이블 포함)</td></tr>
+    <tr><td>통계분석+ML Pipeline</td><td>45 (기술통계·상관계수 출력, t-test 결과+p-value 해석 포함 / Pipeline 객체로 전처리+모델 구성, 평가지표 출력, 모델 파일 저장)</td></tr>
+    <tr><td>자동화+발표</td><td>20 (report.md 자동 생성 / 팀 발표 5분)</td></tr>
+    <tr><td>완성도</td><td>10 (주석처리 누락 시 감점처리)</td></tr>
+  </tbody></table>
+  <div class="cp"><div class="cphead">✔ 제출물</div><ul>
+    <li>폴더 포함 전체 코드(캠퍼스명_반_이름_실습명.zip)</li>
+    <li>실행결과 화면 Capture+Code 분석 결과 본인 의견(PDF)</li>
+    <li>기한: 과정 종료 시까지(~21:00 제출 엄수)</li>
+  </ul></div>
+</section>
+
+
+<div class="quiz-wrap" id="quiz-day2">
+  <h2>✅ Day 2 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="2">0 / 7 정답</div>
+
+  <div class="quiz-q" data-qid="d2q0" data-type="ox" data-answer="true" data-exp="Pandas 2.0부터 CoW가 기본 활성화되어, 뷰를 수정하면 경고가 발생할 수 있어요. copy()나 loc를 명시적으로 사용해야 해요.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Pandas 2.x는 기본적으로 Copy-on-Write(CoW)가 활성화되어 있다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q1" data-type="ox" data-answer="false" data-exp="Lazy API는 scan_ 함수로 시작해 실행 계획만 세우고, collect()를 호출해야 실제로 실행돼요. 즉시 실행되지 않아요.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Polars의 Lazy API는 함수를 호출하는 즉시 연산이 실행된다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q2" data-type="ox" data-answer="true" data-exp="DuckDB는 서버 없이 파일에 직접 SQL을 실행하는 임베디드 분석 엔진이에요.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>DuckDB는 CSV/Parquet 파일에 별도 로딩 없이 SQL을 직접 실행할 수 있다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q3" data-type="mc" data-answer="Python 레벨 반복 대신 C 레벨에서 배치 연산되기 때문에" data-exp="apply()는 Python 함수를 행/열마다 호출하는 느린 반복이고, 벡터화 연산은 NumPy/C 레벨에서 배치로 처리돼 훨씬 빨라요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>다음 중 apply()보다 벡터화 연산(.str, .dt 등)이 훨씬 빠른 이유는?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="Python 레벨 반복 대신 C 레벨에서 배치 연산되기 때문에">Python 레벨 반복 대신 C 레벨에서 배치 연산되기 때문에</button>
+      <button class="quiz-opt" data-val="apply()는 GIL이 걸리지 않기 때문에">apply()는 GIL이 걸리지 않기 때문에</button>
+      <button class="quiz-opt" data-val="벡터화 연산은 별도 프로세스에서 실행되기 때문에">벡터화 연산은 별도 프로세스에서 실행되기 때문에</button>
+      <button class="quiz-opt" data-val="Pandas가 벡터화 연산만 캐싱하기 때문에">Pandas가 벡터화 연산만 캐싱하기 때문에</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q4" data-type="mc" data-answer="업무 이해→데이터 이해→데이터 준비→모델링→평가→배포" data-exp="CRISP-DM은 업무 이해→데이터 이해→데이터 준비→모델링→평가→배포 순서로 진행되는 실무 분석 방법론이에요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>CRISP-DM의 올바른 단계 순서는?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="업무 이해→데이터 이해→데이터 준비→모델링→평가→배포">업무 이해→데이터 이해→데이터 준비→모델링→평가→배포</button>
+      <button class="quiz-opt" data-val="모델링→데이터 준비→업무 이해→평가→배포→데이터 이해">모델링→데이터 준비→업무 이해→평가→배포→데이터 이해</button>
+      <button class="quiz-opt" data-val="데이터 준비→모델링→배포→평가→업무 이해→데이터 이해">데이터 준비→모델링→배포→평가→업무 이해→데이터 이해</button>
+      <button class="quiz-opt" data-val="평가→모델링→데이터 준비→배포→데이터 이해→업무 이해">평가→모델링→데이터 준비→배포→데이터 이해→업무 이해</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q5" data-type="short" data-accept='["joblib"]' data-exp="joblib.dump()/joblib.load()로 전처리+모델이 결합된 Pipeline 객체를 통째로 저장·재사용할 수 있어요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>sklearn Pipeline으로 학습한 모델 객체를 파일로 저장/재로딩할 때 쓰는 표준 라이브러리는? (영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q6" data-type="short" data-accept='["collect", "collect()"]' data-exp="scan_csv → filter → group_by → agg → sort로 계획을 세운 뒤 collect()를 호출해야 실제 실행이 일어나요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>Polars의 Lazy 쿼리 체인 마지막에 실제 실행을 트리거하기 위해 호출해야 하는 메서드는? (영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+  </main>
+</div>
+<button class="top-btn" id="topBtn" title="맨 위로">↑</button>
+
+<script>
+  const links = document.querySelectorAll('.navlink');
+  const sections = document.querySelectorAll('.sec');
+  const searchBox = document.getElementById('searchBox');
+  const topBtn = document.getElementById('topBtn');
+
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const id = e.target.id;
+        links.forEach(l=>l.classList.toggle('active', l.getAttribute('href')==='#'+id));
+      }
+    });
+  }, {rootMargin:'-10% 0px -70% 0px'});
+  sections.forEach(s=>obs.observe(s));
+
+  searchBox.addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    sections.forEach(sec=>{
+      const text = sec.innerText.toLowerCase();
+      const match = q==='' || text.includes(q);
+      sec.style.display = match ? '' : 'none';
+    });
+    links.forEach(l=>{
+      const num = l.getAttribute('data-sec');
+      if(!num) return;
+      const sec = document.getElementById('s'+num);
+      const groupTitle = l.textContent.toLowerCase();
+      const match = q==='' || (sec && sec.innerText.toLowerCase().includes(q)) || groupTitle.includes(q);
+      l.style.display = match ? '' : 'none';
+    });
+  });
+
+  window.addEventListener('scroll', ()=>{
+    topBtn.style.display = window.scrollY > 600 ? 'block' : 'none';
+  });
+  topBtn.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'}));
+
+  // ---- Theme toggle ----
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', ()=>{
+    document.body.classList.toggle('light');
+    const isLight = document.body.classList.contains('light');
+    themeBtn.textContent = isLight ? '🌙 다크 모드' : '☀ 라이트 모드';
+  });
+
+  // ---- Python syntax highlighting for code boxes ----
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  const PY_KEYWORDS = new Set(['def','class','import','from','return','if','elif','else','for','while','try','except','finally','with','as','lambda','yield','async','await','pass','break','continue','global','nonlocal','del','raise','assert','None','True','False','and','or','not','in','is','self']);
+  const PY_FUNCS = new Set(['print','len','range','enumerate','zip','map','filter','sorted','sum','min','max','open','isinstance','type']);
+  const PY_TYPES = new Set(['int','float','str','list','dict','set','tuple','bool','Optional','Union','Literal','Any','Callable','TypedDict']);
+
+  function highlightPy(raw){
+    const escaped = escapeHtml(raw);
+    const re = /(#[^\n]*)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_][A-Za-z0-9_]*\b)/g;
+    return escaped.replace(re, (m, comment, str, num, word)=>{
+      if(comment) return '<span class="tk-c">'+comment+'</span>';
+      if(str) return '<span class="tk-s">'+str+'</span>';
+      if(num) return '<span class="tk-n">'+num+'</span>';
+      if(word){
+        if(PY_KEYWORDS.has(word)) return '<span class="tk-k">'+word+'</span>';
+        if(PY_FUNCS.has(word)) return '<span class="tk-f">'+word+'</span>';
+        if(PY_TYPES.has(word)) return '<span class="tk-t">'+word+'</span>';
+      }
+      return m;
+    });
+  }
+
+  document.querySelectorAll('.sqlbox code').forEach(code=>{
+    code.innerHTML = highlightPy(code.textContent);
+  });
+
+  // ---- Copy button for code boxes ----
+  document.querySelectorAll('.sqlbox').forEach(box=>{
+    const head = box.querySelector('.sqlhead');
+    const code = box.querySelector('code');
+    if(!head || !code) return;
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = '복사';
+    btn.addEventListener('click', ()=>{
+      const text = code.textContent;
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).catch(()=>{});
+      }
+      btn.textContent = '복사됨 ✓';
+      btn.classList.add('copied');
+      setTimeout(()=>{ btn.textContent = '복사'; btn.classList.remove('copied'); }, 1500);
+    });
+    head.appendChild(btn);
+  });
+
+  // ---- Quiz interactivity ----
+  function updateScore(day){
+    const wrap = document.getElementById('quiz-day'+day);
+    const total = wrap.querySelectorAll('.quiz-q').length;
+    const correct = wrap.querySelectorAll('.quiz-q.answered-correct').length;
+    wrap.querySelector('.quiz-score').textContent = correct + ' / ' + total + ' 정답';
+  }
+  const MAX_ATTEMPTS = 3;
+  function expHtml(exp){
+    return exp ? '<div class="quiz-exp">💡 ' + exp + '</div>' : '';
+  }
+  document.querySelectorAll('.quiz-q[data-type="ox"], .quiz-q[data-type="mc"]').forEach(qEl=>{
+    const answer = qEl.dataset.answer;
+    const exp = qEl.dataset.exp || '';
+    const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    const fb = qEl.querySelector('.quiz-feedback');
+    let attempts = 0;
+    qEl.querySelectorAll('.quiz-opt').forEach(opt=>{
+      opt.addEventListener('click', ()=>{
+        if(qEl.classList.contains('locked') || opt.disabled) return;
+        const val = opt.dataset.val;
+        const isCorrect = (val === answer);
+        if(isCorrect){
+          qEl.classList.add('locked','answered-correct');
+          opt.classList.add('correct');
+          qEl.querySelectorAll('.quiz-opt').forEach(o=> o.setAttribute('disabled','true'));
+          fb.innerHTML = '정답이에요! 🎉' + expHtml(exp);
+          fb.className = 'quiz-feedback ok';
+          updateScore(day);
+          return;
+        }
+        attempts++;
+        opt.classList.add('incorrect');
+        opt.setAttribute('disabled','true');
+        if(attempts >= MAX_ATTEMPTS){
+          qEl.classList.add('locked');
+          qEl.querySelectorAll('.quiz-opt').forEach(o=>{
+            o.setAttribute('disabled','true');
+            if(o.dataset.val === answer) o.classList.add('correct');
+          });
+          fb.innerHTML = MAX_ATTEMPTS + '번 틀렸어요. 정답은 강조 표시된 항목이에요.' + expHtml(exp);
+        } else {
+          fb.textContent = '아쉬워요, 다시 시도해보세요. (' + attempts + '/' + MAX_ATTEMPTS + ')';
+        }
+        fb.className = 'quiz-feedback no';
+        updateScore(day);
+      });
+    });
+  });
+  document.querySelectorAll('.quiz-q[data-type="short"]').forEach(qEl=>{
+    const acceptRaw = JSON.parse(qEl.dataset.accept);
+    const accept = acceptRaw.map(a=>a.toLowerCase().trim());
+    const exp = qEl.dataset.exp || '';
+    const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    const input = qEl.querySelector('input');
+    const btn = qEl.querySelector('.quiz-check');
+    const fb = qEl.querySelector('.quiz-feedback');
+    let attempts = 0;
+    function check(){
+      if(qEl.classList.contains('locked')) return;
+      const val = input.value.toLowerCase().trim();
+      const isCorrect = accept.includes(val) && val !== '';
+      if(isCorrect){
+        qEl.classList.add('locked','answered-correct');
+        fb.innerHTML = '정답이에요! 🎉' + expHtml(exp);
+        fb.className = 'quiz-feedback ok';
+        input.disabled = true; btn.disabled = true;
+        updateScore(day);
+        return;
+      }
+      attempts++;
+      if(attempts >= MAX_ATTEMPTS){
+        qEl.classList.add('locked');
+        input.disabled = true; btn.disabled = true;
+        fb.innerHTML = MAX_ATTEMPTS + '번 틀렸어요. 정답은 <b>' + acceptRaw[0] + '</b> 이에요.' + expHtml(exp);
+      } else {
+        fb.textContent = '다시 시도해보세요. (' + attempts + '/' + MAX_ATTEMPTS + ')';
+      }
+      fb.className = 'quiz-feedback no';
+    }
+    btn.addEventListener('click', check);
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); });
+  });
+</script>
+</body>
+</html>
