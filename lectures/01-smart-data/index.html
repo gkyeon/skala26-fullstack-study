@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKALA | 스마트 데이터 이해 및 활용 - 복습노트</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#161925; --panel2:#1c2030; --border:#2a2f42;
+    --text:#e6e8ef; --muted:#9aa0b4; --accent:#7c9dff; --accent2:#4fd1c5;
+    --code-bg:#10131c; --code-text:#c9e6ff;
+    --day1:#7c9dff; --day2:#4fd1c5; --day3:#f6ad55; --day4:#f687b3;
+    --warn:#f6ad55;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6;
+  }
+  .layout{display:flex; min-height:100vh;}
+  .sidebar{
+    width:280px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--border);
+    position:sticky; top:0; height:100vh; overflow-y:auto; padding:20px 14px;
+  }
+  .sidebar h1{font-size:15px; margin:0 6px 4px; color:var(--text); font-weight:700;}
+  .sidebar .sub{font-size:11.5px; color:var(--muted); margin:0 6px 16px;}
+  .search{
+    width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:13px; margin-bottom:14px;
+  }
+  .search:focus{outline:none; border-color:var(--accent);}
+  .day-group{margin-bottom:10px;}
+  .day-title{
+    font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
+    padding:8px 6px 4px; font-weight:700;
+  }
+  .day-title.d1{color:var(--day1);} .day-title.d2{color:var(--day2);}
+  .day-title.d3{color:var(--day3);} .day-title.d4{color:var(--day4);}
+  .navlink{
+    display:block; padding:6px 8px; border-radius:6px; color:var(--muted); text-decoration:none;
+    font-size:13px; margin:1px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .navlink:hover{background:var(--panel2); color:var(--text);}
+  .navlink.active{background:rgba(124,157,255,.15); color:var(--accent); font-weight:600;}
+  main{flex:1; padding:32px 40px 120px; max-width:980px;}
+  .page-head{margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border);}
+  .page-head h1{font-size:26px; margin:0 0 8px;}
+  .page-head p{color:var(--muted); font-size:14px; margin:0;}
+  .badges{margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;}
+  .badges span{font-size:11.5px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted);}
+  .sec{margin-bottom:56px; padding-top:8px; scroll-margin-top:20px;}
+  .sec-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .day-badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; color:#0b0d14;}
+  .day-badge.day1{background:var(--day1);} .day-badge.day2{background:var(--day2);}
+  .day-badge.day3{background:var(--day3);} .day-badge.day4{background:var(--day4);}
+  .sec h2{font-size:21px; margin:0; display:flex; gap:8px; align-items:baseline;}
+  .sec h2 .num{color:var(--muted); font-weight:500;}
+  .subtitle{color:var(--muted); font-size:13.5px; margin:6px 0 18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .sec h3{font-size:16px; margin:22px 0 8px; color:var(--text);}
+  .sec h4{font-size:13.5px; margin:14px 0 6px; color:var(--accent2); font-weight:700;}
+  .b{margin:4px 0 14px; padding-left:20px;}
+  .b li{margin:4px 0; font-size:14px;}
+  .b li::marker{color:var(--accent);}
+  p{font-size:14px; margin:8px 0;}
+  .sqlbox{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:10px;
+    margin:12px 0; overflow:hidden;
+  }
+  .sqlhead{
+    font-size:11px; color:var(--muted); padding:7px 12px; border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,.02); letter-spacing:.03em; text-transform:uppercase;
+  }
+  .sqlbox pre{margin:0; padding:12px 14px; overflow-x:auto;}
+  .sqlbox code{
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:12.5px; color:var(--code-text);
+    line-height:1.65; white-space:pre;
+  }
+  .cp{
+    background:rgba(79,209,197,.07); border:1px solid rgba(79,209,197,.3); border-radius:10px;
+    padding:10px 14px; margin:14px 0;
+  }
+  .cphead{color:var(--accent2); font-size:12.5px; font-weight:700; margin-bottom:6px;}
+  .cp ul{margin:0; padding-left:18px;}
+  .cp li{font-size:13px; margin:3px 0; color:#d5f5f0;}
+  table.t{border-collapse:collapse; width:100%; margin:12px 0; font-size:13px;}
+  table.t th{
+    background:var(--panel2); text-align:left; padding:8px 10px; border:1px solid var(--border);
+    color:var(--accent2); font-size:12px;
+  }
+  table.t td{padding:8px 10px; border:1px solid var(--border); color:var(--text); vertical-align:top;}
+  .note{
+    font-size:12.5px; color:var(--warn); background:rgba(246,173,85,.08);
+    border-left:3px solid var(--warn); padding:8px 12px; margin:12px 0; border-radius:4px;
+  }
+  .divider{border:none; border-top:1px solid var(--border); margin:40px 0;}
+  .day-header{
+    margin:60px 0 24px; padding:14px 0; border-bottom:2px solid var(--border);
+  }
+  .day-header h1{font-size:22px; margin:0 0 4px;}
+  .day-header p{color:var(--muted); font-size:13px; margin:0;}
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-thumb{background:#333850; border-radius:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  .top-btn{
+    position:fixed; bottom:24px; right:24px; background:var(--accent); color:#0b0d14;
+    border:none; border-radius:999px; width:44px; height:44px; font-size:18px; cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,.4); display:none;
+  }
+  @media (max-width:900px){
+    .sidebar{position:fixed; z-index:20; transform:translateX(-100%); transition:transform .2s;}
+    .sidebar.open{transform:translateX(0);}
+    main{padding:20px;}
+  }
+
+  /* ===== Readability upgrade ===== */
+  body{ font-size:15px; }
+  main{ padding:36px 48px 160px; max-width:900px; }
+  .sec{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:22px 26px 26px; margin-bottom:28px; box-shadow:0 1px 0 rgba(255,255,255,.02) inset;
+  }
+  .sec-head{margin-bottom:2px;}
+  .sec h2{font-size:20px;}
+  .subtitle{font-size:13.5px; line-height:1.55; margin-bottom:16px;}
+  p, .b li, .cp li, table.t td{font-size:14.5px; line-height:1.75;}
+  .b{padding-left:22px;}
+  .b li{margin:6px 0;}
+  .sqlbox code{font-size:13px; line-height:1.8;}
+  h4{letter-spacing:.01em;}
+  .day-header{
+    background:linear-gradient(180deg, rgba(124,157,255,.08), transparent);
+    border-radius:12px; padding:20px 22px; border-bottom:none; border:1px solid var(--border);
+  }
+  .day-header h1{font-size:23px;}
+
+  /* ===== Light theme ===== */
+  body.light{
+    --bg:#f7f8fc; --panel:#ffffff; --panel2:#f0f2f9; --border:#e2e5f0;
+    --text:#20232e; --muted:#6b7180; --accent:#3f5fd6; --accent2:#0f9488;
+    --code-bg:#f4f6fb; --code-text:#1d3b6b; --warn:#b45309;
+  }
+  body.light .sec{box-shadow:0 1px 3px rgba(20,25,50,.06);}
+  body.light .cp{background:rgba(15,148,136,.07); border-color:rgba(15,148,136,.28);}
+  body.light .cp li{color:#0d4b45;}
+  body.light .sqlbox{border-color:#dde1ee;}
+  body.light table.t th{background:#eef1fa;}
+  body.light .day-header{background:linear-gradient(180deg, rgba(63,95,214,.06), transparent);}
+
+  /* ===== Top toolbar ===== */
+  .toolbar{display:flex; gap:8px; margin-bottom:14px;}
+  .theme-btn{
+    flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:12.5px; cursor:pointer;
+  }
+  .theme-btn:hover{border-color:var(--accent);}
+
+  /* ===== Run-in-playground button (injected via JS into sqlhead) ===== */
+  .sqlhead{display:flex; align-items:center; justify-content:space-between;}
+  .run-btn{
+    font-size:11px; padding:3px 10px; border-radius:6px; border:1px solid var(--accent);
+    background:transparent; color:var(--accent); cursor:pointer; letter-spacing:0; text-transform:none;
+    font-weight:600;
+  }
+  .run-btn:hover{background:var(--accent); color:#0b0d14;}
+
+  /* ===== SQL Playground drawer ===== */
+  #pgToggle{
+    position:fixed; right:24px; bottom:80px; z-index:40; background:var(--accent2); color:#0b0d14;
+    border:none; border-radius:999px; padding:12px 18px; font-size:13px; font-weight:700; cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,.35); display:flex; align-items:center; gap:6px;
+  }
+  #pgDrawer{
+    position:fixed; left:0; right:0; bottom:-70vh; height:66vh; background:var(--panel);
+    border-top:1px solid var(--border); z-index:39; transition:bottom .25s ease;
+    box-shadow:0 -8px 30px rgba(0,0,0,.4); display:flex; flex-direction:column;
+  }
+  #pgDrawer.open{bottom:0;}
+  .pg-head{
+    display:flex; align-items:center; justify-content:space-between; padding:10px 18px;
+    border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .pg-head h3{margin:0; font-size:14px;}
+  .pg-head .pg-actions{display:flex; gap:8px; align-items:center;}
+  .pg-close{background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; line-height:1;}
+  .pg-body{display:flex; flex:1; overflow:hidden;}
+  .pg-schema{
+    width:230px; flex-shrink:0; border-right:1px solid var(--border); overflow-y:auto; padding:12px 14px;
+    font-size:12px; color:var(--muted);
+  }
+  .pg-schema h4{color:var(--accent2); font-size:11.5px; margin:10px 0 4px;}
+  .pg-schema .tbl{margin-bottom:10px;}
+  .pg-schema .tbl b{color:var(--text); font-size:12.5px;}
+  .pg-schema .tbl div{padding-left:8px; font-family:monospace; font-size:11px;}
+  .pg-main{flex:1; display:flex; flex-direction:column; padding:14px 18px; overflow:hidden;}
+  #pgEditor{
+    width:100%; flex:1; min-height:90px; max-height:160px; resize:vertical; background:var(--code-bg);
+    color:var(--code-text); border:1px solid var(--border); border-radius:8px; padding:10px 12px;
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:13px; line-height:1.6;
+  }
+  .pg-btnrow{display:flex; gap:8px; margin:10px 0;}
+  .pg-run{
+    background:var(--accent2); color:#0b0d14; border:none; border-radius:7px; padding:8px 18px;
+    font-weight:700; font-size:13px; cursor:pointer;
+  }
+  .pg-clear, .pg-example{
+    background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:7px;
+    padding:8px 14px; font-size:12.5px; cursor:pointer;
+  }
+  .pg-result{flex:1; overflow:auto; border:1px solid var(--border); border-radius:8px; padding:10px 12px; background:var(--code-bg);}
+  .pg-result table{border-collapse:collapse; width:100%; font-size:12.5px;}
+  .pg-result th{background:var(--panel2); color:var(--accent2); padding:6px 9px; border:1px solid var(--border); text-align:left; position:sticky; top:0;}
+  .pg-result td{padding:6px 9px; border:1px solid var(--border); font-family:monospace; color:var(--text);}
+  .pg-error{color:#ff8080; font-family:monospace; font-size:12.5px; white-space:pre-wrap;}
+  .pg-info{color:var(--muted); font-size:12.5px;}
+  .pg-rowcount{color:var(--muted); font-size:11.5px; margin-top:6px;}
+  @media (max-width:900px){
+    .pg-schema{display:none;}
+    #pgDrawer{height:80vh;}
+  }
+
+
+  /* ===== Width upgrade (full monitor) ===== */
+  main{ max-width: 1180px; padding:40px 56px 160px; }
+  @media (min-width:1500px){ main{ max-width: 1320px; } }
+  @media (min-width:1800px){ main{ max-width: 1440px; } }
+  .sidebar{ width:300px; }
+
+  /* ===== TL;DR beginner box ===== */
+  .tldr{
+    display:flex; gap:12px; align-items:flex-start; background:rgba(124,157,255,.09);
+    border:1px solid rgba(124,157,255,.35); border-radius:12px; padding:14px 16px; margin:14px 0 18px;
+  }
+  .tldr .icon{font-size:18px; line-height:1.4;}
+  .tldr .txt{font-size:14px; line-height:1.7; color:var(--text);}
+  .tldr .txt b{color:var(--accent);}
+  body.light .tldr{background:rgba(63,95,214,.06); border-color:rgba(63,95,214,.25);}
+
+  /* ===== Playground usage guide ===== */
+  .pg-guide{
+    background:rgba(79,209,197,.08); border:1px solid rgba(79,209,197,.3); border-radius:10px;
+    padding:10px 14px; margin-bottom:12px; font-size:12.5px; line-height:1.7; color:var(--text);
+  }
+  .pg-guide b{color:var(--accent2);}
+  .pg-tabs{display:flex; gap:6px; margin-bottom:10px;}
+  .pg-tab{
+    padding:6px 12px; border-radius:7px; border:1px solid var(--border); background:var(--panel2);
+    color:var(--muted); font-size:12px; cursor:pointer;
+  }
+  .pg-tab.active{background:var(--accent); color:#0b0d14; border-color:var(--accent); font-weight:700;}
+  .ex-list{display:flex; flex-direction:column; gap:6px; max-height:100%; overflow-y:auto;}
+  .ex-item{
+    text-align:left; background:var(--panel2); border:1px solid var(--border); border-radius:8px;
+    padding:8px 10px; color:var(--text); font-size:12.5px; cursor:pointer;
+  }
+  .ex-item:hover{border-color:var(--accent);}
+  .ex-item.active{border-color:var(--accent); background:rgba(124,157,255,.1);}
+  .ex-item .tag{color:var(--muted); font-size:10.5px; display:block; margin-bottom:2px;}
+  .ex-current{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:10px;
+    font-size:13px; line-height:1.6;
+  }
+  .ex-current b{color:var(--accent2);}
+  .ex-btnrow{display:flex; gap:8px; margin-top:8px;}
+  .ex-answer-btn{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:7px;
+    padding:6px 12px; font-size:12px; cursor:pointer;
+  }
+  .ex-answer-btn:hover{border-color:var(--accent2);}
+
+  /* ===== Quiz blocks ===== */
+  .quiz-wrap{
+    margin:36px 0 60px; background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:24px 28px 28px;
+  }
+  .quiz-wrap h2{font-size:19px; margin:0 0 4px; display:flex; align-items:center; gap:8px;}
+  .quiz-wrap > p{color:var(--muted); font-size:13px; margin:0 0 18px;}
+  .quiz-score{
+    display:inline-block; background:var(--panel2); border:1px solid var(--border); border-radius:999px;
+    padding:4px 14px; font-size:12.5px; color:var(--accent2); font-weight:700; margin-bottom:16px;
+  }
+  .quiz-q{
+    border-top:1px dashed var(--border); padding:16px 0;
+  }
+  .quiz-q:first-of-type{border-top:none;}
+  .quiz-qtext{font-size:14.5px; margin:0 0 10px; font-weight:600;}
+  .quiz-qtext .qtype{
+    font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:5px; margin-right:8px;
+    background:var(--panel2); color:var(--muted); vertical-align:middle;
+  }
+  .quiz-opts{display:flex; flex-wrap:wrap; gap:8px;}
+  .quiz-opt{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:8px 14px; font-size:13px; cursor:pointer; text-align:left;
+  }
+  .quiz-opt:hover{border-color:var(--accent);}
+  .quiz-opt.correct{background:rgba(79,209,197,.18); border-color:var(--accent2); color:var(--accent2); font-weight:700;}
+  .quiz-opt.incorrect{background:rgba(246,135,179,.15); border-color:#f687b3; color:#f687b3;}
+  .quiz-opt[disabled]{cursor:default;}
+  .quiz-short{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .quiz-short input{
+    flex:1; min-width:180px; padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--code-bg); color:var(--text); font-size:13px;
+  }
+  .quiz-check{
+    background:var(--accent); color:#0b0d14; border:none; border-radius:7px; padding:8px 16px;
+    font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+  .quiz-feedback{font-size:12.5px; margin-top:8px; font-weight:600;}
+  .quiz-feedback.ok{color:var(--accent2);}
+  .quiz-feedback.no{color:#f687b3;}
+
+  /* ===== Site topbar (links back to course home) ===== */
+  .site-topbar{
+    display:flex; align-items:center; gap:10px; padding:9px 18px; background:var(--panel2);
+    border-bottom:1px solid var(--border); font-size:12.5px; position:sticky; top:0; z-index:30;
+  }
+  .site-topbar a{color:var(--muted); text-decoration:none;}
+  .site-topbar a:hover{color:var(--accent);}
+  .site-topbar .crumb-sep{color:var(--border);}
+  .site-topbar .crumb-cur{color:var(--text); font-weight:600;}
+</style>
+</head>
+
+<body>
+<div class="site-topbar">
+  <a href="../../index.html">🏠 Full-stack 학습 홈</a>
+  <span class="crumb-sep">/</span>
+  <span class="crumb-cur">스마트 데이터 이해 및 활용</span>
+</div>
+<div class="layout">
+  <nav class="sidebar" id="sidebar">
+    <h1>SKALA 스마트 데이터</h1>
+    <p class="sub">이해 및 활용 · 복습노트</p>
+    <div class="toolbar">
+      <button class="theme-btn" id="themeBtn">☀ 라이트 모드</button>
+    </div>
+    <input class="search" id="searchBox" type="text" placeholder="검색 (예: 인덱스, JOIN, VACUUM...)">
+    <div class="day-group"><div class="day-title d1">Day 1 — 관계형 모델 & SQL 기초</div>
+<a class="navlink" href="#s1" data-sec="1">1. 데이터베이스 개요</a>
+<a class="navlink" href="#s2" data-sec="2">2. 관계형 모델 핵심 개념</a>
+<a class="navlink" href="#s3" data-sec="3">3. ERD</a>
+<a class="navlink" href="#s4" data-sec="4">4. 개념적→논리적→물리적 모델 설계</a>
+<a class="navlink" href="#s5" data-sec="5">5. 스키마 전략 & RDBMS 비교</a>
+<a class="navlink" href="#s6" data-sec="6">6. SQL 기초 — DDL</a>
+<a class="navlink" href="#s7" data-sec="7">7. SQL 기초 — DML</a>
+<a class="navlink" href="#s8" data-sec="8">8. 종합실습 – 1</a>
+<a class="navlink" href="#s9" data-sec="9">9. Day 1 핵심 복습 & DBMS 생태계</a>
+<a class="navlink" href="#quiz-day1" style="color:var(--accent2);">✅ Day1 퀴즈</a>
+</div>
+<div class="day-group"><div class="day-title d2">Day 2 — SQL 중급/고급 & Window Function</div>
+<a class="navlink" href="#s10" data-sec="10">10. SQL 중급 — 집계 & 그룹화</a>
+<a class="navlink" href="#s11" data-sec="11">11. SQL 고급 — JOIN 알고리즘</a>
+<a class="navlink" href="#s12" data-sec="12">12. JOIN 종류 상세</a>
+<a class="navlink" href="#s13" data-sec="13">13. 서브쿼리 & 집합 연산자</a>
+<a class="navlink" href="#s14" data-sec="14">14. CTE·View·Materialized View</a>
+<a class="navlink" href="#s15" data-sec="15">15. Windows Function – 분석 함수</a>
+<a class="navlink" href="#s16" data-sec="16">16. 종합 실습 – 2</a>
+<a class="navlink" href="#quiz-day2" style="color:var(--accent2);">✅ Day2 퀴즈</a>
+</div>
+<div class="day-group"><div class="day-title d3">Day 3 — 인덱스·튜닝·트랜잭션</div>
+<a class="navlink" href="#s17" data-sec="17">17. 인덱스 설계 및 최적화</a>
+<a class="navlink" href="#s18" data-sec="18">18. 실행계획 분석</a>
+<a class="navlink" href="#s19" data-sec="19">19. SQL 튜닝 & 느린 쿼리 식별</a>
+<a class="navlink" href="#s20" data-sec="20">20. MVCC & 트랜잭션 격리 수준</a>
+<a class="navlink" href="#s21" data-sec="21">21. Lock & Deadlock 관리</a>
+<a class="navlink" href="#s22" data-sec="22">22. 고급 DB 설계</a>
+<a class="navlink" href="#s23" data-sec="23">23. 종합 실습 – 3</a>
+<a class="navlink" href="#quiz-day3" style="color:var(--accent2);">✅ Day3 퀴즈</a>
+</div>
+<div class="day-group"><div class="day-title d4">Day 4 — 운영·보안·클라우드·트렌드</div>
+<a class="navlink" href="#s24" data-sec="24">24. Stored Procedure & 함수</a>
+<a class="navlink" href="#s25" data-sec="25">25. Trigger & 이벤트 처리</a>
+<a class="navlink" href="#s26" data-sec="26">26. Cloud DB 개요</a>
+<a class="navlink" href="#s27" data-sec="27">27. 서버리스 & 분산 Cloud DB</a>
+<a class="navlink" href="#s28" data-sec="28">28. 데이터 웨어하우스 & 분석 DB</a>
+<a class="navlink" href="#s29" data-sec="29">29. 현재의 트렌드</a>
+<a class="navlink" href="#s30" data-sec="30">30. 보안 및 권한 관리</a>
+<a class="navlink" href="#s31" data-sec="31">31. 백업·복구 & 고가용성</a>
+<a class="navlink" href="#s32" data-sec="32">32. 모니터링 및 운영</a>
+<a class="navlink" href="#s33" data-sec="33">33. 종합실습 – 4</a>
+<a class="navlink" href="#quiz-day4" style="color:var(--accent2);">✅ Day4 퀴즈</a>
+</div>
+  </nav>
+  <main>
+    <div class="page-head">
+      <h1>스마트 데이터의 이해 및 활용 — 복습노트</h1>
+      <p>Full-stack Engineering(AI캠퍼스) · 4일 과정 · 데이터베이스/SQL 전체 33개 세션 요약</p>
+      <div class="badges">
+        <span>PostgreSQL 중심</span><span>SQL 기초~고급</span><span>인덱스/튜닝</span>
+        <span>트랜잭션/MVCC</span><span>보안/운영</span><span>Cloud DB & 최신 트렌드</span>
+        <span>🖥 SQL 연습장 · 따라쓰기 실습 · Day별 퀴즈 포함</span>
+      </div>
+    </div>
+    <div class="day-header" id="day1"><h1>Day 1 — 관계형 모델 & SQL 기초</h1><p>데이터베이스 개요부터 ERD, 물리설계, DDL/DML 기초까지</p></div>
+
+<section class="sec" id="s1" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">1.</span> 데이터베이스 개요</h2>
+  </div>
+  <p class="subtitle">필요성 · 발전 과정 · ACID · WAL · Isolation Level</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 파일로 데이터 관리하다 한계(중복, 동시접속 문제)를 느껴서 DB가 나왔어요. <b>ACID</b>는 '계좌이체 같은 거래가 중간에 끊기거나 꼬이지 않게 보장하는 4가지 약속'. <b>WAL</b>은 '실제 잔고를 바꾸기 전에 통장 여백에 먼저 메모해두는 것'이라고 생각하면 쉬워요.</div></div>
+  <h4>필요성과 발전 과정 (파일시스템 → 계층형 → RDBMS → 분산/클라우드)</h4>
+<ul class="b">
+<li>파일 시스템 시대: 앱마다 독자 파일 사용 → 중복 데이터, 일관성 어려움, 단일 사용자 중심</li>
+<li>계층형 DB(IBM IMS): 트리구조, 빠른 탐색이나 유연성 부족, N:M 표현 어려움</li>
+<li>관계형 DBMS(RDBMS): 1970년대 Codd 제안 → SQL 표준화, 인덱스·트랜잭션·정규화 등 최적화 기법 발전</li>
+<li>분산/클라우드 DB: 빅데이터·글로벌 서비스로 확장성/가용성 중시, NewSQL·NoSQL 혼합 (Spanner, Aurora, CockroachDB)</li>
+</ul>
+<h4>ACID 속성 &amp; DBMS별 지원 차이</h4>
+<ul class="b">
+<li><b>A</b>tomicity(원자성) · <b>C</b>onsistency(일관성) · <b>I</b>solation(격리성) · <b>D</b>urability(지속성) — 트랜잭션이 지켜야 할 4대 원칙</li>
+<li>ACID는 "교과서적으로는 모든 DBMS가 지원" — 실제 보장 수준은 엔진/설정마다 다름</li>
+<li>MySQL InnoDB: 완전한 ACID (Redo/Undo Log, MVCC) / MyISAM: Rollback·FK 불가 → 사실상 ACID 미지원</li>
+<li>PostgreSQL: MVCC + WAL + SSI, 모든 격리수준 지원 — 표준에 가장 가까움</li>
+<li>Oracle: Read Committed 기본, 안정적 상용 구현 / Cloud DB(Aurora 등): 스토리지 6방향 복제로 장애 시 빠른 복구</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">WAL (Write-Ahead Logging) — 로그가 먼저</div><pre><code>-- PostgreSQL WAL 동작 방식
+BEGIN;
+ UPDATE account SET balance = balance - 10000 WHERE id = 'A';
+ -- 1단계: WAL 버퍼에 먼저 기록 (로그 우선 원칙)
+ -- 2단계: Shared Buffer(메모리)에 페이지 변경 반영 (아직 디스크 미기록, dirty page)
+ UPDATE account SET balance = balance + 10000 WHERE id = 'B';
+COMMIT;
+ -- COMMIT 로그를 WAL에 기록 후 fsync → 이후 Checkpoint 시점에 데이터 파일 반영
+-- 장애 복구 시: pg_wal/ 로그를 순서대로 재실행(Redo), 미커밋 트랜잭션은 Undo
+-- 설정: wal_level=replica / synchronous_commit=on(안전) / checkpoint_timeout=5min</code></pre></div>
+<div class="note">WAL = 한 DB 안에서 장애 대비 안전장치 / Consensus(합의 알고리즘) = 분산 DB에서 여러 노드가 같은 결과를 갖도록 보장하는 안전장치 (네트워크 지연/장애 시에도)</div>
+<h4>Isolation Level — 동시성 이상 현상</h4>
+<ul class="b">
+<li><b>Dirty Read</b>: 커밋 전 값을 읽음</li>
+<li><b>Non-Repeatable Read</b>: 같은 행을 두 번 읽었는데 값이 다름 (다른 TX가 UPDATE/DELETE)</li>
+<li><b>Phantom Read</b>: 같은 조건 두 번 조회 시 행 개수가 다름 (다른 TX가 INSERT/DELETE)</li>
+</ul>
+<h4>ANSI 격리 수준별 이상현상 허용 여부</h4>
+<table class="t"><thead><tr>
+<th>격리수준</th>
+<th>Dirty Read</th>
+<th>Non-Repeatable Read</th>
+<th>Phantom Read</th>
+</tr></thead><tbody>
+<tr><td>Read Uncommitted</td><td>발생 가능</td><td>발생 가능</td><td>발생 가능</td></tr>
+<tr><td>Read Committed</td><td>방지</td><td>발생 가능</td><td>발생 가능</td></tr>
+<tr><td>Repeatable Read</td><td>방지</td><td>방지</td><td>표준상 허용(구현별 상이)</td></tr>
+<tr><td>Serializable</td><td>방지</td><td>방지</td><td>방지</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">Phantom Read 예시</div><pre><code>-- Session 1
+BEGIN;
+SELECT COUNT(*) FROM orders WHERE amount &gt;= 100; -- 결과: 5
+-- Session 2 (동시)
+BEGIN; INSERT INTO orders(id, amount) VALUES (999, 150); COMMIT;
+-- 다시 Session 1
+SELECT COUNT(*) FROM orders WHERE amount &gt;= 100; -- 결과가?
+-- READ COMMITTED: 5 → 6 (팬텀 발생)
+-- REPEATABLE READ(PG 등 스냅샷 구현): 5 유지 (같은 트랜잭션 내 같은 스냅샷)
+--   단, SELECT FOR UPDATE나 같은 범위 UPDATE/DELETE를 잡으면 범위 잠금으로 팬텀 사전 차단
+-- SERIALIZABLE: 팬텀 원천 차단 (범위/프레디킷 잠금 또는 SSI)</code></pre></div>
+</section>
+
+
+<section class="sec" id="s2" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">2.</span> 관계형 모델 핵심 개념</h2>
+  </div>
+  <p class="subtitle">테이블, 키(PK/FK/UK), 관계(1:1/1:N/N:M), 정규화(1NF~3NF)</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 엑셀 시트 여러 개를 만들고 '학번' 같은 공통 열로 서로 연결(참조)해서 중복 없이 관리하는 방식이에요. <b>PK</b>=주민번호처럼 그 행을 딱 특정하는 값, <b>FK</b>=다른 시트를 가리키는 화살표라고 보면 됩니다.</div></div>
+  <h4>테이블과 키 (PK / FK / UK)</h4>
+<ul class="b">
+<li><b>테이블(Table/Relation)</b>: 행(Row/Tuple)과 열(Column/Attribute)로 구성된 2차원 구조</li>
+<li><b>기본키(PK)</b>: 각 행을 고유 식별, NULL·중복 불가, 자동 인덱스 생성 (예: 학번)</li>
+<li><b>외래키(FK)</b>: 다른 테이블의 PK를 참조, 테이블 간 관계 표현·참조 무결성 보장</li>
+<li><b>고유키(UK)</b>: 중복 불가하지만 NULL은 허용 (예: 이메일, 주민번호)</li>
+</ul>
+<h4>관계 (Relationship)</h4>
+<ul class="b">
+<li><b>1:1 관계</b>: 한 레코드가 다른 테이블의 레코드 하나와만 연결 (예: 학생 ↔ 학생증)</li>
+<li><b>1:N 관계</b>: 가장 흔한 관계, 한 레코드가 여러 레코드와 연결 (예: 학생 1명 ↔ 성적 여러개)</li>
+<li><b>N:M 관계</b>: 중간(교차) 테이블로 구현 (예: 학생 ↔ 강좌 → '수강' 테이블)</li>
+</ul>
+<h4>정규화 (Normalization)</h4>
+<ul class="b">
+<li><b>정규화 목적</b>: 데이터 중복 최소화, 이상현상(Anomaly) 방지, 무결성 향상</li>
+<li>삽입 이상: 불필요한 데이터도 함께 저장해야 함 / 삭제 이상: 삭제 시 다른 중요정보도 삭제됨 / 갱신 이상: 중복 데이터 일부만 수정 시 불일치</li>
+<li>1NF → 2NF(부분종속 제거) → 3NF(이행종속 제거) → BCNF, 보통 3NF 또는 BCNF까지 적용</li>
+<li>과도한 정규화 → JOIN 비용 증가 → 성능 고려 시 반정규화(Denormalization) 전략 도입</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">정규화 전/후 비교</div><pre><code>-- 비정규화 (1NF 위반: 다중값 컬럼)
+CREATE TABLE student_bad (
+  student_id INT PRIMARY KEY, name VARCHAR(50),
+  subjects VARCHAR(200) -- "DB, 네트워크, OS" ← 원자값 아님!
+);
+-- 1NF+2NF+3NF 적용 후 (분리된 테이블)
+CREATE TABLE students ( id INT PRIMARY KEY, name VARCHAR(50) NOT NULL,
+  major_id INT REFERENCES majors(id) ); -- 3NF: 학과명 분리
+CREATE TABLE majors ( id INT PRIMARY KEY, code VARCHAR(20) UNIQUE, name VARCHAR(100) );
+CREATE TABLE enrollments ( -- 1NF: 과목분리 + 2NF 교차테이블
+  student_id INT REFERENCES students(id), course_id INT REFERENCES courses(id),
+  score DECIMAL(5,2), PRIMARY KEY (student_id, course_id) );</code></pre></div>
+</section>
+
+
+<section class="sec" id="s3" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">3.</span> ERD</h2>
+  </div>
+  <p class="subtitle">Entity · Attribute · Relationship · ERD 작성법 · IE 표기법</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 코드 짜기 전에 테이블 설계도를 그림으로 미리 그려보는 단계예요. 네모=테이블, 선=테이블 간 관계.</div></div>
+  <h4>실습 환경</h4>
+<ul class="b">
+<li>PostgreSQL(권장): 오픈소스, 표준 SQL 호환, JSONB/GIS/Vector 확장. 기본포트 5432(Mac 5433)</li>
+<li>실습 도구: dbdiagram.io(DBML 문법, SQL 내보내기), ERDCloud(한국어 UI), Lucidchart, DBeaver(GUI 클라이언트)</li>
+</ul>
+<h4>Entity</h4>
+<ul class="b">
+<li><b>엔티티</b>: DB에서 관리할 대상 객체 (유형: 사람/사물, 무형: 사건/개념)</li>
+<li><b>강한 엔티티</b>: 독자적 PK 존재, 혼자 식별 가능 (학생, 강좌)</li>
+<li><b>약한 엔티티</b>: 독자적 PK 없음, 다른 강한 엔티티에 의존 (OrderItem = OrderID+ItemNo 복합키). ERD에서 이중 사각형, 식별관계는 굵은 선, 부모 삭제 시 자식도 삭제(ON DELETE CASCADE)</li>
+</ul>
+<h4>Attribute</h4>
+<ul class="b">
+<li>단순속성(더 이상 안 나뉨) vs 복합속성(주소=시+구+동)</li>
+<li>단일값속성(주민번호) vs 다중값속성(이메일 여러개 → 1NF에 따라 별도 테이블 분리)</li>
+<li>유도속성(나이=현재연도-출생연도, 직접 저장 불필요) / 기본키속성(ERD에서 밑줄로 표시)</li>
+</ul>
+<h4>IE 표기법 (까마귀발 표기법, Crow's Foot)</h4>
+<ul class="b">
+<li>│ 하나(One) / 까마귀발 여럿(Many) / ○ 없거나 하나 / ∥ 반드시 하나</li>
+<li>식별관계(실선): FK가 자식의 PK 일부, 부모 없이 자식 존재 불가(약한 엔티티)</li>
+<li>비식별관계(점선): FK가 자식의 일반 컬럼, 부모 없이도 자식 존재 가능</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">dbdiagram.io DBML 예시</div><pre><code>// dbdiagram.io (DBML) — SQL 없이 빠르게 ERD 작성 → SQL DDL 자동 생성
+Table students {
+  id bigint [pk, increment]
+  student_no varchar(20) [unique, not null]
+  major_id int [ref: &gt; majors.id]
+}
+Table enrollments {           // N:M 교차 테이블
+  student_id bigint [ref: &gt; students.id]
+  course_id int [ref: &gt; courses.id]
+  Indexes { (student_id, course_id) [pk] }  // 복합 PK
+}
+// 관계 방향: &gt; 다대일, &lt; 일대다, - 일대일, &lt;&gt; 다대다</code></pre></div>
+<h4>ERD 작성 단계</h4>
+<ul class="b">
+<li>요구사항 수집 → 엔티티 도출(명사 추출) → 속성 정의 → 관계 설정(카디널리티 명시) → ERD 도구 시각화 → 검토 및 수정</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s4" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">4.</span> 개념적→논리적→물리적 모델 설계</h2>
+  </div>
+  <p class="subtitle">3단계 설계 흐름 · 약한 엔터티 · N:M 관계 설계</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 설계는 3단계예요. ① 개념적(말/그림으로 뭐가 필요한지 정리) → ② 논리적(테이블·컬럼 구체화) → ③ 물리적(실제 DB에 맞춰 타입·인덱스까지 결정).</div></div>
+  <h4>3단계 설계 흐름</h4>
+<table class="t"><thead><tr>
+<th>구분</th>
+<th>개념적 모델링</th>
+<th>논리적 모델링</th>
+<th>물리적 모델링</th>
+</tr></thead><tbody>
+<tr><td>독립성</td><td>DBMS 독립적</td><td>DBMS 독립적</td><td>특정 DBMS에 최적화</td></tr>
+<tr><td>활동</td><td>엔터티 식별, 관계 정의, ERD 작성</td><td>엔터티→테이블 매핑, PK/FK, 정규화</td><td>데이터타입/인덱스/파티셔닝/Lock전략 결정</td></tr>
+<tr><td>산출물</td><td>ERD 다이어그램</td><td>논리 ERD, 데이터 사전</td><td>물리 스키마, DDL</td></tr>
+</tbody></table>
+<h4>물리적 모델링 핵심 항목</h4>
+<ul class="b">
+<li>금액: NUMERIC(10,2) — 부동소수점 오류 방지 / 시간: TIMESTAMPTZ(타임존 포함) — 글로벌 서비스 필수</li>
+<li>문자열: VARCHAR(n) vs TEXT — PostgreSQL은 TEXT 길이 제한 없음</li>
+<li>인덱스: WHERE/JOIN/ORDER BY 컬럼에 추가 — B-Tree(기본), Hash(등호만), GIN(JSONB/배열), GiST(GIS)</li>
+<li>파티셔닝: 연도/지역별 분할 저장 / 클러스터형 vs 비클러스터형 인덱스 / 저장공간 압축·아카이빙</li>
+<li>트랜잭션 로드 테스트: 낙관적/비관적 Lock 전략</li>
+</ul>
+<table class="t"><thead><tr>
+<th>구분</th>
+<th>낙관적 Lock (Optimistic)</th>
+<th>비관적 Lock (Pessimistic)</th>
+</tr></thead><tbody>
+<tr><td>가정</td><td>충돌이 드물다</td><td>충돌이 빈번하다</td></tr>
+<tr><td>구현</td><td>version/updated_at 컬럼으로 충돌 감지</td><td>SELECT ... FOR UPDATE [NOWAIT]</td></tr>
+<tr><td>적합</td><td>읽기 위주, 긴 트랜잭션(사용자 세션)</td><td>고충돌 환경, 은행 이체, 좌석 예매, 짧은 트랜잭션</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">약한 엔티티 &amp; N:M 교차 테이블 DDL</div><pre><code>-- 약한 엔티티: OrderItem (Order 없이 존재 불가)
+CREATE TABLE order_items (
+  order_id INT REFERENCES orders(id) ON DELETE CASCADE,
+  item_no SMALLINT NOT NULL,           -- 부분키
+  quantity INT NOT NULL CHECK (quantity &gt; 0),
+  PRIMARY KEY (order_id, item_no) );   -- 복합 PK
+-- N:M 교차 테이블: 학생-강좌 수강신청
+CREATE TABLE enrollments (
+  student_id BIGINT REFERENCES students(id) ON DELETE CASCADE,
+  course_id INT REFERENCES courses(id) ON DELETE CASCADE,
+  PRIMARY KEY (student_id, course_id) );
+-- 양방향 조회 최적화 인덱스
+CREATE INDEX idx_enroll_course ON enrollments (course_id, student_id);</code></pre></div>
+</section>
+
+
+<section class="sec" id="s5" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">5.</span> 스키마 전략 &amp; RDBMS 비교</h2>
+  </div>
+  <p class="subtitle">멀티 프로젝트 설계 · MySQL · PostgreSQL · Oracle · Cloud DB</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: MySQL·PostgreSQL·Oracle·SQL Server는 각자 장단점 있는 자동차 브랜드 같은 거예요. 이 교재는 <b>PostgreSQL</b> 기준으로 진행됩니다.</div></div>
+  <h4>멀티테넌시 3가지 패턴 (스키마 기반 멀티 프로젝트 설계)</h4>
+<ul class="b">
+<li><b>Silo Model</b>: 테넌트별 완전 독립 DB — 보안 최강, 운영비용 최대</li>
+<li><b>Pool Model</b>: 단일 DB + tenant_id 컬럼 — 운영 단순, 데이터 혼재</li>
+<li><b>Bridge Model(PostgreSQL 권장)</b>: 단일 인스턴스 + 테넌트별 스키마 분리 — 물리적 자원 효율, 스키마 단위 접근제어/버전관리, 프로젝트별 독립 인덱스/파티셔닝 전략 가능</li>
+</ul>
+<h4>주요 RDBMS 비교</h4>
+<table class="t"><thead><tr>
+<th>DBMS</th>
+<th>특징</th>
+<th>장점</th>
+<th>단점</th>
+</tr></thead><tbody>
+<tr><td>MySQL/MariaDB</td><td>LAMP스택 핵심, InnoDB(트랜잭션/FK/MVCC)</td><td>배우기 쉬움, 운영부담 적음</td><td>대규모 확장성 한계, 고급기능 부족</td></tr>
+<tr><td>PostgreSQL</td><td>표준SQL 호환 최고, JSONB/PostGIS/사용자정의함수</td><td>복잡쿼리·GIS·JSON 강점, 오픈소스+엔터프라이즈급</td><td>운영 난이도·학습곡선 있음</td></tr>
+<tr><td>Oracle</td><td>RAC(고가용성), Data Guard(재해복구)</td><td>금융/공공/글로벌 신뢰도, 복잡 트랜잭션 안정</td><td>비용 매우 비쌈, 폐쇄적</td></tr>
+<tr><td>SQL Server</td><td>MS 생태계 통합, OLAP/BI 강점</td><td>PowerBI 등 완벽 연계</td><td>Windows 종속적</td></tr>
+</tbody></table>
+<h4>[참고] ANSI SQL:2016</h4>
+<ul class="b">
+<li>ANSI SQL:2016(=ISO/IEC 9075:2016) — 모든 DBMS가 따라야 할 공통 규격</li>
+<li>ANSI SQL로 작성하면 이식성(Portability) 좋음: SELECT/JOIN/GROUP BY/HAVING/CASE WHEN</li>
+<li>Non-ANSI 예: LIMIT(MySQL) vs TOP(SQL Server) — DB마다 문법 다름</li>
+<li>이식성 중요하면 ANSI SQL+호환함수 통일, DB고정 배치/리포트면 고유함수 사용해도 OK. ORM(JPA 등)이 차이를 자동 흡수</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s6" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">6.</span> SQL 기초 — DDL</h2>
+  </div>
+  <p class="subtitle">CREATE DATABASE · CREATE TABLE · ALTER · 데이터 타입 · 제약조건</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: DDL은 테이블의 '뼈대'를 만드는 명령(CREATE, ALTER). 어떤 칸(컬럼)에 어떤 종류(타입)의 값이 들어갈지 정하는 단계예요.</div></div>
+  <div class="sqlbox"><div class="sqlhead">CREATE DATABASE — DBMS별 문법 비교</div><pre><code>-- PostgreSQL (권장)
+CREATE DATABASE skala_db WITH ENCODING='UTF8' LC_COLLATE='en_US.UTF-8'
+  LC_CTYPE='en_US.UTF-8' TEMPLATE=template0;
+\c skala_db
+CREATE SCHEMA app;  CREATE SCHEMA audit;
+SET search_path = app, public;
+-- MySQL/MariaDB
+CREATE DATABASE skala_db CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+-- Oracle (DBA 수행, 사용자=스키마 개념)
+CREATE USER skala_user IDENTIFIED BY "StrongPW1!" DEFAULT TABLESPACE users;
+GRANT CREATE SESSION, CREATE TABLE, CREATE SEQUENCE TO skala_user;</code></pre></div>
+<div class="note">UTF-8 및 콜레이션은 처음부터 올바르게! 나중에 바꾸면 전체 데이터 재변환 필요</div>
+<div class="sqlbox"><div class="sqlhead">CREATE TABLE 표준 뼈대 (PostgreSQL)</div><pre><code>-- PostgreSQL
+CREATE TABLE products (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- SERIAL 대신 최신 표준
+  name VARCHAR(200) NOT NULL,
+  price NUMERIC(10,2) NOT NULL CHECK (price &gt;= 0),
+  attrs JSONB,                          -- 강력한 JSONB 연산/인덱스
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_products_attrs_color ON products ((attrs-&gt;&gt;'color'));</code></pre></div>
+<h4>데이터 타입 차이 핵심 정리</h4>
+<table class="t"><thead><tr>
+<th>타입</th>
+<th>MySQL</th>
+<th>PostgreSQL</th>
+<th>SQL Server</th>
+<th>Oracle</th>
+</tr></thead><tbody>
+<tr><td>정수/식별자</td><td>INT AUTO_INCREMENT</td><td>GENERATED..AS IDENTITY / SERIAL</td><td>BIGINT IDENTITY(1,1)</td><td>IDENTITY(12c+)/SEQUENCE</td></tr>
+<tr><td>문자열</td><td>VARCHAR/TEXT류</td><td>VARCHAR(n), TEXT(제한없음)</td><td>VARCHAR/NVARCHAR(MAX)</td><td>VARCHAR2, CLOB</td></tr>
+<tr><td>날짜시간</td><td>DATETIME/TIMESTAMP</td><td>TIMESTAMPTZ, now()</td><td>DATETIME2, SYSUTCDATETIME()</td><td>TIMESTAMP WITH TIME ZONE</td></tr>
+<tr><td>불리언</td><td>TINYINT(1) 동의어</td><td>BOOLEAN(진짜)</td><td>BIT</td><td>없음 → NUMBER(1)+CHECK</td></tr>
+<tr><td>JSON</td><td>JSON(8+)</td><td>JSONB(강력)/JSON(원문)</td><td>NVARCHAR+OPENJSON</td><td>12c~ IS JSON, 21c~ JSON타입</td></tr>
+</tbody></table>
+<h4>이식성(Portable SQL) 팁</h4>
+<ul class="b">
+<li>타입은 표준/보편형(INTEGER, NUMERIC(p,s), VARCHAR(n), TIMESTAMP) 중심으로</li>
+<li>예약어/식별자 따옴표 지양, 스네이크케이스 소문자 권장</li>
+<li>CHECK/ENUM 남용 금지 — 규칙 변경 시 스키마 변경 불가 → Lookup 테이블 + FK로 대체</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">ALTER TABLE — 운영 주의사항</div><pre><code>-- 컬럼 추가 (일반적으로 안전)
+ALTER TABLE students ADD COLUMN phone VARCHAR(20);
+-- 인덱스 생성 (운영 중 잠금 없이) — CONCURRENTLY: PostgreSQL 전용
+CREATE INDEX CONCURRENTLY idx_students_grade ON students (grade);
+-- TRUNCATE vs DELETE
+TRUNCATE TABLE temp_data; -- 빠름, 자동커밋, 트리거 미실행
+DELETE FROM temp_data;    -- 느림, 롤백 가능, 트리거 실행, WHERE 가능
+-- 컬럼 삭제(CASCADE: 의존 뷰/인덱스 함께 삭제)
+ALTER TABLE students DROP COLUMN IF EXISTS phone CASCADE;</code></pre></div>
+<div class="cp"><div class="cphead">✔ Checkpoint</div><ul><li>운영 중 DDL 변경(대용량 테이블): pt-online-schema-change(MySQL), pg_repack(PostgreSQL)</li></ul></div>
+</section>
+
+
+<section class="sec" id="s7" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">7.</span> SQL 기초 — DML</h2>
+  </div>
+  <p class="subtitle">SELECT · INSERT · UPDATE · DELETE · 함수 · CASE WHEN</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: DML은 실제 데이터를 넣고(INSERT)·고치고(UPDATE)·지우고(DELETE)·찾는(SELECT) 명령이에요. 실무에서 압도적으로 제일 많이 씁니다.</div></div>
+  <div class="sqlbox"><div class="sqlhead">INSERT / UPDATE / DELETE 기본 패턴</div><pre><code>INSERT INTO students (student_no, name, email, major_id, grade)
+VALUES ('2025001', '홍길동', 'hong@skala.ai', 1, 1);
+UPDATE students SET grade = grade + 1, updated_at = now()
+ WHERE enrolled = TRUE AND grade &lt; 4;   -- WHERE 필수! 없으면 전체 행 수정
+DELETE FROM enrollments WHERE student_id IN (SELECT id FROM students WHERE enrolled=FALSE);</code></pre></div>
+<div class="note">MySQL/PostgreSQL 모두 기본 autocommit ON. 대용량 DELETE는 LIMIT+루프로 나눠 처리 권장</div>
+<div class="sqlbox"><div class="sqlhead">SELECT 논리적 실행 순서</div><pre><code>SELECT s.student_no, s.name, m.name AS major_name,
+       CASE s.grade WHEN 1 THEN '신입생' WHEN 4 THEN '졸업반' ELSE s.grade||'학년' END AS grade_label
+FROM students s
+  JOIN majors m ON m.id = s.major_id      -- 2. JOIN
+WHERE s.enrolled = TRUE AND s.grade BETWEEN 1 AND 4   -- 3. 필터(집계 전)
+ORDER BY s.grade DESC, s.name ASC
+LIMIT 20 OFFSET 0;
+-- 논리적 실행순서(작성순서와 다름!): FROM→JOIN→WHERE→GROUP BY→HAVING→SELECT→ORDER BY→LIMIT</code></pre></div>
+<div class="note">WHERE절에서 SELECT절 별칭(alias) 사용 불가 (WHERE가 SELECT보다 먼저 처리됨) — ORDER BY에서만 별칭 사용 가능</div>
+<h4>WHERE 절 조건 패턴</h4>
+<table class="t"><thead><tr>
+<th>조건 패턴</th>
+<th>예시</th>
+<th>비고</th>
+</tr></thead><tbody>
+<tr><td>범위/목록</td><td>BETWEEN 2 AND 4 / IN (1,3,5)</td><td>BETWEEN은 양끝 포함</td></tr>
+<tr><td>LIKE prefix</td><td>name LIKE '김%'</td><td>인덱스 사용 가능</td></tr>
+<tr><td>LIKE infix</td><td>name LIKE '%길%'</td><td>인덱스 미사용! 대용량엔 전문검색 인덱스 필요</td></tr>
+<tr><td>NULL</td><td>IS NULL / IS NOT NULL</td><td>= NULL(X), NULL=NULL→UNKNOWN</td></tr>
+<tr><td>우선순위</td><td>NOT > AND > OR</td><td>괄호로 명확히 표현</td></tr>
+</tbody></table>
+<h4>자주 쓰는 함수 (문자열/날짜/NULL)</h4>
+<ul class="b">
+<li>COALESCE(a,b,c): 첫 non-NULL 반환 — SQL 표준(모든 DBMS) / NVL: Oracle 전용 / ISNULL: SQL Server 전용</li>
+<li>NULLIF(10,10)=NULL(같으면 NULL), NULLIF(10,20)=10(다르면 첫값)</li>
+<li>날짜: DATE_TRUNC('month', now()), now() - INTERVAL '30 days', TO_CHAR(now(),'YYYY-MM-DD')</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s8" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">8.</span> 종합실습 – 1</h2>
+  </div>
+  <p class="subtitle">학사관리시스템 DB 설계 → 구축 → 조회</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 지금까지 배운 걸 가지고 처음부터 끝까지 직접 손으로 DB 하나를 만들어보는 실습이에요.</div></div>
+  <h4>실습 방향</h4>
+<ul class="b">
+<li>PostgreSQL 환경 구성 및 연결 → 학사관리시스템 ERD 설계 → DDL 작성(제약조건 포함) → DML(10건 이상) → WHERE/함수/CASE WHEN 조회 → 수강신청 교차테이블 JOIN 조회</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">PostgreSQL 설치 (터미널 기준, Homebrew)</div><pre><code>brew install postgresql@17
+brew services start postgresql@17
+psql postgres
+postgres=# ALTER USER (…) WITH PASSWORD '원하는비밀번호';  -- 필수!
+postgres=# \q
+psql postgres -U (계정) -W</code></pre></div>
+<h4>제출물</h4>
+<ul class="b">
+<li>ERD: 범례 추가, 연결관계 선 겹침 금지</li>
+<li>리포트(PDF): 요구사항(설계방향), 접속 결과 화면, 문항별 SQL문+결과화면 (항목 누락 시 감점)</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s9" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">9.</span> Day 1 핵심 복습 &amp; DBMS 생태계</h2>
+  </div>
+  <p class="subtitle">DDL/DML 정리 · DBMS vs DW vs Data Mining · MSA 연동</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 1일차 내용 정리 + 실제 서비스에서 DB가 Kafka·Redis 같은 다른 시스템과 어떻게 협업하는지 보는 파트예요.</div></div>
+  <h4>이전 내용 빠른 복습</h4>
+<ul class="b">
+<li>DB개요: 파일시스템 한계→DBMS등장 / ACID 4원칙 / WAL(로그먼저→데이터반영→장애복구) / Isolation(RC→RR→Serializable) / Dirty·NonRepeatable·Phantom Read</li>
+<li>관계형모델: 테이블·PK·FK·UK·관계(1:1/1:N/N:M) / 정규화 1NF~BCNF(부분종속2NF, 이행종속3NF, 비후보키결정자BCNF)</li>
+<li>ERD: Entity·Attribute·Relationship / IE표기법(까마귀발) / 개념→논리→물리 3단계</li>
+<li>DDL: CREATE TABLE·제약조건·데이터타입/ALTER TABLE/DBMS별 차이, PK 생성방식 차이</li>
+<li>DML: SELECT 실행순서(FROM→WHERE→GROUP→HAVING→SELECT→ORDER)/INSERT·UPDATE·DELETE/NULL 주의(=NULL(X)→IS NULL(O))</li>
+</ul>
+<h4>DBMS vs Data Warehouse vs Data Mining</h4>
+<table class="t"><thead><tr>
+<th>구분</th>
+<th>DBMS</th>
+<th>Data Warehouse</th>
+<th>Data Mining</th>
+</tr></thead><tbody>
+<tr><td>목적</td><td>실시간 트랜잭션 처리(OLTP)</td><td>분석용 데이터 통합 저장(OLAP)</td><td>패턴/지식 발견</td></tr>
+<tr><td>데이터</td><td>최신 상태, 정규화</td><td>이력 포함, 반정규화(스타스키마)</td><td>DW/DB에서 추출한 데이터</td></tr>
+</tbody></table>
+<h4>MSA 환경에서 DB 연동 — Kafka / Elasticsearch / Redis</h4>
+<ul class="b">
+<li><b>Kafka 연동</b>: 비동기 메시징, DB 변경(Event Sourcing)을 Topic으로 전파 → 다른 MSA 서비스 구독. Kafka 전송 전 DB COMMIT 완료 필요. Schema Registry로 스키마 호환성 관리</li>
+<li><b>Elasticsearch 연동</b>: 빠른 검색/로그분석, DB→Logstash/Debezium→ES 동기화(CDC). ES는 Eventually Consistent — 실시간 정합성 보장 불가</li>
+<li><b>Redis 연동</b>: 캐시(Cache-Aside/Write-Through), 세션, Pub/Sub, Rate Limiting. 캐시 히트율 90%+ 목표, Cache Stampede 방지(Lock/Jitter)</li>
+</ul>
+</section>
+
+
+<div class="quiz-wrap" id="quiz-day1">
+  <h2>✅ Day 1 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="1">0 / 7 정답</div>
+  
+            <div class="quiz-q" data-qid="d1q0" data-type="ox" data-answer="true">
+              <p class="quiz-qtext"><span class="qtype">OX</span>ACID의 I는 Isolation(격리성)을 의미한다.</p>
+              <div class="quiz-opts">
+                <button class="quiz-opt" data-val="true">O (맞다)</button>
+                <button class="quiz-opt" data-val="false">X (틀리다)</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d1q1" data-type="ox" data-answer="false">
+              <p class="quiz-qtext"><span class="qtype">OX</span>기본키(PK)는 NULL 값을 허용한다.</p>
+              <div class="quiz-opts">
+                <button class="quiz-opt" data-val="true">O (맞다)</button>
+                <button class="quiz-opt" data-val="false">X (틀리다)</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d1q2" data-type="ox" data-answer="false">
+              <p class="quiz-qtext"><span class="qtype">OX</span>WAL은 데이터 파일을 먼저 쓰고, 로그는 나중에 기록하는 방식이다.</p>
+              <div class="quiz-opts">
+                <button class="quiz-opt" data-val="true">O (맞다)</button>
+                <button class="quiz-opt" data-val="false">X (틀리다)</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d1q3" data-type="mc" data-answer="무조건적인 조회 성능 향상">
+              <p class="quiz-qtext"><span class="qtype">객관식</span>다음 중 정규화의 '직접적인' 목적이 아닌 것은?</p>
+              <div class="quiz-opts"><button class="quiz-opt" data-val="데이터 중복 최소화">데이터 중복 최소화</button><button class="quiz-opt" data-val="이상현상(Anomaly) 방지">이상현상(Anomaly) 방지</button><button class="quiz-opt" data-val="무조건적인 조회 성능 향상">무조건적인 조회 성능 향상</button><button class="quiz-opt" data-val="데이터 무결성 향상">데이터 무결성 향상</button></div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d1q4" data-type="mc" data-answer="학생 ↔ 성적">
+              <p class="quiz-qtext"><span class="qtype">객관식</span>다음 중 1:N 관계의 예시로 가장 알맞은 것은?</p>
+              <div class="quiz-opts"><button class="quiz-opt" data-val="학생 ↔ 학생증">학생 ↔ 학생증</button><button class="quiz-opt" data-val="학생 ↔ 성적">학생 ↔ 성적</button><button class="quiz-opt" data-val="학과 ↔ 학과">학과 ↔ 학과</button></div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d1q5" data-type="short" data-accept='["FK", "fk"]'>
+              <p class="quiz-qtext"><span class="qtype">단답형</span>다른 테이블의 PK를 참조하는 컬럼을 무엇이라 하는가? (영문 약자)</p>
+              <div class="quiz-short">
+                <input type="text" placeholder="정답 입력...">
+                <button class="quiz-check">확인</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d1q6" data-type="short" data-accept='["ACID", "acid"]'>
+              <p class="quiz-qtext"><span class="qtype">단답형</span>트랜잭션이 지켜야 할 4대 원칙을 묶어 부르는 약자는?</p>
+              <div class="quiz-short">
+                <input type="text" placeholder="정답 입력...">
+                <button class="quiz-check">확인</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+</div>
+<div class="day-header" id="day2"><h1>Day 2 — SQL 중급/고급 & Window Function</h1><p>집계/JOIN/서브쿼리/CTE/Window Function — SQL의 핵심 심화</p></div>
+
+<section class="sec" id="s10" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">10.</span> SQL 중급 — 집계 &amp; 그룹화</h2>
+  </div>
+  <p class="subtitle">집계함수, GROUP BY, HAVING, ROLLUP, CUBE, FILTER</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: GROUP BY는 '학과별로 묶어서 평균 내줘' 같은 명령이에요. 엑셀 피벗테이블이랑 비슷하다고 생각하면 편해요.</div></div>
+  <h4>집계 함수 핵심 5가지</h4>
+<ul class="b">
+<li>COUNT(*): NULL포함 전체 / COUNT(col): NULL제외 / COUNT(DISTINCT col): 고유값 개수</li>
+<li>SUM/AVG: NULL 자동 제외. <b>AVG(NULL)=NULL</b> (0이 아님에 주의!)</li>
+<li>MIN/MAX: 문자열도 가능(알파벳/유니코드 순)</li>
+<li>FILTER(PostgreSQL 전용): COUNT(*) FILTER (WHERE score>=80) — 다른 DBMS는 SUM(CASE WHEN...THEN 1 ELSE 0 END)</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">GROUP BY / HAVING</div><pre><code>SELECT department_id, COUNT(*) AS emp_count, ROUND(AVG(salary),0) AS avg_salary
+FROM employees
+WHERE hire_date &gt;= '2020-01-01'   -- 집계 전 행 필터 (WHERE)
+GROUP BY department_id
+HAVING COUNT(*) &gt;= 3 AND AVG(salary) &gt;= 5000   -- 집계 후 그룹 필터 (HAVING)
+ORDER BY avg_salary DESC;
+-- FILTER 절
+SELECT COUNT(*) AS total,
+ COUNT(*) FILTER (WHERE true_label = pred_label) AS correct,
+ ROUND(COUNT(*) FILTER (WHERE true_label=pred_label)::NUMERIC / COUNT(*), 3) AS accuracy
+FROM prediction_results;</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">ROLLUP / CUBE — 다차원 소계</div><pre><code>-- ROLLUP: 계층적 소계 (지역별 → 전체합), 빠름
+SELECT region, product, SUM(amount) AS total FROM sales_summary GROUP BY ROLLUP(region, product);
+-- 결과: (East,A,100),(East,B,150),(East,NULL,250)... ,(NULL,NULL,500)
+-- CUBE: 모든 조합 소계 (지역+상품+전체), 느림
+SELECT region, product, SUM(amount) FROM sales_summary GROUP BY CUBE(region, product);
+-- GROUPING 함수로 소계행에 라벨 부여
+SELECT CASE WHEN GROUPING(region)=1 THEN '전체' ELSE region END AS region_label,
+ SUM(amount) FROM sales_summary GROUP BY ROLLUP(region, product);</code></pre></div>
+<h4>집계 쿼리 성능 최적화 포인트</h4>
+<ul class="b">
+<li>SELECT에 GROUP BY 키 이외 컬럼 포함 금지 (MySQL ONLY_FULL_GROUP_BY 모드에서 에러)</li>
+<li><b>OFFSET 페이지네이션 함정</b>: LIMIT 10 OFFSET 990 → DB가 990개 읽고 버림 = O(N). 해결: Cursor/Keyset 방식 WHERE id > :last_id</li>
+<li>ORDER BY + 인덱스: INDEX(dept_id, salary DESC)면 Sort 노드 제거 가능</li>
+<li>통계 테이블 전략: 자주 쓰는 집계값을 별도 테이블에 미리 계산(트리거 갱신) 또는 Materialized View + 주기적 REFRESH</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s11" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">11.</span> SQL 고급 — JOIN 알고리즘</h2>
+  </div>
+  <p class="subtitle">NL·Hash·Merge·BNL/BKA · DBMS별 엔진 비교</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: JOIN을 DB가 내부적으로 어떻게 처리하는지예요. 몰라도 쿼리는 짤 수 있지만, 알면 '왜 이 쿼리가 느린지' 이해하는 데 도움돼요.</div></div>
+  <table class="t"><thead><tr>
+<th>알고리즘</th>
+<th>동작 방식</th>
+<th>적합한 경우</th>
+</tr></thead><tbody>
+<tr><td>Nested Loop Join(NLJ)</td><td>외부 테이블 행마다 내부 테이블 탐색</td><td>외부 집합 작을 때 / 내부 인덱스 있을 때</td></tr>
+<tr><td>Hash Join(HJ)</td><td>작은쪽 해시테이블, 큰쪽 프로브탐색</td><td>대용량 등가 조인, 인덱스 없을 때</td></tr>
+<tr><td>Sort-Merge Join(SMJ)</td><td>양쪽 정렬 후 병합 매칭</td><td>이미 정렬된 대용량, 범위/비등가 조인</td></tr>
+<tr><td>BNL/BKA(MySQL)</td><td>여러 행을 버퍼에 모아 배치 조회</td><td>join_buffer_size로 튜닝</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">실행계획으로 JOIN 알고리즘 확인</div><pre><code>EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+SELECT s.name, c.title, e.score FROM students s
+ JOIN enrollments e ON e.student_id = s.id
+ JOIN courses c ON c.id = e.course_id
+WHERE s.grade = 3;
+-- Hash Join (cost=12.5..45.8 rows=200) (actual time=0.5..2.3 rows=185)
+-- Buffers: shared hit=12 read=5   ← hit=메모리(빠름), read=디스크(느림)
+-- -&gt; Seq Scan on enrollments  ← Full Scan, 인덱스 검토 필요
+-- -&gt; Index Scan on students   ← 인덱스 사용 중
+-- MySQL 8.0.18+: Hash Batches &gt; 1 → work_mem 부족 신호(Spill 발생)</code></pre></div>
+<h4>JOIN 성능 튜닝 체크리스트</h4>
+<ul class="b">
+<li>FK 컬럼에 반드시 인덱스! (ON DELETE CASCADE 대상 포함)</li>
+<li>작은×큰 테이블+인덱스 → Nested Loop / 대형×대형 → Hash</li>
+<li>ON 조건 누락 주의 → 카르테시안 곱(N×M행) 발생</li>
+<li>PostgreSQL: work_mem·hash_mem_multiplier 확인, Hash Batches>1 → Spill 신호</li>
+<li>MySQL: join_buffer_size 설정, 8.0.18+ Hash Join 후보</li>
+<li>SQL Server: tempdb Spill 감지 → 통계 갱신, Adaptive Join(2017+) 활용</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s12" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">12.</span> JOIN 종류 상세</h2>
+  </div>
+  <p class="subtitle">INNER · OUTER · SELF · CROSS · Anti-Join · Semi-Join</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 여러 테이블을 합쳐 보는 여러 방법이에요. INNER=둘 다 있는 것만, LEFT=왼쪽 기준으로 다 보여주고 없으면 빈칸(NULL).</div></div>
+  <table class="t"><thead><tr>
+<th>종류</th>
+<th>설명</th>
+</tr></thead><tbody>
+<tr><td>INNER JOIN</td><td>두 테이블 모두 매칭되는 행만(교집합) — JOIN만 쓰면 기본값</td></tr>
+<tr><td>LEFT OUTER JOIN</td><td>왼쪽 전체 + 오른쪽 없으면 NULL</td></tr>
+<tr><td>RIGHT OUTER JOIN</td><td>오른쪽 전체 + 왼쪽 없으면 NULL (실무에선 LEFT로 방향 바꿔쓰는게 관례)</td></tr>
+<tr><td>FULL OUTER JOIN</td><td>양쪽 모두 보존. MySQL 미지원 → LEFT UNION RIGHT로 우회</td></tr>
+<tr><td>SELF JOIN</td><td>같은 테이블 2개처럼 조인 (직원-상사 계층)</td></tr>
+<tr><td>CROSS JOIN</td><td>카르테시안 곱(N×M) — 의도적으로만 사용</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">Anti-Join 패턴</div><pre><code>-- Anti-Join: 한 번도 수강하지 않은 학생 (3가지 방법)
+-- 1) LEFT JOIN + IS NULL (직관적)
+SELECT s.name FROM student s LEFT JOIN enroll e ON e.student_id=s.id WHERE e.student_id IS NULL;
+-- 2) NOT EXISTS (성능 우수, NULL 안전 - 권장!)
+SELECT s.name FROM student s WHERE NOT EXISTS (SELECT 1 FROM enroll e WHERE e.student_id=s.id);
+-- 3) NOT IN (NULL 함정 주의! 서브쿼리에 NULL 있으면 전체 결과가 빈 집합)
+SELECT s.name FROM student s WHERE s.id NOT IN (SELECT student_id FROM enroll);</code></pre></div>
+<div class="cp"><div class="cphead">✔ Checkpoint</div><ul><li>NOT IN vs NOT EXISTS: NULL 안전성·성능 모두 NOT EXISTS가 우수 → NOT EXISTS 선호</li></ul></div>
+<div class="sqlbox"><div class="sqlhead">실무 활용 패턴</div><pre><code>-- SELF JOIN: 직원-상사 계층
+SELECT e.name AS employee, m.name AS manager
+FROM employees e LEFT JOIN employees m ON m.id = e.manager_id;
+-- 고객별 주문통계 (LEFT JOIN + COALESCE)
+SELECT c.customer_name, COUNT(o.order_id) AS order_count, COALESCE(SUM(o.amount),0) AS total_spent
+FROM customers c LEFT JOIN orders o ON o.customer_id=c.customer_id
+GROUP BY c.customer_id, c.customer_name ORDER BY total_spent DESC;</code></pre></div>
+</section>
+
+
+<section class="sec" id="s13" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">13.</span> 서브쿼리 &amp; 집합 연산자</h2>
+  </div>
+  <p class="subtitle">스칼라·인라인뷰·상관 서브쿼리 · EXISTS·IN·ANY·ALL · UNION·INTERSECT·EXCEPT</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 쿼리 안에 또 쿼리(서브쿼리)를 넣거나, 두 쿼리 결과를 더하고·빼고·겹치는 부분만 찾는(집합연산) 방법이에요.</div></div>
+  <table class="t"><thead><tr>
+<th>유형</th>
+<th>위치</th>
+<th>특징</th>
+</tr></thead><tbody>
+<tr><td>스칼라 서브쿼리</td><td>SELECT 절</td><td>단일값 하나 반환, 행마다 실행 → 성능주의, JOIN 대체 검토</td></tr>
+<tr><td>인라인 뷰</td><td>FROM 절</td><td>임시테이블처럼 사용, 페이지네이션에 자주 사용</td></tr>
+<tr><td>WHERE절 서브쿼리</td><td>WHERE</td><td>비교조건, 단일값(=)/다중행(IN/ANY/ALL/EXISTS)</td></tr>
+<tr><td>상관 서브쿼리</td><td>WHERE 등</td><td>바깥쿼리 컬럼 참조 → 행마다 독립실행, JOIN/CTE로 대체 권장</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">EXISTS / IN / ANY / ALL</div><pre><code>-- EXISTS(효율적, 존재만 확인) vs IN vs NOT EXISTS(권장)
+SELECT name FROM students s WHERE EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id=s.id);
+SELECT name FROM students s WHERE NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id=s.id);
+-- NOT IN의 NULL 함정: 서브쿼리에 NULL 하나라도 있으면 전체 결과가 빈 집합!
+-- ANY: 하나이상 만족(=,&gt;MIN과 동일) / ALL: 모두 만족(=,&gt;MAX와 동일)
+WHERE salary &gt; ANY (SELECT salary FROM employees WHERE dept='HR')
+WHERE salary &gt; ALL (SELECT salary FROM employees WHERE dept='HR')</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">집합 연산자 — UNION / INTERSECT / EXCEPT</div><pre><code>SELECT name FROM students_2024 UNION SELECT name FROM students_2025; -- 합집합(중복제거)
+SELECT ... UNION ALL SELECT ...; -- 합집합(중복포함, 더 빠름 - 정렬/비교 불필요)
+SELECT customer_id FROM orders WHERE ... 2024 INTERSECT SELECT customer_id FROM orders WHERE ... 2025; -- 교집합
+SELECT student_id FROM enrollments WHERE course='DB' EXCEPT SELECT student_id ... WHERE course='Algorithm'; -- 차집합(Oracle: MINUS)
+-- MySQL은 INTERSECT/EXCEPT 미지원 → NOT EXISTS/LEFT JOIN + IS NULL로 우회</code></pre></div>
+</section>
+
+
+<section class="sec" id="s14" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">14.</span> CTE · View · Materialized View</h2>
+  </div>
+  <p class="subtitle">WITH · 재귀 CTE · 뷰 활용 전략</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>CTE(WITH절)</b>는 복잡한 쿼리에 임시로 이름 붙여서 마치 테이블처럼 재사용하는 것, <b>View</b>는 자주 쓰는 쿼리를 아예 저장해두고 테이블처럼 불러쓰는 것이에요.</div></div>
+  <div class="sqlbox"><div class="sqlhead">CTE(Common Table Expression) — WITH 절</div><pre><code>WITH dept_avg AS (
+  SELECT dept_id, AVG(salary) AS avg_sal FROM employees GROUP BY dept_id )
+SELECT e.emp_name, e.salary, d.avg_sal, e.salary-d.avg_sal AS diff
+FROM employees e JOIN dept_avg d ON d.dept_id=e.dept_id
+WHERE e.salary &gt; d.avg_sal ORDER BY diff DESC;</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">재귀 CTE — 계층형 데이터 탐색 (조직도, 카테고리 트리)</div><pre><code>WITH RECURSIVE org_tree AS (
+  -- 기저 단계(Anchor)
+  SELECT id, emp_name, manager_id, 1 AS depth, emp_name::TEXT AS path
+  FROM employees WHERE manager_id IS NULL
+  UNION ALL
+  -- 재귀 단계
+  SELECT e.id, e.emp_name, e.manager_id, t.depth+1, t.path || ' &gt; ' || e.emp_name
+  FROM employees e JOIN org_tree t ON t.id = e.manager_id
+  WHERE t.depth &lt; 10   -- ← 무한재귀 방지! 항상 필요
+)
+SELECT depth, REPEAT(' ', depth-1) || emp_name AS indented_name, path FROM org_tree ORDER BY path;</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">View / Materialized View</div><pre><code>-- 일반 View: 조회할 때마다 쿼리 실행(항상 최신)
+CREATE OR REPLACE VIEW v_student_dashboard AS
+SELECT s.id, COUNT(e.id) AS course_count, ROUND(AVG(e.score),2) AS avg_score
+FROM students s LEFT JOIN enrollments e ON e.student_id=s.id GROUP BY s.id;
+-- Materialized View(PostgreSQL): 결과를 디스크에 저장 → 빠른 조회, 인덱스 생성 가능
+CREATE MATERIALIZED VIEW mv_monthly_sales AS
+SELECT DATE_TRUNC('month', order_date) AS month, SUM(amount) AS total_sales FROM orders GROUP BY 1;
+CREATE INDEX ON mv_monthly_sales (month);
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_monthly_sales; -- 잠금 없이 갱신 (자동 아님! pg_cron 등 필요)</code></pre></div>
+<div class="cp"><div class="cphead">✔ Checkpoint</div><ul><li>CTE: 가독성↑, 재사용 가능, 재귀쿼리 지원 → 서브쿼리 복잡하면 CTE로 분해</li>
+<li>Materialized View 데이터 갱신은 자동이 아님 — 스케줄러 또는 pg_cron 필요</li>
+<li>View 활용: 권한제어(민감컬럼 숨기기) / 복잡쿼리 재사용 / 인터페이스 안정화</li></ul></div>
+</section>
+
+
+<section class="sec" id="s15" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">15.</span> Windows Function – 분석 함수</h2>
+  </div>
+  <p class="subtitle">ROW_NUMBER · RANK · DENSE_RANK · NTILE · LAG · LEAD · 누적합 · 이동평균 (+부록: LATERAL, UPSERT, JSONB, RAG 등)</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: GROUP BY랑 비슷한데 그룹으로 묶어도 <b>원래 행이 사라지지 않는 것</b>이 핵심 차이예요. 순위 매기기(RANK), 전월 대비(LAG) 같은 데 씁니다. 이 세션은 분량이 많은데 뒤쪽 '[참고]'는 실무 심화 부록이라 처음엔 앞부분(순위/LAG/누적합)만 확실히 이해해도 충분해요.</div></div>
+  <table class="t"><thead><tr>
+<th></th>
+<th>GROUP BY</th>
+<th>Window Function</th>
+</tr></thead><tbody>
+<tr><td>동작</td><td>그룹으로 집계 → 행 수 줄어듦(개별행 소실)</td><td>집계하면서도 원래 행 유지 → 행별결과+집계값 동시</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">기본 문법 — PARTITION BY(분석단위구분) · ORDER BY(윈도우내정렬) · ROWS/RANGE(집계범위 프레임)</div><pre><code>함수명() OVER ([PARTITION BY 컬럼] [ORDER BY 컬럼] [ROWS/RANGE 프레임])</code></pre></div>
+<h4>핵심 함수 분류</h4>
+<ul class="b">
+<li><b>순위함수</b>: ROW_NUMBER(고유번호 1,2,3,4) / RANK(동점시 같은순위,건너뜀 1,2,2,4) / DENSE_RANK(동점시 같은순위,연속 1,2,2,3) / NTILE(n)(n개그룹균등분할)</li>
+<li><b>이동/비교함수</b>: LAG(col,n) / LEAD(col,n) / FIRST_VALUE / LAST_VALUE</li>
+<li><b>집계Window</b>: SUM/AVG/COUNT/MIN/MAX OVER() — 누적합, 이동평균</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">ROW_NUMBER / RANK / DENSE_RANK 비교</div><pre><code>SELECT region, month, revenue,
+ ROW_NUMBER() OVER (PARTITION BY region ORDER BY revenue DESC) AS row_num,
+ RANK()       OVER (PARTITION BY region ORDER BY revenue DESC) AS rank_r,
+ DENSE_RANK() OVER (PARTITION BY region ORDER BY revenue DESC) AS d_rank,
+ NTILE(3)     OVER (PARTITION BY region ORDER BY revenue DESC) AS tier
+FROM sales;</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">LAG/LEAD — 전월 대비 증감 (NULLIF로 0나누기 방지)</div><pre><code>SELECT region, month, revenue,
+ LAG(revenue,1) OVER (PARTITION BY region ORDER BY month) AS prev_month_sales,
+ ROUND((revenue - LAG(revenue,1) OVER (PARTITION BY region ORDER BY month))
+   / NULLIF(LAG(revenue,1) OVER (PARTITION BY region ORDER BY month),0) * 100, 1) AS mom_growth_pct,
+ LEAD(revenue,1) OVER (PARTITION BY region ORDER BY month) AS next_month_sales
+FROM sales;
+-- 활용: MoM/YoY(LAG 12개월전) 성장률, 연속 이벤트 감지, 대기시간 계산</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">누적합 / 이동평균 — ROWS vs RANGE 프레임</div><pre><code>-- 누적합
+SUM(revenue) OVER (PARTITION BY region ORDER BY month
+  ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cumulative_revenue
+-- 3개월 이동평균
+AVG(revenue) OVER (PARTITION BY region ORDER BY month
+  ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS ma_3month
+-- ROWS: 물리적 행 개수 기준(정확) / RANGE: 논리적 값(ORDER BY 값 같으면 모두 포함) 기준
+-- 프레임 키워드: UNBOUNDED PRECEDING / N PRECEDING / CURRENT ROW / N FOLLOWING / UNBOUNDED FOLLOWING</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">실무 패턴 — TOP-N per Group / LATERAL JOIN / Gap&amp;Island</div><pre><code>-- TOP-N per Group (학과별 성적 상위 3명) — 3가지 방법
+-- 1) Window Function (가장 추천)
+SELECT * FROM ( SELECT s.name, e.score,
+  ROW_NUMBER() OVER (PARTITION BY s.major_id ORDER BY e.score DESC) AS rn
+  FROM students s JOIN enrollments e ON e.student_id=s.id ) ranked WHERE rn&lt;=3;
+-- 2) LATERAL JOIN (PostgreSQL, 행별 독립 서브쿼리)
+SELECT m.name, top3.name, top3.score FROM majors m
+CROSS JOIN LATERAL ( SELECT s.name, e.score FROM students s JOIN enrollments e ON e.student_id=s.id
+  WHERE s.major_id=m.id ORDER BY e.score DESC LIMIT 3 ) top3;
+-- Gap &amp; Island: 연속 구간 찾기 (연속 로그인 등)
+SELECT MIN(login_date), MAX(login_date), COUNT(*) FROM (
+  SELECT login_date, login_date - ROW_NUMBER() OVER (ORDER BY login_date)*INTERVAL '1 day' AS grp
+  FROM user_logins ) t GROUP BY grp;</code></pre></div>
+<h4>[참고] 심화 패턴 모음</h4>
+<ul class="b">
+<li><b>UPSERT</b>(PostgreSQL): INSERT ... ON CONFLICT (col) DO UPDATE SET x=EXCLUDED.x — MySQL은 ON DUPLICATE KEY UPDATE, SQL Server는 MERGE</li>
+<li><b>STRING_AGG/ARRAY_AGG/JSON_AGG</b>: 여러 행을 문자열/배열/JSON으로 집계 (API 응답 생성에 유용)</li>
+<li><b>PIVOT</b>: PostgreSQL/MySQL은 전용 문법 없음 → CASE WHEN 방식으로 구현 (Oracle/SQL Server는 PIVOT 직접 지원)</li>
+<li><b>ON 절 vs WHERE 절</b>(OUTER JOIN): WHERE로 우측테이블 필터링하면 사실상 INNER JOIN이 됨! LEFT JOIN 유지하려면 조건을 ON 절에 추가</li>
+<li><b>CTE MATERIALIZED</b>(PG12+): 여러번 참조되거나 random()/now() 포함 시, 또는 옵티마이저가 잘못된 플랜 선택 시 강제 고정</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">[참고] AI 시대의 DB — pgvector RAG 하이브리드 검색</div><pre><code>-- pgvector 하이브리드 검색 (RAG 패턴) — 벡터 유사도 70% + 키워드 검색 30%
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE TABLE knowledge_base (id BIGSERIAL PRIMARY KEY, content TEXT,
+  embedding VECTOR(1536), search_ts TSVECTOR);
+CREATE INDEX ON knowledge_base USING HNSW (embedding vector_cosine_ops);
+WITH vector_search AS (
+  SELECT id, 1-(embedding &lt;=&gt; $1::VECTOR) AS vec_score FROM knowledge_base
+  ORDER BY embedding &lt;=&gt; $1::VECTOR LIMIT 20),
+keyword_search AS (
+  SELECT id, ts_rank(search_ts, plainto_tsquery('korean',$2)) AS kw_score FROM knowledge_base
+  WHERE search_ts @@ plainto_tsquery('korean',$2))
+SELECT kb.content, COALESCE(vs.vec_score,0)*0.7 + COALESCE(ks.kw_score,0)*0.3 AS hybrid_score
+FROM knowledge_base kb LEFT JOIN vector_search vs ON vs.id=kb.id
+ LEFT JOIN keyword_search ks ON ks.id=kb.id ORDER BY hybrid_score DESC LIMIT 5;</code></pre></div>
+<h4>[참고] JOIN 실수 패턴 및 방지법</h4>
+<table class="t"><thead><tr>
+<th>실수 패턴</th>
+<th>증상</th>
+<th>해결</th>
+</tr></thead><tbody>
+<tr><td>ON 조건 누락</td><td>카르테시안 곱 폭발</td><td>반드시 ON a.id=b.a_id 명시</td></tr>
+<tr><td>OUTER JOIN 후 WHERE 필터</td><td>INNER JOIN으로 변질</td><td>필터를 ON 절에 추가</td></tr>
+<tr><td>1:N 조인 중복 폭발</td><td>COUNT(*) 비정상적으로 큼</td><td>서브쿼리에서 먼저 집계 후 JOIN, 또는 DISTINCT</td></tr>
+<tr><td>NOT IN + NULL</td><td>결과가 항상 빈 집합</td><td>NOT EXISTS로 변경</td></tr>
+</tbody></table>
+</section>
+
+
+<section class="sec" id="s16" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">16.</span> 종합 실습 – 2</h2>
+  </div>
+  <p class="subtitle">종합실습1 + CampusHub — 복합 쿼리 실습 (JOIN+서브쿼리+윈도우함수) / HR DB 느린 쿼리 최적화</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: JOIN + 집계 + 윈도우함수를 섞어서 실전처럼 연습해보는 실습 파트예요.</div></div>
+  <h4>실습 배경 및 방향</h4>
+<ul class="b">
+<li>CampusHub — 복합 쿼리 실습: JOIN(Inner/Left/Right/Full/Workaround) → Self/Cross 확장 → 실무 집계 → ON vs WHERE 차이 → 심화(GROUP BY, Window Function, CTE)</li>
+<li>학사 데이터: student, enroll(학생당 0~2건 수강, 고아 수강 2건 포함) / 캠퍼스스토어: customers, orders(고객당 정확히 6건) / 조직도: emp(CEO 1, 매니저 10, 직원 300)</li>
+</ul>
+<h4>핵심 문항 유형 (25문항)</h4>
+<ul class="b">
+<li>INNER/LEFT/RIGHT/FULL JOIN 조합별 조회, Anti-Join(미수강 학생), 중복제거 목록</li>
+<li>고객별 주문건수/총액, 상위 10명, 모든 직원-매니저 이름(Self Join)</li>
+<li>GROUP BY ROLLUP(major, gpa_tier)로 학과별+전체 소계, GROUPING()으로 라벨링</li>
+<li>WITH RECURSIVE로 조직 계층 경로+깊이, 매니저별 직속 부하 수(direct_reports)</li>
+<li>학과별 GPA 순위 Top3 (ROW_NUMBER, RANK, DENSE_RANK 비교, 서브쿼리/CTE 두 방식 모두)</li>
+<li>LAG()로 이전 수강과목 대비 성적 변화(diff), 학생별 최고/최저점 차이</li>
+</ul>
+<h4>실습2 후반부 — HR DB 느린 쿼리 최적화 (심화)</h4>
+<ul class="b">
+<li>HR DB 느린 쿼리 최적화(느린쿼리→인덱스 추가→개선): 사번검색, 이메일 LOWER() 검색, LIKE 접미사 검색, 정렬+필터 결합 Top100, OR조건 검색</li>
+<li>제출: 리포트(느린 이유+개선방법+Before/After 실행계획 비교), 최소 2개 이상 쿼리 분석</li>
+</ul>
+</section>
+
+
+<div class="quiz-wrap" id="quiz-day2">
+  <h2>✅ Day 2 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="2">0 / 7 정답</div>
+  
+            <div class="quiz-q" data-qid="d2q0" data-type="ox" data-answer="true">
+              <p class="quiz-qtext"><span class="qtype">OX</span>Window Function은 GROUP BY와 달리 원본 행 개수를 그대로 유지한다.</p>
+              <div class="quiz-opts">
+                <button class="quiz-opt" data-val="true">O (맞다)</button>
+                <button class="quiz-opt" data-val="false">X (틀리다)</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d2q1" data-type="ox" data-answer="false">
+              <p class="quiz-qtext"><span class="qtype">OX</span>RANK()는 동점자가 있어도 항상 연속된 순위(1,2,2,3)를 부여한다.</p>
+              <div class="quiz-opts">
+                <button class="quiz-opt" data-val="true">O (맞다)</button>
+                <button class="quiz-opt" data-val="false">X (틀리다)</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d2q2" data-type="ox" data-answer="true">
+              <p class="quiz-qtext"><span class="qtype">OX</span>UNION ALL은 UNION보다 일반적으로 더 빠르다 (중복 제거 과정이 없어서).</p>
+              <div class="quiz-opts">
+                <button class="quiz-opt" data-val="true">O (맞다)</button>
+                <button class="quiz-opt" data-val="false">X (틀리다)</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d2q3" data-type="mc" data-answer="INNER JOIN">
+              <p class="quiz-qtext"><span class="qtype">객관식</span>두 테이블에 '모두' 매칭되는 행만 반환하는 JOIN은?</p>
+              <div class="quiz-opts"><button class="quiz-opt" data-val="LEFT JOIN">LEFT JOIN</button><button class="quiz-opt" data-val="INNER JOIN">INNER JOIN</button><button class="quiz-opt" data-val="CROSS JOIN">CROSS JOIN</button><button class="quiz-opt" data-val="FULL OUTER JOIN">FULL OUTER JOIN</button></div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d2q4" data-type="mc" data-answer="NOT EXISTS">
+              <p class="quiz-qtext"><span class="qtype">객관식</span>NOT IN 대신 NULL 안전성과 성능 때문에 권장되는 대안은?</p>
+              <div class="quiz-opts"><button class="quiz-opt" data-val="NOT EXISTS">NOT EXISTS</button><button class="quiz-opt" data-val="HAVING">HAVING</button><button class="quiz-opt" data-val="LIMIT">LIMIT</button><button class="quiz-opt" data-val="GROUP BY">GROUP BY</button></div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d2q5" data-type="short" data-accept='["STRING_AGG", "string_agg"]'>
+              <p class="quiz-qtext"><span class="qtype">단답형</span>여러 행을 하나의 문자열로 이어붙이는 PostgreSQL 집계 함수는?</p>
+              <div class="quiz-short">
+                <input type="text" placeholder="정답 입력...">
+                <button class="quiz-check">확인</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d2q6" data-type="short" data-accept='["CTE", "cte"]'>
+              <p class="quiz-qtext"><span class="qtype">단답형</span>WITH 절로 만드는, 이름 붙여 재사용하는 임시 결과 집합을 뭐라고 부르는가? (영문 약자)</p>
+              <div class="quiz-short">
+                <input type="text" placeholder="정답 입력...">
+                <button class="quiz-check">확인</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+</div>
+<div class="day-header" id="day3"><h1>Day 3 — 인덱스·튜닝·트랜잭션</h1><p>인덱스 설계, 실행계획, SQL 튜닝, MVCC, Lock, 고급 DB 설계</p></div>
+
+<section class="sec" id="s17" data-day="3">
+  <div class="sec-head">
+    <span class="day-badge day3">Day 3</span>
+    <h2><span class="num">17.</span> 인덱스 설계 및 최적화</h2>
+  </div>
+  <p class="subtitle">B-Tree · Hash · GIN · GiST · BRIN · 복합 인덱스 · 커버링 인덱스</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 책의 '찾아보기(색인)'와 완전히 같은 개념이에요. 인덱스가 없으면 처음부터 끝까지 다 뒤지고(Full Scan), 있으면 바로 찾아갑니다.</div></div>
+  <h4>인덱스 개념 및 트레이드오프</h4>
+<ul class="b">
+<li>인덱스 없음: Table Full Scan = O(N) / 인덱스: B-Tree 탐색 O(log N) — 수백만 행에서 수십ms 차이</li>
+<li>트레이드오프: 읽기 성능↑ vs 쓰기 비용↑(INSERT/UPDATE/DELETE시 재정렬) vs 저장공간 증가</li>
+<li>설계원칙: WHERE 자주 등장 컬럼 우선, 선택도(Selectivity) 높은 컬럼, FK 컬럼 필수, 미사용 인덱스 제거</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">B-Tree 인덱스 성능 비교 실습</div><pre><code>-- Before: 인덱스 없이 (100만건)
+EXPLAIN ANALYZE SELECT * FROM query_logs WHERE user_id='u123';
+-- Seq Scan (actual time=120..1850)  ← 1850ms
+CREATE INDEX idx_query_logs_user ON query_logs(user_id);
+-- After: 인덱스 적용 후
+-- Index Scan (actual time=0.05..0.8) ← 0.8ms (약 2,300배 향상)</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">인덱스 생성 명령어 모음</div><pre><code>-- 복합 인덱스: 선두 컬럼 원칙(leftmost prefix rule)
+CREATE INDEX idx_orders_cust_date ON orders (customer_id, order_date DESC);
+-- 커버링 인덱스: SELECT 컬럼이 모두 인덱스에 있으면 테이블접근 불필요 → Index Only Scan
+CREATE INDEX idx_customer_cover ON customers (customer_id) INCLUDE (name, email);
+-- 부분 인덱스(Partial Index): 특정 조건 행만 인덱싱 → 크기↓속도↑
+CREATE INDEX idx_orders_pending ON orders (created_at) WHERE status='PENDING';
+-- 함수 기반 인덱스
+CREATE INDEX idx_users_email_lower ON users (LOWER(email));
+-- CONCURRENTLY: 운영 중 잠금 없이 생성
+CREATE INDEX CONCURRENTLY idx_products_category ON products (category_id);</code></pre></div>
+<div class="cp"><div class="cphead">✔ Checkpoint</div><ul><li>복합 인덱스 설계: 등호(=) 조건 컬럼 먼저 → 범위(<,>) 조건 나중, 선택도 높은 컬럼 우선</li>
+<li>선두 컬럼 포함 시 사용 가능 (customer_id=5 / customer_id=5 AND order_date>.. / customer_id=5 ORDER BY order_date)</li>
+<li>선두 컬럼 없이 order_date만 조건이면 사용 불가</li></ul></div>
+<h4>인덱스 DBMS별 상세 차이</h4>
+<table class="t"><thead><tr>
+<th>DBMS</th>
+<th>특징</th>
+</tr></thead><tbody>
+<tr><td>MySQL/MariaDB</td><td>InnoDB 클러스터형 인덱스 기본(PK기준 물리정렬), GIN/GiST 미지원→FULLTEXT로 대체</td></tr>
+<tr><td>PostgreSQL</td><td>비클러스터형 기본. GIN(JSONB/배열/FTS), GiST(GIS/범위/벡터), BRIN(타임시리즈 대용량), Hash(등호만)</td></tr>
+<tr><td>Oracle</td><td>B-Tree(기본)+Bitmap(저선택도 DW용)+Cluster 인덱스</td></tr>
+<tr><td>SQL Server</td><td>클러스터형(테이블당 1개)+비클러스터형 여러개+Columnstore(OLAP)</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">인덱스 관리 — 사용률 모니터링 및 제거</div><pre><code>-- 인덱스 사용률 확인 &amp; 미사용 인덱스 탐지
+SELECT indexrelname, relname, idx_scan, pg_size_pretty(pg_relation_size(indexrelid))
+FROM pg_stat_user_indexes WHERE idx_scan = 0 ORDER BY pg_relation_size(indexrelid) DESC;
+-- 인덱스 재구성 (블로트 제거, 운영 중 잠금없이)
+REINDEX INDEX CONCURRENTLY idx_orders_cust_date;</code></pre></div>
+<h4>인덱스 심화 — B-Tree 내부구조 &amp; 커버링 인덱스</h4>
+<ul class="b">
+<li>B-Tree = Balanced Tree: 모든 리프노드가 같은 깊이 → O(log N) 탐색 보장</li>
+<li>키가 작을수록 노드당 항목 많음 → 트리 깊이 감소 → 빠름 (UUID 16바이트 vs BIGINT 8바이트 → UUID가 더 큰 트리)</li>
+<li>Fill Factor(기본 90%): UPDATE 많은 테이블은 낮추면(예:70%) 페이지 분할(Split) 감소</li>
+<li><b>Index Only Scan</b>: 커버링 인덱스로 Heap Fetches=0 달성 → 테이블 접근 없이 인덱스만으로 응답 (가장 빠름)</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s18" data-day="3">
+  <div class="sec-head">
+    <span class="day-badge day3">Day 3</span>
+    <h2><span class="num">18.</span> 실행계획 분석</h2>
+  </div>
+  <p class="subtitle">EXPLAIN ANALYZE · 플랜 읽기 · DBMS별 도구</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 쿼리를 실제로 실행하기 전에 DB가 '나 이렇게 처리할 거야'라고 미리 보여주는 설계도예요. 쿼리가 왜 느린지 진단할 때 봅니다.</div></div>
+  <table class="t"><thead><tr>
+<th>명령</th>
+<th>동작</th>
+</tr></thead><tbody>
+<tr><td>EXPLAIN</td><td>추정 실행계획만 표시(쿼리 실행 안 함)</td></tr>
+<tr><td>EXPLAIN ANALYZE</td><td>실제 실행+측정값 (DML이면 ROLLBACK 권장)</td></tr>
+<tr><td>EXPLAIN (ANALYZE, BUFFERS)</td><td>버퍼 히트/디스크읽기까지 측정</td></tr>
+</tbody></table>
+<h4>실행계획을 읽어야 하는 상황</h4>
+<ul class="b">
+<li>쿼리가 갑자기 느려졌을 때 / 인덱스 만들었는데 안 쓰이는 것 같을 때</li>
+<li>JOIN 방식이 이상할 때(Hash vs Nested Loop) / rows 예측값과 actual rows 크게 다를 때(통계 갱신 필요)</li>
+<li>시각화 도구: explain.dalibo.com (PostgreSQL JSON 플랜 붙여넣기)</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">PostgreSQL EXPLAIN ANALYZE — 플랜 읽기</div><pre><code>BEGIN;
+EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+SELECT s.name, c.title, e.score FROM students s
+ JOIN enrollments e ON e.student_id=s.id JOIN courses c ON c.id=e.course_id
+WHERE s.major_id=1;
+ROLLBACK; -- DML이면 롤백
+-- Hash Join (cost=12.5..45.8 rows=200) (actual time=0.5..2.3 rows=185)
+-- Buffers: shared hit=12 read=5  (hit=메모리, read=디스크)
+-- Seq Scan on enrollments ← 인덱스 없음! 추가 검토
+-- Planning Time: 0.2ms / Execution Time: 2.5ms</code></pre></div>
+<div class="cp"><div class="cphead">✔ Checkpoint</div><ul><li>Hash Batches > 1 → 메모리 Spill 발생 → work_mem 증가 검토</li>
+<li>예측 rows와 실제 rows 차이 크면 → ANALYZE 필요</li></ul></div>
+<h4>타 DBMS 실행계획 확인</h4>
+<ul class="b">
+<li>MySQL: EXPLAIN FORMAT=JSON — access_type:'ALL'=Full Scan(나쁨), 'range'=범위 인덱스(좋음). 8.0.18+ EXPLAIN ANALYZE 지원</li>
+<li>SQL Server: SET SHOWPLAN_ALL ON / Oracle: SET AUTOTRACE ON</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s19" data-day="3">
+  <div class="sec-head">
+    <span class="day-badge day3">Day 3</span>
+    <h2><span class="num">19.</span> SQL 튜닝 &amp; 느린 쿼리 식별</h2>
+  </div>
+  <p class="subtitle">안티패턴 · Slow Query · pg_stat_statements · 파티셔닝</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 느린 쿼리를 빠르게 고치는 노하우 모음이에요. 대표적인 8가지 실수 패턴만 기억해도 절반은 해결돼요.</div></div>
+  <div class="sqlbox"><div class="sqlhead">SQL 튜닝 8대 안티패턴</div><pre><code>-- 1) 인덱스 컬럼에 함수 적용 → 인덱스 무력화
+-- X: WHERE YEAR(order_date)=2024   /  O: WHERE order_date&gt;='2024-01-01' AND order_date&lt;'2025-01-01'
+-- 2) SELECT * → 불필요한 데이터 + 커버링 인덱스 불가.  O: 필요한 컬럼만 명시
+-- 3) 암묵적 타입변환 → 인덱스 무력화.  X: WHERE user_id='12345' (INT 컬럼)  O: WHERE user_id=12345
+-- 4) LIKE 앞 와일드카드 → 전체스캔.  X: LIKE '%길동%'  O: LIKE '홍%' 또는 GIN+pg_trgm
+-- 5) N+1 문제: 루프 안에서 개별쿼리(1+N번) → 한번의 JOIN으로 처리
+-- 6) NOT IN + NULL 함정 → NOT EXISTS로 변경
+-- 7) DISTINCT 남용(원인 파악없이 제거) → EXISTS로 존재여부만 확인
+-- 8) 대용량 OFFSET(선형증가) → Cursor 방식 WHERE id &gt; :last_id</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">느린 쿼리 식별</div><pre><code>-- PostgreSQL: pg_stat_statements 활성화 후 느린쿼리 TOP-10
+SELECT ROUND(mean_exec_time::NUMERIC,2) AS avg_ms, calls, LEFT(query,100)
+FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 10;
+-- MySQL: Slow Query Log
+SET GLOBAL slow_query_log='ON'; SET GLOBAL long_query_time=1;</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">파티셔닝 전략 — Range / Hash / List</div><pre><code>-- Range 파티셔닝(PostgreSQL): 날짜 기준 분할
+CREATE TABLE sales (id BIGSERIAL, sale_date DATE, amount NUMERIC) PARTITION BY RANGE (sale_date);
+CREATE TABLE sales_2024 PARTITION OF sales FOR VALUES FROM ('2024-01-01') TO ('2025-01-01');
+-- Partition Pruning: WHERE에 파티션 키 포함 시 해당 파티션만 스캔
+EXPLAIN SELECT * FROM sales WHERE sale_date BETWEEN '2024-06-01' AND '2024-06-30';
+-- Hash 파티셔닝(MySQL): PARTITION BY HASH(customer_id) PARTITIONS 4;
+-- List 파티셔닝: PARTITION BY LIST (region);</code></pre></div>
+<table class="t"><thead><tr>
+<th>구분</th>
+<th>파티셔닝</th>
+<th>샤딩</th>
+</tr></thead><tbody>
+<tr><td>범위</td><td>단일 DB 인스턴스 내 논리분할</td><td>여러 DB 인스턴스에 물리 분산</td></tr>
+<tr><td>장점</td><td>간단, JOIN 가능</td><td>수평 확장(Scale-out)</td></tr>
+<tr><td>단점</td><td>-</td><td>Cross-shard JOIN 어려움</td></tr>
+</tbody></table>
+<h4>SQL 튜닝 실전 체크리스트 (4단계)</h4>
+<ul class="b">
+<li>1단계 실행계획 확인(Seq Scan? actual vs 예측 rows 차이?) → 2단계 인덱스 최적화 → 3단계 쿼리 개선(서브쿼리→JOIN/CTE) → 4단계 아키텍처 개선(Materialized View, 파티셔닝, Read Replica)</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s20" data-day="3">
+  <div class="sec-head">
+    <span class="day-badge day3">Day 3</span>
+    <h2><span class="num">20.</span> MVCC &amp; 트랜잭션 격리 수준</h2>
+  </div>
+  <p class="subtitle">다중버전 동시성 제어 · Isolation Level · DBMS별 실습</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 여러 사람이 동시에 DB를 봐도 서로 안 꼬이게 하는 방법이에요. 핵심은 '수정해도 옛날 버전을 잠깐 남겨둔다(다중버전)'는 것.</div></div>
+  <h4>MVCC(Multi-Version Concurrency Control) 심화</h4>
+<ul class="b">
+<li>데이터 수정 시 In-place 덮어쓰기 대신 새 버전 레코드 생성. 각 트랜잭션은 시작시점 스냅샷 보유 → 읽기가 쓰기를 차단하지 않음</li>
+<li><b>PostgreSQL</b>: 각 행에 xmin/xmax 시스템컬럼, UPDATE=새버전 INSERT+구버전 xmax 갱신. Dead tuple은 VACUUM이 회수. 장수 트랜잭션은 VACUUM 차단→Table Bloat 주의</li>
+<li><b>MySQL InnoDB</b>: Undo Log(변경전 데이터 별도 저장), Read View(TX시작시 스냅샷), Purge Thread(불필요 undo 자동정리)</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">Isolation Level 실습 — RC vs RR vs Serializable</div><pre><code>-- Read Committed(기본): 커밋된 최신 데이터 읽음 → Non-Repeatable Read 발생 가능
+BEGIN ISOLATION LEVEL READ COMMITTED;
+SELECT balance FROM bank WHERE name='Alice'; -- 1000
+-- (다른 세션이 800으로 UPDATE+COMMIT)
+SELECT balance FROM bank WHERE name='Alice'; -- 800 (바뀜!)
+-- Repeatable Read: 트랜잭션 내 항상 같은 값(스냅샷 유지)
+BEGIN ISOLATION LEVEL REPEATABLE READ;
+SELECT balance ...; -- 1000
+-- (다른 세션 UPDATE+COMMIT 해도)
+SELECT balance ...; -- 여전히 1000
+-- Serializable: 가장 엄격, 충돌 시 강제 실패
+-- ERROR: could not serialize access due to concurrent update (에러코드 40001, 앱에서 재시도 필요)</code></pre></div>
+</section>
+
+
+<section class="sec" id="s21" data-day="3">
+  <div class="sec-head">
+    <span class="day-badge day3">Day 3</span>
+    <h2><span class="num">21.</span> Lock &amp; Deadlock 관리</h2>
+  </div>
+  <p class="subtitle">Row Lock · Advisory Lock · 감지 · 해소 · 모니터링</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 두 작업이 서로 상대방이 가진 걸 기다리다 영원히 멈추는 상황(교착상태, Deadlock)과 그 해결법이에요.</div></div>
+  <h4>Lock 종류 및 PostgreSQL Lock 구조</h4>
+<ul class="b">
+<li>Row-Level Lock(Tuple Lock): 행단위 충돌방지(UPDATE/DELETE) / Table-Level Lock: ACCESS SHARE~ACCESS EXCLUSIVE / Advisory Lock: 사용자정의 논리락</li>
+<li>FOR UPDATE(배타적 락, 대기) / FOR UPDATE NOWAIT(즉시 ERROR) / FOR UPDATE SKIP LOCKED(잠긴행 건너뜀 — 작업큐 처리에 유용)</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">SKIP LOCKED 패턴 (분산 작업큐/배치처리 필수 패턴)</div><pre><code>-- SKIP LOCKED: 여러 Worker가 중복없이 작업 큐 분배 (경쟁 소비자 패턴)
+WITH picked AS (
+  SELECT id FROM job_queue WHERE status='READY' ORDER BY id
+  FOR UPDATE SKIP LOCKED LIMIT 10 )
+UPDATE job_queue SET status='RUNNING' FROM picked WHERE job_queue.id=picked.id
+RETURNING job_queue.*;</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">Deadlock 발생 구조와 해소법</div><pre><code>-- Deadlock: 교차대기 (Session1: row1잠금→row2요청 / Session2: row2잠금→row1요청)
+-- → 순환대기! PostgreSQL이 자동감지 → ERROR: deadlock detected → 한쪽 자동 ROLLBACK
+-- 해결1: 항상 동일 순서로 Lock 획득(ORDER BY id) — 핵심!
+WITH targets AS (SELECT id FROM items WHERE id=ANY(ARRAY[1,2]) ORDER BY id FOR UPDATE)
+UPDATE items SET stock=stock-1 FROM targets WHERE items.id=targets.id;
+-- 해결2: 트랜잭션 짧게 유지 (HTTP호출/파일I/O는 트랜잭션 밖에서)
+-- 해결3: Advisory Lock으로 업무단위 직렬화: SELECT pg_advisory_xact_lock(42);
+-- 해결4: 재시도 전략(에러코드 40P01) — 지수 백오프 + Jitter</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">Deadlock 모니터링</div><pre><code>-- 대기 중인 세션 확인 (blocking/waiting)
+SELECT bl.pid AS waiting_pid, wl.pid AS blocking_pid, bl.query AS waiting_query
+FROM pg_catalog.pg_locks l1 JOIN pg_catalog.pg_stat_activity bl ON bl.pid=l1.pid
+JOIN pg_catalog.pg_locks l2 ON l1.locktype=l2.locktype AND l1.pid&lt;&gt;l2.pid
+JOIN pg_catalog.pg_stat_activity wl ON wl.pid=l2.pid WHERE NOT l1.granted AND l2.granted;
+-- 세션 강제 종료
+SELECT pg_cancel_backend(pid);    -- 쿼리만 취소(graceful)
+SELECT pg_terminate_backend(pid); -- 연결 자체 종료(강제)</code></pre></div>
+</section>
+
+
+<section class="sec" id="s22" data-day="3">
+  <div class="sec-head">
+    <span class="day-badge day3">Day 3</span>
+    <h2><span class="num">22.</span> 고급 DB 설계</h2>
+  </div>
+  <p class="subtitle">BCNF·4NF·5NF · 반정규화 · SCD · 샤딩 · MSA DB 패턴 (+부록: 백업/VACUUM/모니터링)</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 정규화를 더 깐깐하게(BCNF) 하거나, 반대로 성능을 위해 일부러 중복을 허용(반정규화)하거나, 데이터가 너무 많을 때 여러 서버로 쪼개는 것(샤딩)까지 다루는 심화 설계예요.</div></div>
+  <h4>BCNF (Boyce-Codd Normal Form)</h4>
+<ul class="b">
+<li>조건: 모든 결정자(Determinant)가 후보키(Candidate Key)여야 함</li>
+<li>예: 학습지원(교수,과목,강의실) — 교수→강의실 함수종속(교수는 항상 같은 강의실) → 교수는 후보키 아닌데 강의실을 결정 = BCNF 위반</li>
+<li>해결: 교수강의실(교수,강의실) + 강의배정(교수,과목) 두 테이블로 분리</li>
+<li>3NF: 함수종속 보존 우선(비후보 결정자 허용 가능) vs BCNF: 정합성 우선(엄격). 실무는 3NF까지 적용(JOIN비용·복잡도 고려)</li>
+</ul>
+<h4>정규화 vs 반정규화 선택</h4>
+<table class="t"><thead><tr>
+<th></th>
+<th>정규화 유지(OLTP)</th>
+<th>반정규화 허용(OLAP)</th>
+</tr></thead><tbody>
+<tr><td>중심</td><td>쓰기(INSERT/UPDATE) 중심, 무결성 최우선</td><td>읽기(집계 SELECT) 중심, JOIN비용 감소 우선</td></tr>
+<tr><td>적합</td><td>은행계좌, 주문처리, 사용자등록</td><td>대시보드, 보고서, AI/ML 피처테이블</td></tr>
+<tr><td>기법</td><td>3NF~BCNF 적용, 성능은 인덱스로 해결</td><td>중복컬럼/집계컬럼 추가, 안전대안=Materialized View</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">SCD(Slowly Changing Dimension) — 이력 데이터 관리</div><pre><code>-- SCD Type 1: 덮어쓰기(이력없음) — UPDATE customers SET city='부산' WHERE id=42;
+-- SCD Type 2: 이력보존(새 행 추가, 기간관리) — 실무 표준
+CREATE TABLE customer_history (
+  id BIGSERIAL PRIMARY KEY, customer_id INT, name TEXT, city TEXT,
+  valid_from DATE NOT NULL, valid_to DATE, is_current BOOLEAN DEFAULT TRUE );
+-- 변경 발생시: 기존행 종료 + 새행 삽입
+UPDATE customer_history SET valid_to=CURRENT_DATE-1, is_current=FALSE
+  WHERE customer_id=42 AND is_current=TRUE;
+INSERT INTO customer_history (customer_id,name,city,valid_from) VALUES (42,'홍길동','부산',CURRENT_DATE);
+-- 특정 시점 조회: WHERE valid_from&lt;=:date AND (valid_to IS NULL OR valid_to&gt;=:date)</code></pre></div>
+<div class="cp"><div class="cphead">✔ Checkpoint</div><ul><li>SCD Type 3: 현재+이전값을 별도 컬럼으로 보존</li>
+<li>SCD Type 6: Type 1+2+3 혼합</li></ul></div>
+<h4>샤딩(Sharding) — 수평 분할 전략</h4>
+<ul class="b">
+<li><b>파티셔닝</b>: 단일 DB 인스턴스 내 논리/물리 분할 vs <b>샤딩</b>: 여러 DB 인스턴스에 물리 분산(수평확장)</li>
+<li>Range 샤딩(ID범위기준), Hash 샤딩(user_id % N, 균등분산이나 이관 어려움), Directory 샤딩(샤드맵 테이블)</li>
+<li>구현도구: Citus(PostgreSQL), Vitess(MySQL, YouTube 출신), TiDB(Spanner 영감)</li>
+<li>주의사항: Cross-shard JOIN 불가(앱레벨 처리), 분산 트랜잭션 복잡(2PC 필요), 샤딩 전 파티셔닝/Read Replica로 충분한지 먼저 검토</li>
+</ul>
+<table class="t"><thead><tr>
+<th>MSA DB 패턴</th>
+<th>설명</th>
+</tr></thead><tbody>
+<tr><td>Database per Service</td><td>서비스별 독립 DB 소유 → 독립배포, 기술선택 자유. 단점: 분산TX 복잡, 데이터 일관성 어려움</td></tr>
+<tr><td>Saga 패턴</td><td>분산TX를 로컬TX 체인으로 처리, 실패시 보상TX(Compensating). Choreography(이벤트기반) vs Orchestration(중앙조정)</td></tr>
+<tr><td>CQRS</td><td>읽기(Query)/쓰기(Command) 모델 분리. 쓰기=RDBMS(정규화,ACID), 읽기=비정규화캐시/ReadReplica</td></tr>
+<tr><td>Outbox 패턴</td><td>트랜잭션 내 이벤트발행 보장. 메인로직+아웃박스테이블 INSERT를 같은TX로 → CDC(Debezium)→Kafka</td></tr>
+<tr><td>CDC</td><td>DB변경을 실시간 이벤트스트림으로. PG: Logical Decoding+wal2json / MySQL: Binlog+Debezium</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">[참고] 백업/VACUUM/Connection Pool 운영 실무</div><pre><code>-- 논리백업
+pg_dump -U postgres -d mydb -Fc -f backup.dump  -- 압축 바이너리(권장)
+pg_dumpall -U postgres &gt; full_cluster_backup.sql -- 전체 클러스터(전역객체 포함)
+-- Table Bloat 확인
+SELECT relname, n_dead_tup, n_live_tup,
+ ROUND(n_dead_tup::NUMERIC/NULLIF(n_live_tup+n_dead_tup,0)*100,1) AS dead_pct
+FROM pg_stat_user_tables ORDER BY n_dead_tup DESC LIMIT 10;
+VACUUM orders;         -- Dead tuple 회수(잠금없음, 공간 미반환)
+VACUUM FULL orders;    -- 완전 재작성(배타적잠금, 공간 반환)
+-- pgBouncer: pool_mode=transaction(권장) — 20개 DB연결로 2000개 앱연결 처리</code></pre></div>
+<h4>DB 성능 최적화 4단계 접근법</h4>
+<ul class="b">
+<li>1단계 설계 최적화(영향력 가장 큼: 정규화수준, PK선택, FK인덱스, 데이터타입) → 2단계 쿼리 최적화 → 3단계 인덱스 최적화 → 4단계 DB설정 최적화(shared_buffers, work_mem, Connection Pool)</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s23" data-day="3">
+  <div class="sec-head">
+    <span class="day-badge day3">Day 3</span>
+    <h2><span class="num">23.</span> 종합 실습 – 3</h2>
+  </div>
+  <p class="subtitle">HR DB 느린 쿼리 최적화 — EXPLAIN Before/After 비교</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 실제로 느려진 쿼리를 실행계획 보면서 직접 고쳐보는 실습이에요.</div></div>
+  <h4>학습 목표</h4>
+<ul class="b">
+<li>인덱스 없는 Seq Scan → 인덱스 추가 후 Index Scan 전환 체험</li>
+<li>pg_stat_statements로 실제 느린 쿼리 식별, EXPLAIN ANALYZE Before/After 비교 리포트</li>
+<li>Deadlock 시나리오 실습 및 해소</li>
+</ul>
+<h4>HR DB 느린 쿼리 최적화 실습 내용</h4>
+<ul class="b">
+<li>HR 데이터베이스: 직원 수 5만명↑로 검색 지연, 보고서 생성시간 지연 발생 시나리오</li>
+<li>1) 실행계획 맛보기(사번검색) → 2) 이메일 LOWER() 검색 튜닝 → 3) LIKE 접미사 검색 튜닝 → 4) 정렬+필터 결합 Top100 튜닝 → 5) OR조건 검색 튜닝</li>
+<li>제출: 느린 이유+개선방법+Before/After 실행계획 비교 리포트, 최소 2개 이상 쿼리 차이 분석</li>
+</ul>
+</section>
+
+
+<div class="quiz-wrap" id="quiz-day3">
+  <h2>✅ Day 3 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="3">0 / 7 정답</div>
+  
+            <div class="quiz-q" data-qid="d3q0" data-type="ox" data-answer="false">
+              <p class="quiz-qtext"><span class="qtype">OX</span>인덱스가 많을수록 쓰기(INSERT/UPDATE) 성능도 항상 좋아진다.</p>
+              <div class="quiz-opts">
+                <button class="quiz-opt" data-val="true">O (맞다)</button>
+                <button class="quiz-opt" data-val="false">X (틀리다)</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d3q1" data-type="ox" data-answer="true">
+              <p class="quiz-qtext"><span class="qtype">OX</span>SELECT * 는 커버링 인덱스(Index Only Scan)를 활용하기 어렵게 만든다.</p>
+              <div class="quiz-opts">
+                <button class="quiz-opt" data-val="true">O (맞다)</button>
+                <button class="quiz-opt" data-val="false">X (틀리다)</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d3q2" data-type="ox" data-answer="true">
+              <p class="quiz-qtext"><span class="qtype">OX</span>REPEATABLE READ는 트랜잭션이 끝날 때까지 처음 본 스냅샷을 계속 유지한다.</p>
+              <div class="quiz-opts">
+                <button class="quiz-opt" data-val="true">O (맞다)</button>
+                <button class="quiz-opt" data-val="false">X (틀리다)</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d3q3" data-type="mc" data-answer="WHERE YEAR(order_date) = 2024">
+              <p class="quiz-qtext"><span class="qtype">객관식</span>다음 중 인덱스를 무력화시키는 패턴은?</p>
+              <div class="quiz-opts"><button class="quiz-opt" data-val="WHERE order_date >= '2024-01-01'">WHERE order_date >= '2024-01-01'</button><button class="quiz-opt" data-val="WHERE YEAR(order_date) = 2024">WHERE YEAR(order_date) = 2024</button><button class="quiz-opt" data-val="WHERE name LIKE '홍%'">WHERE name LIKE '홍%'</button></div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d3q4" data-type="mc" data-answer="Deadlock">
+              <p class="quiz-qtext"><span class="qtype">객관식</span>두 트랜잭션이 서로 상대가 가진 락을 기다리며 영원히 멈추는 상태는?</p>
+              <div class="quiz-opts"><button class="quiz-opt" data-val="Phantom Read">Phantom Read</button><button class="quiz-opt" data-val="Deadlock">Deadlock</button><button class="quiz-opt" data-val="Dirty Read">Dirty Read</button><button class="quiz-opt" data-val="Rollback">Rollback</button></div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d3q5" data-type="short" data-accept='["EXPLAIN", "explain"]'>
+              <p class="quiz-qtext"><span class="qtype">단답형</span>쿼리를 '실제 실행하지 않고' 예측 실행계획만 보고 싶을 때 쓰는 명령어는?</p>
+              <div class="quiz-short">
+                <input type="text" placeholder="정답 입력...">
+                <button class="quiz-check">확인</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d3q6" data-type="short" data-accept='["MVCC", "mvcc"]'>
+              <p class="quiz-qtext"><span class="qtype">단답형</span>수정해도 옛날 버전을 잠깐 유지해서 동시성을 관리하는 방식의 이름(약자)은?</p>
+              <div class="quiz-short">
+                <input type="text" placeholder="정답 입력...">
+                <button class="quiz-check">확인</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+</div>
+<div class="day-header" id="day4"><h1>Day 4 — 운영·보안·클라우드·트렌드</h1><p>프로시저/트리거, 클라우드 DB, 보안, 백업/HA, 모니터링, 최신 트렌드</p></div>
+
+<section class="sec" id="s24" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">24.</span> Stored Procedure &amp; 함수</h2>
+  </div>
+  <p class="subtitle">4개 DBMS 문법 · DETERMINISTIC/IMMUTABLE · 보안 모델 · 실무 포인트</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: SQL을 함수처럼 DB 안에 저장해두고 필요할 때 불러쓰는 거예요. 반복되는 로직을 DB에 미리 넣어두는 것.</div></div>
+  <div class="sqlbox"><div class="sqlhead">함수 예시 — 4개 DBMS (부가세 계산)</div><pre><code>-- PostgreSQL: IMMUTABLE이면 함수기반 인덱스에도 사용 가능
+CREATE OR REPLACE FUNCTION fn_vat(amount NUMERIC) RETURNS NUMERIC
+LANGUAGE sql IMMUTABLE AS $$ SELECT amount * 0.1 $$;
+CREATE INDEX idx_tax ON orders ((fn_vat(total_amount)));
+-- MySQL: DETERMINISTIC(같은입력=같은결과, 복제/캐싱 안전)
+CREATE FUNCTION fn_vat(amount DECIMAL(10,2)) RETURNS DECIMAL(10,2) DETERMINISTIC
+BEGIN RETURN amount * 0.1; END;
+-- Oracle: RESULT_CACHE(결과 메모리 캐시)
+CREATE OR REPLACE FUNCTION fn_vat(p_amount NUMBER) RETURN NUMBER RESULT_CACHE DETERMINISTIC
+IS BEGIN RETURN p_amount * 0.1; END;</code></pre></div>
+<h4>함수 성능 키워드 — DB별 최적화 힌트</h4>
+<table class="t"><thead><tr>
+<th>DBMS</th>
+<th>함수 안정성 키워드</th>
+</tr></thead><tbody>
+<tr><td>PostgreSQL</td><td>IMMUTABLE(인덱스표현식 가능) / STABLE(같은쿼리내 불변, 예:COUNT(*)) / VOLATILE(기본값, 예:random(),now())</td></tr>
+<tr><td>MySQL</td><td>DETERMINISTIC / NOT DETERMINISTIC(기본, random/NOW 포함시)</td></tr>
+<tr><td>SQL Server</td><td>인라인 테이블 함수(iTVF, 빠름-내부SQL 그대로 펼침) vs 스칼라 함수(행마다 호출, 느림)</td></tr>
+<tr><td>Oracle</td><td>RESULT_CACHE — 같은 입력 반복시 메모리 재사용</td></tr>
+</tbody></table>
+<h4>SP vs 앱 코드 선택 기준 &amp; 에러 처리</h4>
+<ul class="b">
+<li>Stored Procedure가 잘 맞는 경우: 공통 계산 로직, 트리거로 호출, 배치 작업</li>
+<li>앱 코드가 나은 경우: 자주 바뀌는 비즈니스 로직, 외부 API 연동, 복잡한 조건분기</li>
+<li>예외처리: PostgreSQL EXCEPTION 블록 / MySQL DECLARE HANDLER / Oracle EXCEPTION WHEN / SQL Server TRY...CATCH</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">PostgreSQL SP 실전 예 — 주문 생성 (재고부족 시 자동 ROLLBACK)</div><pre><code>CREATE OR REPLACE PROCEDURE sp_create_order(p_customer_id BIGINT, p_items JSONB)
+LANGUAGE plpgsql AS $$
+DECLARE v_order_id BIGINT; v_item JSONB; v_stock INT;
+BEGIN
+  INSERT INTO orders (customer_id, status) VALUES (p_customer_id,'created') RETURNING id INTO v_order_id;
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+    SELECT stock_qty INTO v_stock FROM products WHERE id=(v_item-&gt;&gt;'product_id')::INT FOR UPDATE; -- 동시성 처리
+    IF v_stock &lt; (v_item-&gt;&gt;'qty')::INT THEN
+      RAISE EXCEPTION '재고 부족: product_id=%', (v_item-&gt;&gt;'product_id');  -- EXCEPTION시 자동 ROLLBACK
+    END IF;
+    UPDATE products SET stock_qty = stock_qty - (v_item-&gt;&gt;'qty')::INT WHERE id=(v_item-&gt;&gt;'product_id')::INT;
+  END LOOP;
+  UPDATE orders SET status='paid' WHERE id=v_order_id;
+END;$$;</code></pre></div>
+</section>
+
+
+<section class="sec" id="s25" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">25.</span> Trigger &amp; 이벤트 처리</h2>
+  </div>
+  <p class="subtitle">감사 로그 · CDC · 배치 · DBMS별 비교 · 실행 순서 제어</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 특정 이벤트(예: INSERT)가 일어나면 자동으로 실행되는 코드예요. 일종의 'DB 자동 알림/자동 처리기'.</div></div>
+  <h4>Trigger 잘 맞는/피해야 할 경우 (BEFORE/AFTER, 행단위/문장단위)</h4>
+<table class="t"><thead><tr>
+<th>잘 맞는 경우</th>
+<th>피해야 할 경우</th>
+</tr></thead><tbody>
+<tr><td>감사로그(누가언제 뭘 바꿨는지 자동기록)</td><td>외부연동(API호출, 장시간작업) → TX연장/장애전파</td></tr>
+<tr><td>기본값/유효성 보강(created_at 자동세팅)</td><td>순서의존/상호참조 트리거 → 유지보수 지옥</td></tr>
+<tr><td>비즈니스 규칙(재고 음수 방지)</td><td>대량DML에 row트리거 남발 → statement트리거나 배치로 전환</td></tr>
+<tr><td>소프트삭제/버전관리</td><td>-</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">PostgreSQL 감사 로그 트리거 (row-level / statement-level)</div><pre><code>CREATE TABLE audit_log(id BIGSERIAL PRIMARY KEY, table_name TEXT, op TEXT, row_json JSONB, at TIMESTAMPTZ DEFAULT now());
+-- Row-level Trigger
+CREATE OR REPLACE FUNCTION trg_sales_ai() RETURNS trigger AS $$
+BEGIN INSERT INTO audit_log(table_name,op,row_json) VALUES ('sales', TG_OP, to_jsonb(NEW)); RETURN NEW; END$$ LANGUAGE plpgsql;
+CREATE TRIGGER sales_ai AFTER INSERT ON sales FOR EACH ROW EXECUTE FUNCTION trg_sales_ai();
+-- Statement-level + Transition table (대량 DML에 효율적)
+CREATE TRIGGER sales_stmt_ai AFTER INSERT ON sales REFERENCING NEW TABLE AS new_table
+FOR EACH STATEMENT EXECUTE FUNCTION trg_sales_stmt_ai();</code></pre></div>
+<div class="note">MySQL은 row 트리거만 지원, SQL Server는 statement 트리거 중심 — 설계에 큰 영향을 줌</div>
+<h4>이벤트 처리 아키텍처 — 배치·알림·CDC</h4>
+<ul class="b">
+<li>원칙: 트리거에서 외부 API 호출 금지 → 트리거→로그테이블/토픽 적재 → 비동기 소비자 패턴</li>
+<li>배치: MySQL EVENT Scheduler / PostgreSQL은 내장 스케줄러 없음→pg_cron 필요 / Oracle DBMS_SCHEDULER</li>
+<li>실시간 알림: PostgreSQL LISTEN/NOTIFY(pg_notify) / SQL Server Service Broker / Oracle AQ</li>
+<li>CDC: MySQL Binlog+Debezium / PostgreSQL Logical Decoding(wal2json)+Debezium / SQL Server 내장 CDC / Oracle GoldenGate</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">PostgreSQL Event Trigger &amp; pg_notify 실시간 알림</div><pre><code>-- DDL 변경이력 자동기록 (Event Trigger)
+CREATE OR REPLACE FUNCTION fn_ddl_logger() RETURNS event_trigger AS $$
+DECLARE r RECORD; BEGIN FOR r IN SELECT * FROM pg_event_trigger_ddl_commands() LOOP
+  INSERT INTO ddl_history(event_tag, object) VALUES (r.command_tag, r.object_identity); END LOOP; END$$ LANGUAGE plpgsql;
+CREATE EVENT TRIGGER ddl_logger ON ddl_command_end EXECUTE FUNCTION fn_ddl_logger();
+-- 실시간 알림 (NOTIFY/LISTEN)
+CREATE OR REPLACE FUNCTION fn_notify_order() RETURNS trigger AS $$
+BEGIN PERFORM pg_notify('order_channel', row_to_json(NEW)::TEXT); RETURN NEW; END$$ LANGUAGE plpgsql;
+CREATE TRIGGER trg_order_notify AFTER INSERT ON orders FOR EACH ROW EXECUTE FUNCTION fn_notify_order();
+-- 앱: cur.execute("LISTEN order_channel")</code></pre></div>
+</section>
+
+
+<section class="sec" id="s26" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">26.</span> Cloud DB 개요</h2>
+  </div>
+  <p class="subtitle">On-Prem vs DBaaS · AWS RDS &amp; Aurora · GCP Cloud SQL · Azure Database</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 직접 서버를 관리하지 않고 AWS·GCP·Azure가 대신 관리해주는 DB 서비스들을 소개해요.</div></div>
+  <h4>DBaaS 할 일 vs 우리가 할 일</h4>
+<ul class="b">
+<li>DBaaS가 해주는 것: 하드웨어/스토리지관리, 장애디스크교체, 백업스케줄링, 모니터링, 고가용성(Multi-AZ) 토폴로지</li>
+<li>우리가 해야 하는 것(책임 면제 아님!): 스키마/인덱스/쿼리 최적화, DB파라미터 전략, 보안정책(권한/암호화/네트워크), 비용/성능 SLO 설계</li>
+</ul>
+<h4>AWS/GCP/Azure 관리형 RDBMS</h4>
+<table class="t"><thead><tr>
+<th>서비스</th>
+<th>특징</th>
+</tr></thead><tbody>
+<tr><td>AWS RDS</td><td>다양한 엔진, 자동백업/장애복구, 루트접근 제한</td></tr>
+<tr><td>Amazon Aurora</td><td>MySQL/PG호환+AWS최적화, MySQL대비 3~5배 빠름(스토리지 분산), 6방향 복제</td></tr>
+<tr><td>GCP Cloud SQL</td><td>자동백업/확장, BigQuery/Dataflow 연계 쉬움, IAM DB Auth, 최대 64TB</td></tr>
+<tr><td>Azure Database</td><td>Flexible Server(Zonal HA), SLA 99.99%, Entra ID 인증 연동</td></tr>
+</tbody></table>
+<h4>Cloud DB 선택 의사결정 프레임워크 (4단계)</h4>
+<ul class="b">
+<li>1단계 규제/컴플라이언스(데이터주권, GDPR — 제약있으면 On-Prem) → 2단계 팀 역량(DBA있으면 On-Prem 가능, 작으면 DBaaS) → 3단계 워크로드 특성(안정적=고정인스턴스, 급변=서버리스) → 4단계 비용총합(TCO: CAPEX+OPEX vs Egress/IOPS 등 숨은비용)</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s27" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">27.</span> 서버리스 &amp; 분산 Cloud DB</h2>
+  </div>
+  <p class="subtitle">Aurora Serverless v2 · Google Spanner · Cosmos DB · PlanetScale · Neon · Supabase</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 트래픽에 따라 자동으로 커졌다 작아졌다 하는 최신 클라우드 DB들이에요.</div></div>
+  <h4>서버리스·분산 DB 주요 서비스</h4>
+<table class="t"><thead><tr>
+<th>서비스</th>
+<th>특징</th>
+</tr></thead><tbody>
+<tr><td>Aurora Serverless v2</td><td>ACU단위 자동스케일, 간헐적/변동성 큰 OLTP 적합</td></tr>
+<tr><td>Google Cloud Spanner</td><td>Paxos/TrueTime기반, 글로벌TX+외부일관성, Strict Serializability</td></tr>
+<tr><td>Azure Cosmos DB</td><td>다중모델(문서/키값/Cassandra/Mongo), 5단계 일관성 선택</td></tr>
+<tr><td>PlanetScale</td><td>Vitess기반, 브랜칭/Online DDL</td></tr>
+<tr><td>Neon</td><td>scale-to-zero, 스토리지-컴퓨트 분리</td></tr>
+<tr><td>Supabase</td><td>Postgres+Auth+Realtime+Edge Functions</td></tr>
+</tbody></table>
+</section>
+
+
+<section class="sec" id="s28" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">28.</span> 데이터 웨어하우스 &amp; 분석 DB</h2>
+  </div>
+  <p class="subtitle">OLTP vs OLAP · 파티션 프루닝 · 벡터화 실행 · Redshift · BigQuery · Snowflake · ClickHouse</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 우리가 지금까지 배운 DB(OLTP, 실시간 거래처리용)와 분석·보고서 전용 DB(OLAP)는 애초에 설계 목적이 다르다는 걸 짚고 가는 파트예요.</div></div>
+  <h4>분석 DB 핵심 기술 3가지</h4>
+<ul class="b">
+<li><b>파티션 프루닝</b>: 필요한 날짜/범위 파티션만 읽음 (BigQuery PARTITION BY DATE, Snowflake 마이크로파티션, ClickHouse PARTITION BY)</li>
+<li><b>컬럼 프루닝</b>: SELECT한 컬럼만 읽음 — SELECT * 절대 금지! (스캔 바이트=과금 기준)</li>
+<li><b>벡터화 실행</b>: 컬럼단위 벡터(1000개씩)로 SIMD 처리 — BigQuery/Snowflake/DuckDB/ClickHouse 모두 채택</li>
+</ul>
+<h4>스타 스키마 &amp; DW 설계 원칙</h4>
+<ul class="b">
+<li><b>스타 스키마</b>: 팩트테이블(거래·이벤트, append-only, 시간파티션) + 디멘전테이블(사용자/상품/시간, SCD Type2)이 별모양으로 둘러쌈</li>
+<li>Surrogate Key(디멘전 대체키), 역할차원(Role-Playing: 날짜 하나로 order_date/ship_date 별칭), Junk Dimension, Conformed Dimension(여러 마트 공용)</li>
+<li>스노우플레이크 스키마: 디멘전을 다시 정규화(계층 자주 바뀔 때) / 3NF DW: 원천레이어는 3NF, 소비레이어(mart)는 스타</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">BigQuery 파티션·클러스터 + ClickHouse MergeTree</div><pre><code>-- BigQuery: 파티션+클러스터
+CREATE TABLE mart.fact_sales PARTITION BY DATE(event_ts) CLUSTER BY user_id, item_id AS
+SELECT event_ts, user_id, item_id, qty, amount FROM stg.sales_cleaned;
+-- ClickHouse: MergeTree 엔진 (초고속 실시간 OLAP)
+CREATE TABLE fact_events (event_time DateTime, user_id UInt64, amount Decimal(12,2))
+ENGINE=MergeTree PARTITION BY toDate(event_time) ORDER BY (user_id, event_time)
+TTL event_time + INTERVAL 90 DAY;</code></pre></div>
+</section>
+
+
+<section class="sec" id="s29" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">29.</span> 현재의 트렌드</h2>
+  </div>
+  <p class="subtitle">NewSQL · 시계열 DB · Vector DB &amp; pgvector RAG · AI+DB · GraphQL · Edge DB</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 요즘 뜨는 DB들(벡터DB, 시계열DB 등)이에요. 특히 AI 서비스(RAG, 임베딩 검색)와 관련이 깊어지고 있어요.</div></div>
+  <h4>NewSQL · 시계열 DB · Vector DB</h4>
+<ul class="b">
+<li><b>NewSQL</b> = RDBMS의 ACID+SQL + NoSQL의 수평확장 (Shared-nothing 분산 + Raft/Paxos + MVCC)</li>
+<li>CockroachDB: Range단위 자동샤딩, 기본 SERIALIZABLE, 모든 노드 동등(운영 단순) / TiDB: MySQL호환+HTAP(OLTP+OLAP 동시)</li>
+<li><b>시계열 DB</b>: TimescaleDB(PostgreSQL확장, Hypertable 자동파티션, Continuous Aggregates) vs InfluxDB(전용 고속ingest, SQL과 다른 문법)</li>
+<li><b>Vector DB</b>: pgvector(PostgreSQL확장, SQL+트랜잭션+JOIN 그대로) / Pinecone(완전관리형, 초대규모) / Weaviate(오픈소스, 하이브리드검색)</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">pgvector — RAG 하이브리드 검색 (벡터70%+키워드30%)</div><pre><code>CREATE EXTENSION IF NOT EXISTS vector;
+CREATE TABLE knowledge_base (id BIGSERIAL PRIMARY KEY, content TEXT, embedding VECTOR(1536), search_ts TSVECTOR);
+CREATE INDEX ON knowledge_base USING HNSW (embedding vector_cosine_ops) WITH (m=16, ef_construction=64);
+-- RAG = 문서를 임베딩으로 저장 → 질문 임베딩으로 유사문서 검색 → LLM 컨텍스트 주입</code></pre></div>
+<h4>AI/ML + DB 통합 패턴 3가지</h4>
+<ul class="b">
+<li>패턴1 In-DB ML: BigQuery ML/Snowpark 등, SQL로 직접 모델 실행 — 데이터이동 없음(보안), 단 모델다양성은 제한적</li>
+<li>패턴2 RAG: 원문→임베딩→VectorDB저장→질문유사검색→LLM컨텍스트주입. 품질핵심=Chunking/재순위/최신성</li>
+<li>패턴3 피처스토어: Feast 등으로 훈련/서빙 스키마 일관성 유지 (오프라인=DB/DWH, 온라인=Redis캐시)</li>
+</ul>
+<h4>GraphQL/Edge DB · AI 시대 DB 엔지니어 역할 변화</h4>
+<ul class="b">
+<li>GraphQL+DB: REST의 Over/Under-fetch 문제 해결. Hasura(PG위에 즉시 GraphQL+RLS+구독), PostGraphile, Prisma. N+1은 DataLoader로 방지</li>
+<li>Edge DB: 낮은지연 위해 엣지에 데이터 배치. Turso(libSQL/SQLite분산), Cloudflare D1, Neon/PlanetScale(서버리스+브랜치)</li>
+<li>AI시대 DB 엔지니어: 전통 역할(스키마설계,튜닝,백업) + Vector DB설계, Feature Store관리, AI파이프라인 통합, LLM생성 SQL 검증</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s30" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">30.</span> 보안 및 권한 관리</h2>
+  </div>
+  <p class="subtitle">인증·인가·SQL Injection·암호화·Row-Level Security·감사</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 누가 접속할 수 있고(인증) 뭘 할 수 있는지(권한)를 정하고, 해킹의 대표격인 SQL Injection을 막는 방법이에요.</div></div>
+  <h4>DB 보안 전체 구조 — 최소 권한 원칙(Least Privilege)</h4>
+<table class="t"><thead><tr>
+<th>요소</th>
+<th>설명</th>
+</tr></thead><tbody>
+<tr><td>인증(Authentication)</td><td>누가 접속했는가 (아이디/비번, AD/IAM)</td></tr>
+<tr><td>인가(Authorization)</td><td>그 사람이 무엇을 할 수 있나 (SELECT/INSERT 등 권한)</td></tr>
+<tr><td>입력검증/파라미터바인딩</td><td>악성 입력으로부터 SQL 보호</td></tr>
+<tr><td>암호화</td><td>전송(TLS)과 저장(디스크/TDE/컬럼) 보호</td></tr>
+<tr><td>감사(Audit)</td><td>누가 언제 무슨 쿼리 실행했는지 기록</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">사용자·역할·권한 생성 (Postgres / MySQL)</div><pre><code>-- PostgreSQL
+CREATE ROLE app_reader NOLOGIN;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO app_reader;
+CREATE ROLE app_user LOGIN PASSWORD 'secret';
+GRANT app_reader TO app_user;
+-- MySQL 8+
+CREATE ROLE 'app_reader'; GRANT SELECT ON mydb.* TO 'app_reader';
+CREATE USER 'app_user'@'%' IDENTIFIED BY 'secret'; GRANT 'app_reader' TO 'app_user'@'%';</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">Row-Level Security (행 단위 보안)</div><pre><code>-- Row-Level Security(RLS): 같은 테이블에서 사용자별로 볼 수 있는 행 제한 (멀티테넌시)
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY customer_policy ON orders FOR SELECT
+  USING (customer_id = current_setting('app.customer_id')::int);
+SELECT set_config('app.customer_id','42', true); -- 앱이 세션에 고객ID 설정 → 그 고객 데이터만 조회</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">SQL Injection — 원인과 방어법 (파라미터 바인딩 필수)</div><pre><code># 위험(절대 금지!): 문자열 포맷으로 SQL 조립
+sql = f"SELECT * FROM users WHERE name = '{user_input}'"   # ' OR '1'='1 공격 가능
+# 안전: 파라미터 바인딩(Prepared Statement)
+cur.execute("SELECT * FROM users WHERE name = %s", (user_input,))
+# ORDER BY 등 컬럼명은 바인딩 불가 → 화이트리스트 검증
+if order not in ('name','created_at'): order = 'created_at'</code></pre></div>
+<div class="note">ORM(SQLAlchemy 등)도 raw SQL이나 .execute(text(...))에 입력을 직접 포맷팅하면 취약 — ORM의 파라미터 바인딩 API만 사용</div>
+<table class="t"><thead><tr>
+<th>암호화 종류</th>
+<th>설명</th>
+</tr></thead><tbody>
+<tr><td>전송 암호화(TLS)</td><td>클라이언트↔DB 연결 암호화, 항상 켜기</td></tr>
+<tr><td>디스크 암호화/TDE</td><td>DB파일 자동 암호화(앱은 모름), 컬럼단위 제어 불가</td></tr>
+<tr><td>컬럼 암호화</td><td>민감 데이터만 타겟(pgcrypto/Always Encrypted), 인덱스/검색 제약·성능저하 단점</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">PostgreSQL pgcrypto 컬럼 암호화</div><pre><code>CREATE EXTENSION IF NOT EXISTS pgcrypto;
+INSERT INTO customers (name, ssn_enc) VALUES ('Alice', pgp_sym_encrypt('111-22-3333','mypassword'));
+SELECT pgp_sym_decrypt(ssn_enc,'mypassword') FROM customers;</code></pre></div>
+<h4>흔히 하는 실수 &amp; 해결방법 / 체크리스트: TLS강제, Prepared Statement, 최소권한, 감사로그</h4>
+<ul class="b">
+<li>애플리케이션에 DB 관리자 권한 부여 → 역할분리·최소권한으로 해결</li>
+<li>클라우드 KMS 키 권한 삭제 → 키 권한 정책 문서화, 백업키 관리</li>
+<li>로그에 민감정보 평문 노출 → 마스킹/로그필터링, 민감컬럼 암호화</li>
+<li>ORDER BY 등 파라미터 검증없이 사용 → 화이트리스트 검증</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s31" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">31.</span> 백업·복구 &amp; 고가용성</h2>
+  </div>
+  <p class="subtitle">Full/Incremental/PITR · Replication · Failover · Cloud 백업</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: DB 서버가 갑자기 죽어도 데이터와 서비스를 지키는 방법들이에요 (백업, 복제, 자동 전환).</div></div>
+  <h4>Multi-AZ 구조 (고가용성)</h4>
+<ul class="b">
+<li>Multi-AZ: Primary(읽기/쓰기)+Standby(복제전용) 두 AZ에 동기복제. Failover 시 AWS가 자동으로 Standby 승격</li>
+<li>동기복제 → 쓰기완료엔 양쪽 모두 필요 → RPO(데이터손실)≈0 / RTO(복구시간)는 수 분 내</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">PostgreSQL 백업/PITR(Point-In-Time Recovery)</div><pre><code>-- 논리백업
+pg_dump -U postgres -d mydb -Fc -f backup.dump  -- 압축바이너리(권장), -j 4로 병렬가능
+pg_dumpall -U postgres &gt; full_cluster_backup.sql -- 전역객체 포함 전체
+-- 물리백업(PITR용)
+pg_basebackup -U replicator -D /backup/base -Ft -z -P --wal-method=stream
+-- postgresql.conf: wal_level=replica, archive_mode=on, archive_command='cp %p /backup/wal/%f'
+-- 복구 시점 지정: recovery_target_time = '2024-12-15 14:30:00'</code></pre></div>
+<div class="note">백업 원칙: 3-2-1 (3 copies / 2 media / 1 offsite) + 정기 복원 테스트 필수!</div>
+<h4>Streaming Replication &amp; DR 목표</h4>
+<table class="t"><thead><tr>
+<th>구분</th>
+<th>설명</th>
+</tr></thead><tbody>
+<tr><td>Streaming Replication</td><td>Primary→Standby 실시간 WAL 복제, Hot Standby로 읽기분산</td></tr>
+<tr><td>Synchronous</td><td>COMMIT시 Standby 응답 대기 (RPO=0, 성능저하)</td></tr>
+<tr><td>Asynchronous</td><td>COMMIT 즉시 응답 (RPO>0, 기본값, 성능우수)</td></tr>
+<tr><td>RPO</td><td>Recovery Point Objective — 최대 허용 데이터 손실 시간</td></tr>
+<tr><td>RTO</td><td>Recovery Time Objective — 최대 허용 서비스 다운 시간</td></tr>
+</tbody></table>
+<h4>고가용성 솔루션 심화</h4>
+<ul class="b">
+<li>Failover 도구: Patroni(Python HA매니저, 자동승격) / pg_auto_failover, Repmgr(대안)</li>
+<li>Oracle RAC: 여러 인스턴스가 공유스토리지 동시접근, Cache Fusion, 대형엔터프라이즈</li>
+<li>SQL Server Always On AG: DB집합단위 HA/DR, 동기(RPO=0)/비동기(DR) 선택</li>
+<li>PostgreSQL FDW: postgres_fdw로 원격 테이블 로컬처럼 참조, 이기종DB조인/점진적마이그레이션</li>
+</ul>
+</section>
+
+
+<section class="sec" id="s32" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">32.</span> 모니터링 및 운영</h2>
+  </div>
+  <p class="subtitle">TPS·QPS·Latency · Slow Query · Prometheus+Grafana · Cloud 모니터링</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: DB의 건강 상태를 계속 체크하는 것 — 사람으로 치면 정기검진이에요.</div></div>
+  <h4>기본 지표 (TPS, QPS, Latency)</h4>
+<table class="t"><thead><tr>
+<th>지표</th>
+<th>의미</th>
+<th>비유(카페)</th>
+</tr></thead><tbody>
+<tr><td>QPS</td><td>초당 처리하는 쿼리 수</td><td>초당 주문 수</td></tr>
+<tr><td>TPS</td><td>초당 완료된 거래(트랜잭션) 수</td><td>초당 결제 완료 수</td></tr>
+<tr><td>Latency</td><td>응답까지 걸리는 시간</td><td>한 잔 나오기까지 시간</td></tr>
+</tbody></table>
+<h4>모니터링 툴 (Prometheus + Grafana)</h4>
+<ul class="b">
+<li>Prometheus가 DB에서 CPU%, TPS 등 데이터 수집 → Grafana가 그래프로 대시보드화</li>
+<li>주요 그래프: QPS, p95 지연시간, 복제지연(replica lag), Active connection 수</li>
+<li>Cloud DB는 자동 수집되나, 세세한 로그는 'Logs Export'를 켜야 함</li>
+</ul>
+<div class="cp"><div class="cphead">✔ 요약</div><ul><li>TPS/QPS = DB가 얼마나 바쁘게 일하는가</li>
+<li>Latency = 얼마나 빨리 일하는가</li>
+<li>로그 = 왜 느렸는가의 증거</li>
+<li>모니터링 도구 = 그걸 한눈에 보여주는 창</li></ul></div>
+</section>
+
+
+<section class="sec" id="s33" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">33.</span> 종합실습 – 4</h2>
+  </div>
+  <p class="subtitle">ecommerce 매출 분석 및 정리 — RFM · 재고 · 실행계획 성능개선</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 실무형 이커머스 데이터로 매출분석·재구매율 등 진짜 업무에 가까운 마무리 종합 실습이에요.</div></div>
+  <h4>실습 시나리오</h4>
+<ul class="b">
+<li>시나리오: E-Commerce 데이터팀 주니어 엔지니어 — 월간 매출리포트/AOV, 카테고리별 성과, 재구매·RFM분석, 재고이슈 탐지 + 실행계획 성능개선</li>
+<li>데이터 특징: 채널(web/mobile/marketplace), 주문상태(created~refunded), 가격이력(SCD2), 카테고리(트리구조,재귀CTE), 재고(reorder_point), 리뷰(1~5점), 쿠폰</li>
+</ul>
+<h4>실습 문제 (Q1~Q11)</h4>
+<ul class="b">
+<li>Q1 지난달 실판매금액(paid+shipped+delivered) / Q2 월별 주문수·매출·평균금액 / Q3 최근90일 카테고리 Top10 / Q4 제품별 누적매출 RANK Top20</li>
+<li>Q5 RFM 분석(최근성/빈도/금액) / Q6 첫구매후 30일내 재구매율 / Q7 재고 임계치 이하 상품 / Q8 리뷰4.5↑&50개↑ 효자상품</li>
+<li>Q9 쿠폰 사용 영향 비교 / Q10 상위1% 고객 최근60일 매출 / Q11 0으로 나눠도 에러 안나는 안전한 나눗셈 함수</li>
+</ul>
+<h4>실행 계획 비교 &amp; 성능 개선</h4>
+<ul class="b">
+<li>EXPLAIN ANALYZE로 병목 파악 → 인덱스 추가/개선 → JOIN 전략 비교(Hash vs Nested Loop, Bitmap Heap Scan)</li>
+<li>Materialized View 활용: mv_daily_gmv로 매일 총판매금액 리포트 가속 (매번 JOIN+SUM은 느림) — 갱신주기는 오후 3시 기준 설계</li>
+</ul>
+</section>
+
+
+<div class="quiz-wrap" id="quiz-day4">
+  <h2>✅ Day 4 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="4">0 / 7 정답</div>
+  
+            <div class="quiz-q" data-qid="d4q0" data-type="ox" data-answer="false">
+              <p class="quiz-qtext"><span class="qtype">OX</span>트리거 안에서 외부 API 호출 같은 무거운 작업을 하는 것이 권장된다.</p>
+              <div class="quiz-opts">
+                <button class="quiz-opt" data-val="true">O (맞다)</button>
+                <button class="quiz-opt" data-val="false">X (틀리다)</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d4q1" data-type="ox" data-answer="true">
+              <p class="quiz-qtext"><span class="qtype">OX</span>SQL Injection을 막는 가장 기본적인 방법은 파라미터 바인딩(Prepared Statement)이다.</p>
+              <div class="quiz-opts">
+                <button class="quiz-opt" data-val="true">O (맞다)</button>
+                <button class="quiz-opt" data-val="false">X (틀리다)</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d4q2" data-type="ox" data-answer="false">
+              <p class="quiz-qtext"><span class="qtype">OX</span>RPO는 '최대 허용 서비스 다운 시간'을 의미한다.</p>
+              <div class="quiz-opts">
+                <button class="quiz-opt" data-val="true">O (맞다)</button>
+                <button class="quiz-opt" data-val="false">X (틀리다)</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d4q3" data-type="mc" data-answer="최대 허용 데이터 손실 시간">
+              <p class="quiz-qtext"><span class="qtype">객관식</span>RPO(Recovery Point Objective)가 의미하는 것은?</p>
+              <div class="quiz-opts"><button class="quiz-opt" data-val="최대 허용 데이터 손실 시간">최대 허용 데이터 손실 시간</button><button class="quiz-opt" data-val="최대 허용 다운타임">최대 허용 다운타임</button><button class="quiz-opt" data-val="초당 쿼리 수">초당 쿼리 수</button><button class="quiz-opt" data-val="인덱스 크기">인덱스 크기</button></div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d4q4" data-type="mc" data-answer="종이 문서 인쇄 관리">
+              <p class="quiz-qtext"><span class="qtype">객관식</span>AI 시대에 DB 엔지니어에게 새롭게 요구되는 역할이 아닌 것은?</p>
+              <div class="quiz-opts"><button class="quiz-opt" data-val="Vector DB 설계">Vector DB 설계</button><button class="quiz-opt" data-val="Feature Store 관리">Feature Store 관리</button><button class="quiz-opt" data-val="LLM 생성 SQL 검증">LLM 생성 SQL 검증</button><button class="quiz-opt" data-val="종이 문서 인쇄 관리">종이 문서 인쇄 관리</button></div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d4q5" data-type="short" data-accept='["RAG", "rag"]'>
+              <p class="quiz-qtext"><span class="qtype">단답형</span>문서를 임베딩으로 저장해두고 질문과 유사한 문서를 찾아 LLM에 제공하는 패턴의 이름(약자)은?</p>
+              <div class="quiz-short">
+                <input type="text" placeholder="정답 입력...">
+                <button class="quiz-check">확인</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+            <div class="quiz-q" data-qid="d4q6" data-type="short" data-accept='["QPS", "qps"]'>
+              <p class="quiz-qtext"><span class="qtype">단답형</span>'초당 처리 쿼리 수'를 뜻하는 모니터링 지표 약자는?</p>
+              <div class="quiz-short">
+                <input type="text" placeholder="정답 입력...">
+                <button class="quiz-check">확인</button>
+              </div>
+              <div class="quiz-feedback"></div>
+            </div>
+</div>
+  </main>
+</div>
+<button class="top-btn" id="topBtn" title="맨 위로">↑</button>
+
+<button id="pgToggle">🖥 SQL 연습장</button>
+<div id="pgDrawer">
+  <div class="pg-head">
+    <h3>🖥 SQL 연습장 — 브라우저에서 직접 실행되는 실습용 SQLite</h3>
+    <div class="pg-actions">
+      <span class="pg-info" id="pgStatus">엔진 로딩 중...</span>
+      <button class="pg-close" id="pgClose">×</button>
+    </div>
+  </div>
+  <div class="pg-body">
+    <div class="pg-schema">
+      <div class="pg-tabs">
+        <button class="pg-tab active" id="tabSchema">📋 스키마</button>
+        <button class="pg-tab" id="tabExercise">✏️ 연습문제</button>
+      </div>
+      <div id="schemaPanel">
+<h4>students</h4><div>id, student_no, name, major_id, grade, gpa, enrolled</div>
+<h4>majors</h4><div>id, code, name</div>
+<h4>courses</h4><div>id, code, title, credits, professor_id</div>
+<h4>professors</h4><div>id, name</div>
+<h4>enrollments</h4><div>student_id, course_id, score, enrolled_at</div>
+<h4>employees</h4><div>id, emp_name, manager_id, dept_id, salary, hire_date</div>
+<h4>departments</h4><div>id, name</div>
+<h4>customers</h4><div>id, customer_name</div>
+<h4>orders</h4><div>id, customer_id, order_date, amount, status</div>
+<h4>bank</h4><div>id, name, balance</div>
+<h4>sales_summary</h4><div>region, product, amount</div>
+</div>
+      <div id="exercisePanel" class="ex-list" style="display:none;"><div style="font-size:11px;color:var(--muted);margin:10px 0 4px;">Day 1</div>
+<button class="ex-item" data-idx="0"><span class="tag">Day1 · #1</span>WHERE 기본</button>
+<button class="ex-item" data-idx="1"><span class="tag">Day1 · #2</span>LIKE 검색</button>
+<button class="ex-item" data-idx="2"><span class="tag">Day1 · #3</span>정렬 & 조건</button>
+<button class="ex-item" data-idx="3"><span class="tag">Day1 · #4</span>COUNT 집계</button>
+<div style="font-size:11px;color:var(--muted);margin:10px 0 4px;">Day 2</div>
+<button class="ex-item" data-idx="4"><span class="tag">Day2 · #5</span>기본 JOIN</button>
+<button class="ex-item" data-idx="5"><span class="tag">Day2 · #6</span>GROUP BY 집계</button>
+<button class="ex-item" data-idx="6"><span class="tag">Day2 · #7</span>Anti-Join</button>
+<button class="ex-item" data-idx="7"><span class="tag">Day2 · #8</span>Window Function</button>
+<div style="font-size:11px;color:var(--muted);margin:10px 0 4px;">Day 3</div>
+<button class="ex-item" data-idx="8"><span class="tag">Day3 · #9</span>실행계획 보기</button>
+<button class="ex-item" data-idx="9"><span class="tag">Day3 · #10</span>서브쿼리</button>
+<button class="ex-item" data-idx="10"><span class="tag">Day3 · #11</span>상관 서브쿼리</button>
+<button class="ex-item" data-idx="11"><span class="tag">Day3 · #12</span>UPDATE 트랜잭션</button>
+<div style="font-size:11px;color:var(--muted);margin:10px 0 4px;">Day 4</div>
+<button class="ex-item" data-idx="12"><span class="tag">Day4 · #13</span>조건부 집계</button>
+<button class="ex-item" data-idx="13"><span class="tag">Day4 · #14</span>고객별 매출</button>
+<button class="ex-item" data-idx="14"><span class="tag">Day4 · #15</span>Self Join</button>
+<button class="ex-item" data-idx="15"><span class="tag">Day4 · #16</span>재귀 CTE</button></div>
+    </div>
+    <div class="pg-main">
+      <div class="pg-guide" id="pgGuide">
+        <b>사용법</b> ① 아래 에디터에 SQL을 입력 → ② <b>실행</b> 버튼(또는 Ctrl+Enter) → ③ 결과 확인.
+        본문의 <b>"▶ 연습장에서 실행"</b> 버튼을 누르면 그 예제가 자동으로 채워지고 바로 실행돼요.
+        왼쪽 <b>✏️ 연습문제</b> 탭에서 빈칸(___) 채우기 문제를 골라 "따라쓰기" 연습도 할 수 있어요.
+      </div>
+      <div id="exerciseCurrent" class="ex-current" style="display:none;"></div>
+      <textarea id="pgEditor" spellcheck="false">SELECT s.name, m.name AS major, e.score
+FROM students s
+JOIN enrollments e ON e.student_id = s.id
+JOIN majors m ON m.id = s.major_id
+ORDER BY e.score DESC
+LIMIT 10;</textarea>
+      <div class="pg-btnrow">
+        <button class="pg-run" id="pgRun">▶ 실행 (Ctrl+Enter)</button>
+        <button class="pg-clear" id="pgClear">지우기</button>
+        <button class="pg-example" id="pgReset">스키마 초기화</button>
+      </div>
+      <div class="pg-result" id="pgResult"><div class="pg-info">쿼리를 실행하면 결과가 여기 표시됩니다.</div></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+<script>
+  const links = document.querySelectorAll('.navlink');
+  const sections = document.querySelectorAll('.sec');
+  const searchBox = document.getElementById('searchBox');
+  const topBtn = document.getElementById('topBtn');
+
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const id = e.target.id;
+        links.forEach(l=>l.classList.toggle('active', l.getAttribute('href')==='#'+id));
+      }
+    });
+  }, {rootMargin:'-10% 0px -70% 0px'});
+  sections.forEach(s=>obs.observe(s));
+
+  searchBox.addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    sections.forEach(sec=>{
+      const text = sec.innerText.toLowerCase();
+      const match = q==='' || text.includes(q);
+      sec.style.display = match ? '' : 'none';
+    });
+    links.forEach(l=>{
+      const num = l.getAttribute('data-sec');
+      if(!num) return;
+      const sec = document.getElementById('s'+num);
+      const groupTitle = l.textContent.toLowerCase();
+      const match = q==='' || (sec && sec.innerText.toLowerCase().includes(q)) || groupTitle.includes(q);
+      l.style.display = match ? '' : 'none';
+    });
+  });
+
+  window.addEventListener('scroll', ()=>{
+    topBtn.style.display = window.scrollY > 600 ? 'block' : 'none';
+  });
+  topBtn.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'}));
+
+  // ---- Theme toggle ----
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', ()=>{
+    document.body.classList.toggle('light');
+    const isLight = document.body.classList.contains('light');
+    themeBtn.textContent = isLight ? '🌙 다크 모드' : '☀ 라이트 모드';
+  });
+
+  // ---- SQL Playground (sql.js / SQLite in-browser) ----
+  const SEED_SQL = "\nCREATE TABLE majors (id INTEGER PRIMARY KEY, code TEXT UNIQUE, name TEXT NOT NULL);\nINSERT INTO majors VALUES\n (1,'CS','\ucef4\ud4e8\ud130\uacf5\ud559'),(2,'BA','\uacbd\uc601\ud559'),(3,'EE','\uc804\uc790\uacf5\ud559'),(4,'MED','\uac04\ud638\ud559');\n\nCREATE TABLE students (\n  id INTEGER PRIMARY KEY, student_no TEXT UNIQUE, name TEXT NOT NULL,\n  major_id INTEGER REFERENCES majors(id), grade INTEGER, gpa REAL, enrolled INTEGER DEFAULT 1\n);\nINSERT INTO students VALUES\n (1,'2024001','\ud64d\uae38\ub3d9',1,3,3.8,1),(2,'2024002','\uc774\uc21c\uc2e0',2,2,3.2,1),\n (3,'2024003','\uac15\uac10\ucc2c',1,4,3.9,1),(4,'2024004','\uc720\uad00\uc21c',3,1,3.5,1),\n (5,'2024005','\uc2e0\uc0ac\uc784\ub2f9',2,3,3.6,1),(6,'2024006','\uc7a5\uc601\uc2e4',1,2,3.1,1),\n (7,'2024007','\uc548\uc911\uadfc',4,4,3.95,1),(8,'2024008','\uc724\ubd09\uae38',3,2,2.9,1),\n (9,'2024009','\uae40\uad6c',1,1,3.4,1),(10,'2024010','\uc720\ubcd1\uc5b8',2,3,2.7,0),\n (11,'2024011','\uc815\uc57d\uc6a9',3,4,3.7,1),(12,'2024012','\ud5c8\uc900',4,1,3.3,1),\n (13,'2024013','\uc138\uc885\ub300\uc655',1,4,4.0,1),(14,'2024014','\uc774\uc774',2,2,3.0,1),\n (15,'2024015','\uc774\ud669',1,3,3.85,1);\n\nCREATE TABLE professors (id INTEGER PRIMARY KEY, name TEXT NOT NULL);\nINSERT INTO professors VALUES (1,'\uae40\uad50\uc218'),(2,'\ubc15\uad50\uc218'),(3,'\ucd5c\uad50\uc218');\n\nCREATE TABLE courses (\n  id INTEGER PRIMARY KEY, code TEXT UNIQUE, title TEXT NOT NULL, credits INTEGER, professor_id INTEGER\n);\nINSERT INTO courses VALUES\n (1,'CS101','\ub370\uc774\ud130\ubca0\uc774\uc2a4',3,1),(2,'CS102','\uc54c\uace0\ub9ac\uc998',3,1),\n (3,'CS103','\uc6b4\uc601\uccb4\uc81c',3,2),(4,'BA201','\ub9c8\ucf00\ud305\uc6d0\ub860',3,2),\n (5,'EE301','\ud68c\ub85c\uc774\ub860',3,3),(6,'CS201','\uc790\ub8cc\uad6c\uc870',3,1);\n\nCREATE TABLE enrollments (\n  student_id INTEGER REFERENCES students(id), course_id INTEGER REFERENCES courses(id),\n  score REAL, enrolled_at TEXT, PRIMARY KEY (student_id, course_id)\n);\nINSERT INTO enrollments VALUES\n (1,1,92,'2024-03-02'),(1,2,85,'2024-03-02'),(1,6,78,'2024-09-01'),\n (2,4,88,'2024-03-02'),(2,1,70,'2024-09-01'),\n (3,1,95,'2024-03-02'),(3,2,91,'2024-03-02'),(3,6,89,'2024-09-01'),\n (4,5,80,'2024-03-02'),\n (5,4,93,'2024-03-02'),(5,1,77,'2024-09-01'),\n (6,1,60,'2024-03-02'),(6,2,66,'2024-03-02'),\n (7,1,99,'2024-03-02'),(7,6,97,'2024-09-01'),\n (8,5,55,'2024-03-02'),\n (9,1,72,'2024-03-02'),\n (11,5,84,'2024-03-02'),\n (12,1,90,'2024-03-02'),\n (13,1,100,'2024-03-02'),(13,2,98,'2024-03-02'),(13,6,96,'2024-09-01'),\n (14,4,65,'2024-03-02'),\n (15,1,88,'2024-03-02'),(15,6,91,'2024-09-01');\n\nCREATE TABLE departments (id INTEGER PRIMARY KEY, name TEXT NOT NULL);\nINSERT INTO departments VALUES (1,'\uac1c\ubc1c\ud300'),(2,'\uc601\uc5c5\ud300'),(3,'\uc778\uc0ac\ud300');\n\nCREATE TABLE employees (\n  id INTEGER PRIMARY KEY, emp_name TEXT NOT NULL, manager_id INTEGER,\n  dept_id INTEGER, salary INTEGER, hire_date TEXT\n);\nINSERT INTO employees VALUES\n (1,'\ub300\ud45c',NULL,1,10000,'2015-01-01'),\n (2,'Mgr_1',1,1,7000,'2016-02-01'),(3,'Mgr_2',1,2,6800,'2016-03-01'),\n (4,'Dev_1',2,1,5200,'2019-01-15'),(5,'Dev_2',2,1,5400,'2020-03-10'),\n (6,'Dev_3',2,1,4900,'2021-07-01'),(7,'Sales_1',3,2,4700,'2019-05-01'),\n (8,'Sales_2',3,2,5000,'2020-01-01'),(9,'Dev_4',2,1,6100,'2018-01-01'),\n (10,'HR_1',1,3,4500,'2017-09-01');\n\nCREATE TABLE customers (id INTEGER PRIMARY KEY, customer_name TEXT NOT NULL);\nINSERT INTO customers VALUES (1,'\uc0bc\uc131'),(2,'LG'),(3,'\ub124\uc774\ubc84'),(4,'\uce74\uce74\uc624'),(5,'\ucfe0\ud321');\n\nCREATE TABLE orders (\n  id INTEGER PRIMARY KEY, customer_id INTEGER, order_date TEXT, amount REAL, status TEXT\n);\nINSERT INTO orders VALUES\n (1,1,'2024-01-05',1200,'paid'),(2,1,'2024-02-10',900,'paid'),\n (3,2,'2024-01-20',500,'paid'),(4,3,'2024-03-01',3000,'paid'),\n (5,3,'2024-03-15',1500,'cancelled'),(6,4,'2024-04-02',700,'paid'),\n (7,5,'2024-04-10',2200,'paid'),(8,1,'2024-05-01',400,'paid'),\n (9,2,'2024-05-15',1100,'paid'),(10,4,'2024-06-01',950,'paid');\n\nCREATE TABLE bank (id INTEGER PRIMARY KEY, name TEXT, balance INTEGER);\nINSERT INTO bank VALUES (1,'Alice',1000),(2,'Bob',1000);\n\nCREATE TABLE sales_summary (region TEXT, product TEXT, amount INTEGER);\nINSERT INTO sales_summary VALUES ('East','A',100),('East','B',150),('West','A',200),('West','B',50);\n";
+  const EXERCISES = [{"day": 1, "title": "WHERE 기본", "prompt": "students 테이블에서 3학년(grade=3) 학생의 이름과 GPA를 조회하세요.", "starter": "SELECT name, ___\nFROM students\nWHERE grade = ___;", "answer": "SELECT name, gpa\nFROM students\nWHERE grade = 3;"}, {"day": 1, "title": "LIKE 검색", "prompt": "이름에 '이'가 들어간 학생을 찾으세요. (LIKE 패턴 사용)", "starter": "SELECT name FROM students WHERE name LIKE ___;", "answer": "SELECT name FROM students WHERE name LIKE '%이%';"}, {"day": 1, "title": "정렬 & 조건", "prompt": "GPA가 3.5 이상인 학생을 GPA 높은 순으로 정렬해서 조회하세요.", "starter": "SELECT name, gpa FROM students\nWHERE gpa ___\nORDER BY gpa ___;", "answer": "SELECT name, gpa FROM students\nWHERE gpa >= 3.5\nORDER BY gpa DESC;"}, {"day": 1, "title": "COUNT 집계", "prompt": "students 테이블의 전체 학생 수를 세어보세요.", "starter": "SELECT ___(*) FROM students;", "answer": "SELECT COUNT(*) FROM students;"}, {"day": 2, "title": "기본 JOIN", "prompt": "학생 이름과 소속 학과 이름을 함께 조회하세요. (students + majors JOIN)", "starter": "SELECT s.name, m.name AS major\nFROM students s\nJOIN majors m ON ___;", "answer": "SELECT s.name, m.name AS major\nFROM students s\nJOIN majors m ON m.id = s.major_id;"}, {"day": 2, "title": "GROUP BY 집계", "prompt": "학과(major_id)별 평균 GPA를 구하세요.", "starter": "SELECT major_id, ___(gpa)\nFROM students\nGROUP BY ___;", "answer": "SELECT major_id, AVG(gpa)\nFROM students\nGROUP BY major_id;"}, {"day": 2, "title": "Anti-Join", "prompt": "한 번도 수강하지 않은 학생을 찾으세요. (LEFT JOIN + IS NULL)", "starter": "SELECT s.name\nFROM students s\nLEFT JOIN enrollments e ON e.student_id = s.id\nWHERE e.student_id ___;", "answer": "SELECT s.name\nFROM students s\nLEFT JOIN enrollments e ON e.student_id = s.id\nWHERE e.student_id IS NULL;"}, {"day": 2, "title": "Window Function", "prompt": "수강 기록(enrollments)에서 점수가 높은 순으로 순위를 매겨보세요. (RANK)", "starter": "SELECT student_id, score,\n ___() OVER (ORDER BY score DESC) AS rnk\nFROM enrollments;", "answer": "SELECT student_id, score,\n RANK() OVER (ORDER BY score DESC) AS rnk\nFROM enrollments;"}, {"day": 3, "title": "실행계획 보기", "prompt": "SQLite에서 실행계획을 확인하는 명령을 완성하세요. (PostgreSQL의 EXPLAIN과 같은 역할)", "starter": "___ QUERY PLAN\nSELECT * FROM students WHERE grade = 3;", "answer": "EXPLAIN QUERY PLAN\nSELECT * FROM students WHERE grade = 3;"}, {"day": 3, "title": "서브쿼리", "prompt": "전체 평균 GPA보다 높은 학생의 이름을 조회하세요.", "starter": "SELECT name FROM students\nWHERE gpa > (SELECT ___(gpa) FROM students);", "answer": "SELECT name FROM students\nWHERE gpa > (SELECT AVG(gpa) FROM students);"}, {"day": 3, "title": "상관 서브쿼리", "prompt": "자기 학과 평균보다 GPA가 높은 학생을 찾으세요. (상관 서브쿼리)", "starter": "SELECT s.name FROM students s\nWHERE s.gpa > (\n  SELECT AVG(gpa) FROM students s2 WHERE s2.major_id = ___\n);", "answer": "SELECT s.name FROM students s\nWHERE s.gpa > (\n  SELECT AVG(gpa) FROM students s2 WHERE s2.major_id = s.major_id\n);"}, {"day": 3, "title": "UPDATE 트랜잭션", "prompt": "bank 테이블에서 Alice의 잔고를 800으로 바꿔보세요.", "starter": "UPDATE bank SET balance = ___ WHERE name = ___;", "answer": "UPDATE bank SET balance = 800 WHERE name = 'Alice';"}, {"day": 4, "title": "조건부 집계", "prompt": "orders 테이블에서 상태가 'paid'인 주문의 총 금액 합계를 구하세요.", "starter": "SELECT ___(amount) FROM orders WHERE status = ___;", "answer": "SELECT SUM(amount) FROM orders WHERE status = 'paid';"}, {"day": 4, "title": "고객별 매출", "prompt": "고객별 총 주문금액을 구하고, 금액이 큰 순서로 정렬하세요.", "starter": "SELECT c.customer_name, SUM(o.amount) AS total\nFROM customers c JOIN orders o ON o.customer_id = c.id\nGROUP BY ___\nORDER BY ___ DESC;", "answer": "SELECT c.customer_name, SUM(o.amount) AS total\nFROM customers c JOIN orders o ON o.customer_id = c.id\nGROUP BY c.customer_name\nORDER BY total DESC;"}, {"day": 4, "title": "Self Join", "prompt": "직원과 그 직원의 상사(매니저) 이름을 함께 조회하세요.", "starter": "SELECT e.emp_name, m.emp_name AS manager\nFROM employees e\nLEFT JOIN employees m ON m.id = ___;", "answer": "SELECT e.emp_name, m.emp_name AS manager\nFROM employees e\nLEFT JOIN employees m ON m.id = e.manager_id;"}, {"day": 4, "title": "재귀 CTE", "prompt": "WITH RECURSIVE로 조직도 전체 계층(깊이 포함)을 조회하세요.", "starter": "WITH RECURSIVE org AS (\n  SELECT id, emp_name, manager_id, 1 AS depth FROM employees WHERE manager_id IS NULL\n  UNION ALL\n  SELECT e.id, e.emp_name, e.manager_id, o.depth+1\n  FROM employees e JOIN org o ON o.id = ___\n)\nSELECT * FROM org;", "answer": "WITH RECURSIVE org AS (\n  SELECT id, emp_name, manager_id, 1 AS depth FROM employees WHERE manager_id IS NULL\n  UNION ALL\n  SELECT e.id, e.emp_name, e.manager_id, o.depth+1\n  FROM employees e JOIN org o ON o.id = e.manager_id\n)\nSELECT * FROM org;"}];
+  const pgToggle = document.getElementById('pgToggle');
+  const pgDrawer = document.getElementById('pgDrawer');
+  const pgClose = document.getElementById('pgClose');
+  const pgEditor = document.getElementById('pgEditor');
+  const pgRun = document.getElementById('pgRun');
+  const pgClear = document.getElementById('pgClear');
+  const pgReset = document.getElementById('pgReset');
+  const pgResult = document.getElementById('pgResult');
+  const pgStatus = document.getElementById('pgStatus');
+  const exerciseCurrent = document.getElementById('exerciseCurrent');
+
+  let db = null;
+
+  function openDrawer(){ pgDrawer.classList.add('open'); }
+  function closeDrawer(){ pgDrawer.classList.remove('open'); }
+  pgToggle.addEventListener('click', ()=>{
+    pgDrawer.classList.contains('open') ? closeDrawer() : openDrawer();
+  });
+  pgClose.addEventListener('click', closeDrawer);
+
+  function initDb(SQL){
+    db = new SQL.Database();
+    db.run(SEED_SQL);
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderResults(results){
+    if(!results || results.length===0){
+      pgResult.innerHTML = '<div class="pg-info">실행 완료 — 반환된 행이 없습니다 (SELECT가 아니거나 결과 없음).</div>';
+      return;
+    }
+    let html = '';
+    results.forEach(res=>{
+      html += '<table><thead><tr>' + res.columns.map(c=>'<th>'+escapeHtml(c)+'</th>').join('') + '</tr></thead><tbody>';
+      res.values.forEach(row=>{
+        html += '<tr>' + row.map(v=> '<td>' + (v===null? '<span style="color:var(--muted)">NULL</span>' : escapeHtml(v)) + '</td>').join('') + '</tr>';
+      });
+      html += '</tbody></table>';
+      html += '<div class="pg-rowcount">' + res.values.length + '개 행 반환</div>';
+    });
+    pgResult.innerHTML = html;
+  }
+
+  function runQuery(){
+    if(!db){ pgResult.innerHTML = '<div class="pg-info">엔진이 아직 로딩 중이에요. 잠시 후 다시 시도해주세요.</div>'; return; }
+    const q = pgEditor.value;
+    try{
+      const results = db.exec(q);
+      renderResults(results);
+    }catch(err){
+      pgResult.innerHTML = '<div class="pg-error">오류: ' + escapeHtml(err.message) + '</div>';
+    }
+  }
+  pgRun.addEventListener('click', runQuery);
+  pgEditor.addEventListener('keydown', (e)=>{
+    if((e.ctrlKey || e.metaKey) && e.key==='Enter'){ runQuery(); }
+  });
+  pgClear.addEventListener('click', ()=>{ pgEditor.value=''; pgEditor.focus(); });
+  pgReset.addEventListener('click', ()=>{
+    if(!db) return;
+    db.close(); initDb(window.__SQL);
+    pgResult.innerHTML = '<div class="pg-info">스키마를 초기 상태로 재설정했습니다.</div>';
+  });
+
+  window.initSqlJs({ locateFile: file => 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/' + file })
+    .then(SQL=>{
+      window.__SQL = SQL;
+      initDb(SQL);
+      pgStatus.textContent = '준비 완료 ✓';
+    })
+    .catch(err=>{
+      pgStatus.textContent = '로딩 실패 (인터넷 연결을 확인하세요)';
+      console.error(err);
+    });
+
+  document.querySelectorAll('.sqlbox').forEach(box=>{
+    const head = box.querySelector('.sqlhead');
+    const code = box.querySelector('code');
+    if(!head || !code) return;
+    const btn = document.createElement('button');
+    btn.className = 'run-btn';
+    btn.textContent = '▶ 연습장에서 실행';
+    btn.addEventListener('click', ()=>{
+      exerciseCurrent.style.display = 'none';
+      pgEditor.value = code.textContent;
+      openDrawer();
+      setTimeout(runQuery, 250);
+      pgDrawer.scrollIntoView({behavior:'smooth', block:'end'});
+    });
+    head.appendChild(btn);
+  });
+
+  // ---- Tabs: schema vs exercise ----
+  const tabSchema = document.getElementById('tabSchema');
+  const tabExercise = document.getElementById('tabExercise');
+  const schemaPanel = document.getElementById('schemaPanel');
+  const exercisePanel = document.getElementById('exercisePanel');
+  tabSchema.addEventListener('click', ()=>{
+    tabSchema.classList.add('active'); tabExercise.classList.remove('active');
+    schemaPanel.style.display=''; exercisePanel.style.display='none';
+  });
+  tabExercise.addEventListener('click', ()=>{
+    tabExercise.classList.add('active'); tabSchema.classList.remove('active');
+    schemaPanel.style.display='none'; exercisePanel.style.display='';
+  });
+
+  // ---- Exercise loading ----
+  function loadExercise(idx){
+    const ex = EXERCISES[idx];
+    document.querySelectorAll('.ex-item').forEach(b=>b.classList.toggle('active', b.dataset.idx==idx));
+    exerciseCurrent.style.display = '';
+    exerciseCurrent.innerHTML = '<b>Day ' + ex.day + ' · ' + ex.title + '</b><br>' + ex.prompt +
+      '<div class="ex-btnrow"><button class="ex-answer-btn" id="showAnswerBtn">정답 보기</button>' +
+      '<button class="ex-answer-btn" id="reloadStarterBtn">문제(빈칸) 다시 불러오기</button></div>';
+    pgEditor.value = ex.starter;
+    document.getElementById('showAnswerBtn').addEventListener('click', ()=>{
+      pgEditor.value = ex.answer;
+    });
+    document.getElementById('reloadStarterBtn').addEventListener('click', ()=>{
+      pgEditor.value = ex.starter;
+    });
+    openDrawer();
+    tabExercise.click();
+  }
+  document.querySelectorAll('.ex-item').forEach(btn=>{
+    btn.addEventListener('click', ()=> loadExercise(parseInt(btn.dataset.idx)));
+  });
+
+  // ---- Quiz interactivity ----
+  function updateScore(day){
+    const wrap = document.getElementById('quiz-day'+day);
+    const total = wrap.querySelectorAll('.quiz-q').length;
+    const correct = wrap.querySelectorAll('.quiz-q.answered-correct').length;
+    wrap.querySelector('.quiz-score').textContent = correct + ' / ' + total + ' 정답';
+  }
+  document.querySelectorAll('.quiz-q[data-type="ox"], .quiz-q[data-type="mc"]').forEach(qEl=>{
+    const answer = qEl.dataset.answer;
+    const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    qEl.querySelectorAll('.quiz-opt').forEach(opt=>{
+      opt.addEventListener('click', ()=>{
+        if(qEl.classList.contains('locked')) return;
+        qEl.classList.add('locked');
+        const val = opt.dataset.val;
+        const isCorrect = (val === answer);
+        opt.classList.add(isCorrect ? 'correct' : 'incorrect');
+        qEl.querySelectorAll('.quiz-opt').forEach(o=>{
+          o.setAttribute('disabled','true');
+          if(o.dataset.val === answer) o.classList.add('correct');
+        });
+        const fb = qEl.querySelector('.quiz-feedback');
+        if(isCorrect){ fb.textContent = '정답이에요! 🎉'; fb.className='quiz-feedback ok'; qEl.classList.add('answered-correct'); }
+        else{ fb.textContent = '아쉬워요. 정답은 강조 표시된 항목이에요.'; fb.className='quiz-feedback no'; }
+        updateScore(day);
+      });
+    });
+  });
+  document.querySelectorAll('.quiz-q[data-type="short"]').forEach(qEl=>{
+    const accept = JSON.parse(qEl.dataset.accept).map(a=>a.toLowerCase().trim());
+    const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    const input = qEl.querySelector('input');
+    const btn = qEl.querySelector('.quiz-check');
+    const fb = qEl.querySelector('.quiz-feedback');
+    function check(){
+      if(qEl.classList.contains('locked')) return;
+      const val = input.value.toLowerCase().trim();
+      const isCorrect = accept.includes(val) && val !== '';
+      if(isCorrect){
+        qEl.classList.add('locked','answered-correct');
+        fb.textContent = '정답이에요! 🎉'; fb.className = 'quiz-feedback ok';
+        input.disabled = true; btn.disabled = true;
+        updateScore(day);
+      } else {
+        fb.textContent = '다시 시도해보세요. (정답 예: ' + accept[0] + ')'; fb.className = 'quiz-feedback no';
+      }
+    }
+    btn.addEventListener('click', check);
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Full-stack Engineering 학습 저장소</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#161925; --panel2:#1c2030; --border:#2a2f42;
+    --text:#e6e8ef; --muted:#9aa0b4; --accent:#7c9dff; --accent2:#4fd1c5;
+    --warn:#f6ad55; --done:#4fd1c5; --wip:#f6ad55; --todo:#5b6072;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6;
+  }
+  body.light{
+    --bg:#f7f8fc; --panel:#ffffff; --panel2:#f0f2f9; --border:#e2e5f0;
+    --text:#20232e; --muted:#6b7180; --accent:#3f5fd6; --accent2:#0f9488;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:48px 28px 100px;}
+  .top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:36px;}
+  .theme-btn{
+    padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:12.5px; cursor:pointer; white-space:nowrap;
+  }
+  .hero h1{font-size:28px; margin:0 0 10px;}
+  .hero p{color:var(--muted); font-size:14.5px; margin:0 0 4px; max-width:640px;}
+  .hero .meta{margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;}
+  .hero .meta span{font-size:11.5px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted);}
+  .section-title{font-size:15px; font-weight:700; margin:40px 0 4px; display:flex; align-items:center; gap:8px;}
+  .section-sub{color:var(--muted); font-size:13px; margin:0 0 18px;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:16px;}
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:20px 22px;
+    text-decoration:none; color:var(--text); display:block; transition:border-color .15s, transform .15s;
+  }
+  .card:hover{border-color:var(--accent); transform:translateY(-2px);}
+  .card.todo{border-style:dashed; opacity:.7; cursor:default;}
+  .card.todo:hover{transform:none; border-color:var(--border);}
+  .card .status{
+    display:inline-block; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px;
+    margin-bottom:10px; letter-spacing:.02em;
+  }
+  .status.done{background:rgba(79,209,197,.15); color:var(--done);}
+  .status.wip{background:rgba(246,173,85,.15); color:var(--wip);}
+  .status.todo{background:rgba(91,96,114,.2); color:var(--todo);}
+  .card h3{font-size:16.5px; margin:0 0 8px;}
+  .card p{font-size:13px; color:var(--muted); margin:0 0 12px; line-height:1.6;}
+  .card .tags{display:flex; gap:6px; flex-wrap:wrap;}
+  .card .tags span{font-size:10.5px; padding:2px 8px; border-radius:6px; background:var(--panel2); color:var(--muted);}
+  .howto{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px 26px; margin-top:44px;
+  }
+  .howto h2{font-size:16px; margin:0 0 6px;}
+  .howto p.lead{color:var(--muted); font-size:13px; margin:0 0 18px;}
+  .steps{counter-reset:step; list-style:none; padding:0; margin:0; display:grid; gap:14px;}
+  .steps li{
+    counter-increment:step; position:relative; padding-left:38px; font-size:13.5px; line-height:1.7;
+  }
+  .steps li::before{
+    content:counter(step); position:absolute; left:0; top:0; width:26px; height:26px; border-radius:50%;
+    background:var(--panel2); border:1px solid var(--border); color:var(--accent); font-weight:700;
+    font-size:12px; display:flex; align-items:center; justify-content:center;
+  }
+  .steps code{
+    background:var(--panel2); border:1px solid var(--border); border-radius:5px; padding:1px 6px;
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:12px; color:var(--accent2);
+  }
+  footer{margin-top:56px; color:var(--muted); font-size:12px; text-align:center;}
+  footer a{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="hero">
+      <h1>🚀 Full-stack Engineering 학습 저장소</h1>
+      <p>AI캠퍼스 Full-stack 부트캠프(4일 단위 모듈 진행) 3개월 과정을 팀원들과 함께 정리하는 복습노트 사이트입니다.</p>
+      <p>강의별로 <b>내용 요약 · 실습 · 퀴즈</b>를 한 페이지에 담아, 배운 걸 바로 확인하고 서로 공유할 수 있도록 만들었어요.</p>
+      <div class="meta">
+        <span>📚 3개월 풀스택 과정</span>
+        <span>👥 조원 공유용</span>
+        <span>🔄 매 강의마다 업데이트</span>
+        <span>🌐 GitHub Pages 배포</span>
+      </div>
+    </div>
+    <button class="theme-btn" id="themeBtn">☀ 라이트 모드</button>
+  </div>
+
+  <div class="section-title">📖 강의 목록</div>
+  <p class="section-sub">완료된 강의를 클릭하면 복습노트로 이동해요. 새 강의는 아래 "새 강의 추가하는 법"을 참고해 계속 늘려가요.</p>
+  <div class="grid">
+    <a class="card" href="lectures/01-smart-data/index.html">
+      <span class="status done">완료</span>
+      <h3>스마트 데이터 이해 및 활용</h3>
+      <p>데이터베이스 개요부터 ERD, SQL 기초~고급, 인덱스/튜닝, 트랜잭션, 클라우드 DB, 보안/운영까지 총 33개 세션.</p>
+      <div class="tags">
+        <span>PostgreSQL</span><span>SQL</span><span>SQL 연습장</span><span>Day별 퀴즈</span>
+      </div>
+    </a>
+    <div class="card todo">
+      <span class="status todo">준비 중</span>
+      <h3>다음 강의</h3>
+      <p>다음 강의가 끝나면 이 자리에 새 카드가 추가돼요. 아래 가이드대로 폴더를 만들고 이 index.html에 카드만 추가하면 됩니다.</p>
+      <div class="tags"><span>+ 추가 예정</span></div>
+    </div>
+  </div>
+
+  <div class="howto" id="howto">
+    <h2>🛠 새 강의 추가하는 법</h2>
+    <p class="lead">강의가 끝날 때마다 아래 순서로 하면 사이트가 계속 늘어나요. (팀원 누구나 가능)</p>
+    <ol class="steps">
+      <li><code>lectures/</code> 폴더 안에 새 폴더 생성 (예: <code>lectures/02-backend-basics/</code>)</li>
+      <li><code>template/lecture-template.html</code> 을 복사해서 새 폴더의 <code>index.html</code> 로 저장</li>
+      <li>템플릿 안 주석(<code>&lt;!-- 여기에 --&gt;</code>)을 따라 강의 내용 · 실습 · 퀴즈를 채워넣기 (Claude에게 PDF/자료 주고 "이 템플릿 형식으로 채워줘"라고 요청해도 됨)</li>
+      <li>이 <code>index.html</code>(홈)의 강의 목록 <code>&lt;div class="grid"&gt;</code> 안에 새 카드 하나 추가하고, "준비 중" 카드는 지우거나 다음 자리로 미루기</li>
+      <li><code>git add . &amp;&amp; git commit -m "add: 새 강의 추가" &amp;&amp; git push</code> — GitHub Pages가 몇 분 안에 자동 반영</li>
+    </ol>
+  </div>
+
+  <footer>SKALA Full-stack Engineering 스터디 · <a href="README.md">배포 가이드 (README)</a></footer>
+</div>
+<script>
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', ()=>{
+    document.body.classList.toggle('light');
+    themeBtn.textContent = document.body.classList.contains('light') ? '🌙 다크 모드' : '☀ 라이트 모드';
+  });
+</script>
+</body>
+</html>
