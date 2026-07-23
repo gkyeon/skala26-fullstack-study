@@ -317,6 +317,10 @@
   .quiz-feedback{font-size:12.5px; margin-top:8px; font-weight:600;}
   .quiz-feedback.ok{color:var(--accent2);}
   .quiz-feedback.no{color:#f687b3;}
+  .quiz-exp{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-weight:400; font-size:12.5px;
+    line-height:1.6; color:var(--text); background:var(--panel2); border:1px solid var(--border);
+  }
 
   /* ===== Site topbar (links back to course home) ===== */
   .site-topbar{
@@ -804,7 +808,7 @@ psql postgres -U (계정) -W</code></pre></div>
   <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
   <div class="quiz-score" data-day="1">0 / 7 정답</div>
   
-            <div class="quiz-q" data-qid="d1q0" data-type="ox" data-answer="true">
+            <div class="quiz-q" data-qid="d1q0" data-type="ox" data-answer="true" data-exp="ACID = Atomicity·Consistency·Isolation·Durability, I는 격리성(Isolation)이 맞아요.">
               <p class="quiz-qtext"><span class="qtype">OX</span>ACID의 I는 Isolation(격리성)을 의미한다.</p>
               <div class="quiz-opts">
                 <button class="quiz-opt" data-val="true">O (맞다)</button>
@@ -812,7 +816,7 @@ psql postgres -U (계정) -W</code></pre></div>
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d1q1" data-type="ox" data-answer="false">
+            <div class="quiz-q" data-qid="d1q1" data-type="ox" data-answer="false" data-exp="PK는 각 행을 유일하게 식별해야 하므로 NULL과 중복을 모두 허용하지 않아요.">
               <p class="quiz-qtext"><span class="qtype">OX</span>기본키(PK)는 NULL 값을 허용한다.</p>
               <div class="quiz-opts">
                 <button class="quiz-opt" data-val="true">O (맞다)</button>
@@ -820,7 +824,7 @@ psql postgres -U (계정) -W</code></pre></div>
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d1q2" data-type="ox" data-answer="false">
+            <div class="quiz-q" data-qid="d1q2" data-type="ox" data-answer="false" data-exp="WAL은 이름 그대로 로그를 먼저(Write-Ahead) 남기고, 데이터 파일 반영은 나중(Checkpoint 시점)에 이뤄져요.">
               <p class="quiz-qtext"><span class="qtype">OX</span>WAL은 데이터 파일을 먼저 쓰고, 로그는 나중에 기록하는 방식이다.</p>
               <div class="quiz-opts">
                 <button class="quiz-opt" data-val="true">O (맞다)</button>
@@ -828,17 +832,17 @@ psql postgres -U (계정) -W</code></pre></div>
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d1q3" data-type="mc" data-answer="무조건적인 조회 성능 향상">
+            <div class="quiz-q" data-qid="d1q3" data-type="mc" data-answer="무조건적인 조회 성능 향상" data-exp="정규화는 중복 제거·이상현상 방지·무결성 향상이 목적이며, 오히려 JOIN이 늘어 조회 성능은 저하될 수도 있어요.">
               <p class="quiz-qtext"><span class="qtype">객관식</span>다음 중 정규화의 '직접적인' 목적이 아닌 것은?</p>
               <div class="quiz-opts"><button class="quiz-opt" data-val="데이터 중복 최소화">데이터 중복 최소화</button><button class="quiz-opt" data-val="이상현상(Anomaly) 방지">이상현상(Anomaly) 방지</button><button class="quiz-opt" data-val="무조건적인 조회 성능 향상">무조건적인 조회 성능 향상</button><button class="quiz-opt" data-val="데이터 무결성 향상">데이터 무결성 향상</button></div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d1q4" data-type="mc" data-answer="학생 ↔ 성적">
+            <div class="quiz-q" data-qid="d1q4" data-type="mc" data-answer="학생 ↔ 성적" data-exp="학생 한 명이 여러 과목의 성적을 가질 수 있으니 1:N, 학생↔학생증은 1:1 관계예요.">
               <p class="quiz-qtext"><span class="qtype">객관식</span>다음 중 1:N 관계의 예시로 가장 알맞은 것은?</p>
               <div class="quiz-opts"><button class="quiz-opt" data-val="학생 ↔ 학생증">학생 ↔ 학생증</button><button class="quiz-opt" data-val="학생 ↔ 성적">학생 ↔ 성적</button><button class="quiz-opt" data-val="학과 ↔ 학과">학과 ↔ 학과</button></div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d1q5" data-type="short" data-accept='["FK", "fk"]'>
+            <div class="quiz-q" data-qid="d1q5" data-type="short" data-accept='["FK", "fk"]' data-exp="다른 테이블의 PK를 참조해 관계를 표현하는 컬럼이 외래키(Foreign Key, FK)예요.">
               <p class="quiz-qtext"><span class="qtype">단답형</span>다른 테이블의 PK를 참조하는 컬럼을 무엇이라 하는가? (영문 약자)</p>
               <div class="quiz-short">
                 <input type="text" placeholder="정답 입력...">
@@ -846,7 +850,7 @@ psql postgres -U (계정) -W</code></pre></div>
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d1q6" data-type="short" data-accept='["ACID", "acid"]'>
+            <div class="quiz-q" data-qid="d1q6" data-type="short" data-accept='["ACID", "acid"]' data-exp="Atomicity(원자성)·Consistency(일관성)·Isolation(격리성)·Durability(지속성)의 앞글자를 딴 약자예요.">
               <p class="quiz-qtext"><span class="qtype">단답형</span>트랜잭션이 지켜야 할 4대 원칙을 묶어 부르는 약자는?</p>
               <div class="quiz-short">
                 <input type="text" placeholder="정답 입력...">
@@ -1163,7 +1167,7 @@ FROM knowledge_base kb LEFT JOIN vector_search vs ON vs.id=kb.id
   <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
   <div class="quiz-score" data-day="2">0 / 7 정답</div>
   
-            <div class="quiz-q" data-qid="d2q0" data-type="ox" data-answer="true">
+            <div class="quiz-q" data-qid="d2q0" data-type="ox" data-answer="true" data-exp="Window Function은 GROUP BY처럼 행을 묶어 축소하지 않고, OVER()로 각 행에 집계값을 추가만 해요.">
               <p class="quiz-qtext"><span class="qtype">OX</span>Window Function은 GROUP BY와 달리 원본 행 개수를 그대로 유지한다.</p>
               <div class="quiz-opts">
                 <button class="quiz-opt" data-val="true">O (맞다)</button>
@@ -1171,7 +1175,7 @@ FROM knowledge_base kb LEFT JOIN vector_search vs ON vs.id=kb.id
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d2q1" data-type="ox" data-answer="false">
+            <div class="quiz-q" data-qid="d2q1" data-type="ox" data-answer="false" data-exp="RANK()는 동점자 수만큼 다음 순위를 건너뛰어요(1,2,2,4). 건너뛰지 않는 건 DENSE_RANK()예요.">
               <p class="quiz-qtext"><span class="qtype">OX</span>RANK()는 동점자가 있어도 항상 연속된 순위(1,2,2,3)를 부여한다.</p>
               <div class="quiz-opts">
                 <button class="quiz-opt" data-val="true">O (맞다)</button>
@@ -1179,7 +1183,7 @@ FROM knowledge_base kb LEFT JOIN vector_search vs ON vs.id=kb.id
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d2q2" data-type="ox" data-answer="true">
+            <div class="quiz-q" data-qid="d2q2" data-type="ox" data-answer="true" data-exp="UNION ALL은 중복 제거를 위한 정렬/비교 과정이 없어서 UNION보다 일반적으로 더 빨라요.">
               <p class="quiz-qtext"><span class="qtype">OX</span>UNION ALL은 UNION보다 일반적으로 더 빠르다 (중복 제거 과정이 없어서).</p>
               <div class="quiz-opts">
                 <button class="quiz-opt" data-val="true">O (맞다)</button>
@@ -1187,17 +1191,17 @@ FROM knowledge_base kb LEFT JOIN vector_search vs ON vs.id=kb.id
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d2q3" data-type="mc" data-answer="INNER JOIN">
+            <div class="quiz-q" data-qid="d2q3" data-type="mc" data-answer="INNER JOIN" data-exp="양쪽 테이블에 모두 매칭되는 행만 반환하는 것이 INNER JOIN의 정의예요.">
               <p class="quiz-qtext"><span class="qtype">객관식</span>두 테이블에 '모두' 매칭되는 행만 반환하는 JOIN은?</p>
               <div class="quiz-opts"><button class="quiz-opt" data-val="LEFT JOIN">LEFT JOIN</button><button class="quiz-opt" data-val="INNER JOIN">INNER JOIN</button><button class="quiz-opt" data-val="CROSS JOIN">CROSS JOIN</button><button class="quiz-opt" data-val="FULL OUTER JOIN">FULL OUTER JOIN</button></div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d2q4" data-type="mc" data-answer="NOT EXISTS">
+            <div class="quiz-q" data-qid="d2q4" data-type="mc" data-answer="NOT EXISTS" data-exp="NOT IN은 서브쿼리 결과에 NULL이 섞이면 전체가 빈 결과가 되는 함정이 있어서, NULL에 안전한 NOT EXISTS가 권장돼요.">
               <p class="quiz-qtext"><span class="qtype">객관식</span>NOT IN 대신 NULL 안전성과 성능 때문에 권장되는 대안은?</p>
               <div class="quiz-opts"><button class="quiz-opt" data-val="NOT EXISTS">NOT EXISTS</button><button class="quiz-opt" data-val="HAVING">HAVING</button><button class="quiz-opt" data-val="LIMIT">LIMIT</button><button class="quiz-opt" data-val="GROUP BY">GROUP BY</button></div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d2q5" data-type="short" data-accept='["STRING_AGG", "string_agg"]'>
+            <div class="quiz-q" data-qid="d2q5" data-type="short" data-accept='["STRING_AGG", "string_agg"]' data-exp="여러 행의 값을 구분자로 이어붙여 하나의 문자열로 만드는 PostgreSQL 함수예요 (예: STRING_AGG(name, ', ')).">
               <p class="quiz-qtext"><span class="qtype">단답형</span>여러 행을 하나의 문자열로 이어붙이는 PostgreSQL 집계 함수는?</p>
               <div class="quiz-short">
                 <input type="text" placeholder="정답 입력...">
@@ -1205,7 +1209,7 @@ FROM knowledge_base kb LEFT JOIN vector_search vs ON vs.id=kb.id
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d2q6" data-type="short" data-accept='["CTE", "cte"]'>
+            <div class="quiz-q" data-qid="d2q6" data-type="short" data-accept='["CTE", "cte"]' data-exp="WITH 절로 정의해 쿼리 안에서 이름처럼 재사용하는 임시 결과 집합이 CTE(Common Table Expression)예요.">
               <p class="quiz-qtext"><span class="qtype">단답형</span>WITH 절로 만드는, 이름 붙여 재사용하는 임시 결과 집합을 뭐라고 부르는가? (영문 약자)</p>
               <div class="quiz-short">
                 <input type="text" placeholder="정답 입력...">
@@ -1513,7 +1517,7 @@ VACUUM FULL orders;    -- 완전 재작성(배타적잠금, 공간 반환)
   <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
   <div class="quiz-score" data-day="3">0 / 7 정답</div>
   
-            <div class="quiz-q" data-qid="d3q0" data-type="ox" data-answer="false">
+            <div class="quiz-q" data-qid="d3q0" data-type="ox" data-answer="false" data-exp="인덱스가 늘어날수록 INSERT/UPDATE/DELETE마다 인덱스도 함께 갱신해야 해서 쓰기 성능은 오히려 떨어져요.">
               <p class="quiz-qtext"><span class="qtype">OX</span>인덱스가 많을수록 쓰기(INSERT/UPDATE) 성능도 항상 좋아진다.</p>
               <div class="quiz-opts">
                 <button class="quiz-opt" data-val="true">O (맞다)</button>
@@ -1521,7 +1525,7 @@ VACUUM FULL orders;    -- 완전 재작성(배타적잠금, 공간 반환)
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d3q1" data-type="ox" data-answer="true">
+            <div class="quiz-q" data-qid="d3q1" data-type="ox" data-answer="true" data-exp="커버링 인덱스는 필요한 컬럼만 인덱스에서 바로 읽는 방식인데, SELECT *는 모든 컬럼이 필요해 인덱스만으로 해결이 안 돼요.">
               <p class="quiz-qtext"><span class="qtype">OX</span>SELECT * 는 커버링 인덱스(Index Only Scan)를 활용하기 어렵게 만든다.</p>
               <div class="quiz-opts">
                 <button class="quiz-opt" data-val="true">O (맞다)</button>
@@ -1529,7 +1533,7 @@ VACUUM FULL orders;    -- 완전 재작성(배타적잠금, 공간 반환)
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d3q2" data-type="ox" data-answer="true">
+            <div class="quiz-q" data-qid="d3q2" data-type="ox" data-answer="true" data-exp="REPEATABLE READ는 트랜잭션 시작 시점의 스냅샷을 끝까지 유지해서 같은 쿼리를 반복해도 같은 결과를 봐요.">
               <p class="quiz-qtext"><span class="qtype">OX</span>REPEATABLE READ는 트랜잭션이 끝날 때까지 처음 본 스냅샷을 계속 유지한다.</p>
               <div class="quiz-opts">
                 <button class="quiz-opt" data-val="true">O (맞다)</button>
@@ -1537,17 +1541,17 @@ VACUUM FULL orders;    -- 완전 재작성(배타적잠금, 공간 반환)
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d3q3" data-type="mc" data-answer="WHERE YEAR(order_date) = 2024">
+            <div class="quiz-q" data-qid="d3q3" data-type="mc" data-answer="WHERE YEAR(order_date) = 2024" data-exp="컬럼에 함수를 씌우면(YEAR(order_date)) 인덱스를 그대로 못 써서 풀스캔이 발생해요. 범위 조건(>=)이 인덱스 친화적이에요.">
               <p class="quiz-qtext"><span class="qtype">객관식</span>다음 중 인덱스를 무력화시키는 패턴은?</p>
               <div class="quiz-opts"><button class="quiz-opt" data-val="WHERE order_date >= '2024-01-01'">WHERE order_date >= '2024-01-01'</button><button class="quiz-opt" data-val="WHERE YEAR(order_date) = 2024">WHERE YEAR(order_date) = 2024</button><button class="quiz-opt" data-val="WHERE name LIKE '홍%'">WHERE name LIKE '홍%'</button></div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d3q4" data-type="mc" data-answer="Deadlock">
+            <div class="quiz-q" data-qid="d3q4" data-type="mc" data-answer="Deadlock" data-exp="서로가 가진 락을 상대에게 기다리며 영원히 멈추는 교착 상태가 Deadlock이에요.">
               <p class="quiz-qtext"><span class="qtype">객관식</span>두 트랜잭션이 서로 상대가 가진 락을 기다리며 영원히 멈추는 상태는?</p>
               <div class="quiz-opts"><button class="quiz-opt" data-val="Phantom Read">Phantom Read</button><button class="quiz-opt" data-val="Deadlock">Deadlock</button><button class="quiz-opt" data-val="Dirty Read">Dirty Read</button><button class="quiz-opt" data-val="Rollback">Rollback</button></div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d3q5" data-type="short" data-accept='["EXPLAIN", "explain"]'>
+            <div class="quiz-q" data-qid="d3q5" data-type="short" data-accept='["EXPLAIN", "explain"]' data-exp="EXPLAIN은 쿼리를 실행하지 않고 예상 실행계획만 보여줘요. 실제로 실행해서 확인하려면 EXPLAIN ANALYZE를 써요.">
               <p class="quiz-qtext"><span class="qtype">단답형</span>쿼리를 '실제 실행하지 않고' 예측 실행계획만 보고 싶을 때 쓰는 명령어는?</p>
               <div class="quiz-short">
                 <input type="text" placeholder="정답 입력...">
@@ -1555,7 +1559,7 @@ VACUUM FULL orders;    -- 완전 재작성(배타적잠금, 공간 반환)
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d3q6" data-type="short" data-accept='["MVCC", "mvcc"]'>
+            <div class="quiz-q" data-qid="d3q6" data-type="short" data-accept='["MVCC", "mvcc"]' data-exp="MVCC(Multi-Version Concurrency Control)는 수정 시 이전 버전을 잠깐 남겨서 읽기와 쓰기가 서로 막지 않게 해줘요.">
               <p class="quiz-qtext"><span class="qtype">단답형</span>수정해도 옛날 버전을 잠깐 유지해서 동시성을 관리하는 방식의 이름(약자)은?</p>
               <div class="quiz-short">
                 <input type="text" placeholder="정답 입력...">
@@ -1926,7 +1930,7 @@ pg_basebackup -U replicator -D /backup/base -Ft -z -P --wal-method=stream
   <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
   <div class="quiz-score" data-day="4">0 / 7 정답</div>
   
-            <div class="quiz-q" data-qid="d4q0" data-type="ox" data-answer="false">
+            <div class="quiz-q" data-qid="d4q0" data-type="ox" data-answer="false" data-exp="트리거는 트랜잭션 안에서 동기적으로 실행되므로, 외부 API 호출 같은 무거운 작업을 넣으면 트랜잭션이 오래 묶이고 실패 위험도 커져요.">
               <p class="quiz-qtext"><span class="qtype">OX</span>트리거 안에서 외부 API 호출 같은 무거운 작업을 하는 것이 권장된다.</p>
               <div class="quiz-opts">
                 <button class="quiz-opt" data-val="true">O (맞다)</button>
@@ -1934,7 +1938,7 @@ pg_basebackup -U replicator -D /backup/base -Ft -z -P --wal-method=stream
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d4q1" data-type="ox" data-answer="true">
+            <div class="quiz-q" data-qid="d4q1" data-type="ox" data-answer="true" data-exp="파라미터 바인딩(Prepared Statement)은 값과 SQL 코드를 분리해서 입력값이 SQL로 해석되지 않게 막아줘요.">
               <p class="quiz-qtext"><span class="qtype">OX</span>SQL Injection을 막는 가장 기본적인 방법은 파라미터 바인딩(Prepared Statement)이다.</p>
               <div class="quiz-opts">
                 <button class="quiz-opt" data-val="true">O (맞다)</button>
@@ -1942,7 +1946,7 @@ pg_basebackup -U replicator -D /backup/base -Ft -z -P --wal-method=stream
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d4q2" data-type="ox" data-answer="false">
+            <div class="quiz-q" data-qid="d4q2" data-type="ox" data-answer="false" data-exp="RPO는 '최대 허용 데이터 손실 시간'이에요. '최대 허용 다운타임'은 RTO(Recovery Time Objective)예요.">
               <p class="quiz-qtext"><span class="qtype">OX</span>RPO는 '최대 허용 서비스 다운 시간'을 의미한다.</p>
               <div class="quiz-opts">
                 <button class="quiz-opt" data-val="true">O (맞다)</button>
@@ -1950,17 +1954,17 @@ pg_basebackup -U replicator -D /backup/base -Ft -z -P --wal-method=stream
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d4q3" data-type="mc" data-answer="최대 허용 데이터 손실 시간">
+            <div class="quiz-q" data-qid="d4q3" data-type="mc" data-answer="최대 허용 데이터 손실 시간" data-exp="RPO(Recovery Point Objective)는 장애 시 되돌아갈 수 있는 최근 백업 시점까지, 즉 허용 가능한 데이터 손실 범위를 뜻해요.">
               <p class="quiz-qtext"><span class="qtype">객관식</span>RPO(Recovery Point Objective)가 의미하는 것은?</p>
               <div class="quiz-opts"><button class="quiz-opt" data-val="최대 허용 데이터 손실 시간">최대 허용 데이터 손실 시간</button><button class="quiz-opt" data-val="최대 허용 다운타임">최대 허용 다운타임</button><button class="quiz-opt" data-val="초당 쿼리 수">초당 쿼리 수</button><button class="quiz-opt" data-val="인덱스 크기">인덱스 크기</button></div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d4q4" data-type="mc" data-answer="종이 문서 인쇄 관리">
+            <div class="quiz-q" data-qid="d4q4" data-type="mc" data-answer="종이 문서 인쇄 관리" data-exp="AI 시대 DB 엔지니어는 Vector DB 설계, Feature Store 관리, LLM 생성 SQL 검증 같은 역할이 새롭게 요구돼요. 종이 문서 인쇄 관리는 관련 없어요.">
               <p class="quiz-qtext"><span class="qtype">객관식</span>AI 시대에 DB 엔지니어에게 새롭게 요구되는 역할이 아닌 것은?</p>
               <div class="quiz-opts"><button class="quiz-opt" data-val="Vector DB 설계">Vector DB 설계</button><button class="quiz-opt" data-val="Feature Store 관리">Feature Store 관리</button><button class="quiz-opt" data-val="LLM 생성 SQL 검증">LLM 생성 SQL 검증</button><button class="quiz-opt" data-val="종이 문서 인쇄 관리">종이 문서 인쇄 관리</button></div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d4q5" data-type="short" data-accept='["RAG", "rag"]'>
+            <div class="quiz-q" data-qid="d4q5" data-type="short" data-accept='["RAG", "rag"]' data-exp="RAG(Retrieval-Augmented Generation)는 관련 문서를 검색해 LLM 프롬프트에 넣어주는 검색 증강 생성 패턴이에요.">
               <p class="quiz-qtext"><span class="qtype">단답형</span>문서를 임베딩으로 저장해두고 질문과 유사한 문서를 찾아 LLM에 제공하는 패턴의 이름(약자)은?</p>
               <div class="quiz-short">
                 <input type="text" placeholder="정답 입력...">
@@ -1968,7 +1972,7 @@ pg_basebackup -U replicator -D /backup/base -Ft -z -P --wal-method=stream
               </div>
               <div class="quiz-feedback"></div>
             </div>
-            <div class="quiz-q" data-qid="d4q6" data-type="short" data-accept='["QPS", "qps"]'>
+            <div class="quiz-q" data-qid="d4q6" data-type="short" data-accept='["QPS", "qps"]' data-exp="QPS(Queries Per Second)는 초당 처리하는 쿼리 수로, DB 부하와 처리량을 보는 대표적인 모니터링 지표예요.">
               <p class="quiz-qtext"><span class="qtype">단답형</span>'초당 처리 쿼리 수'를 뜻하는 모니터링 지표 약자는?</p>
               <div class="quiz-short">
                 <input type="text" placeholder="정답 입력...">
@@ -2273,45 +2277,78 @@ LIMIT 10;</textarea>
     const correct = wrap.querySelectorAll('.quiz-q.answered-correct').length;
     wrap.querySelector('.quiz-score').textContent = correct + ' / ' + total + ' 정답';
   }
+  const MAX_ATTEMPTS = 3;
+  function expHtml(exp){
+    return exp ? '<div class="quiz-exp">💡 ' + exp + '</div>' : '';
+  }
   document.querySelectorAll('.quiz-q[data-type="ox"], .quiz-q[data-type="mc"]').forEach(qEl=>{
     const answer = qEl.dataset.answer;
+    const exp = qEl.dataset.exp || '';
     const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    const fb = qEl.querySelector('.quiz-feedback');
+    let attempts = 0;
     qEl.querySelectorAll('.quiz-opt').forEach(opt=>{
       opt.addEventListener('click', ()=>{
-        if(qEl.classList.contains('locked')) return;
-        qEl.classList.add('locked');
+        if(qEl.classList.contains('locked') || opt.disabled) return;
         const val = opt.dataset.val;
         const isCorrect = (val === answer);
-        opt.classList.add(isCorrect ? 'correct' : 'incorrect');
-        qEl.querySelectorAll('.quiz-opt').forEach(o=>{
-          o.setAttribute('disabled','true');
-          if(o.dataset.val === answer) o.classList.add('correct');
-        });
-        const fb = qEl.querySelector('.quiz-feedback');
-        if(isCorrect){ fb.textContent = '정답이에요! 🎉'; fb.className='quiz-feedback ok'; qEl.classList.add('answered-correct'); }
-        else{ fb.textContent = '아쉬워요. 정답은 강조 표시된 항목이에요.'; fb.className='quiz-feedback no'; }
+        if(isCorrect){
+          qEl.classList.add('locked','answered-correct');
+          opt.classList.add('correct');
+          qEl.querySelectorAll('.quiz-opt').forEach(o=> o.setAttribute('disabled','true'));
+          fb.innerHTML = '정답이에요! 🎉' + expHtml(exp);
+          fb.className = 'quiz-feedback ok';
+          updateScore(day);
+          return;
+        }
+        attempts++;
+        opt.classList.add('incorrect');
+        opt.setAttribute('disabled','true');
+        if(attempts >= MAX_ATTEMPTS){
+          qEl.classList.add('locked');
+          qEl.querySelectorAll('.quiz-opt').forEach(o=>{
+            o.setAttribute('disabled','true');
+            if(o.dataset.val === answer) o.classList.add('correct');
+          });
+          fb.innerHTML = MAX_ATTEMPTS + '번 틀렸어요. 정답은 강조 표시된 항목이에요.' + expHtml(exp);
+        } else {
+          fb.textContent = '아쉬워요, 다시 시도해보세요. (' + attempts + '/' + MAX_ATTEMPTS + ')';
+        }
+        fb.className = 'quiz-feedback no';
         updateScore(day);
       });
     });
   });
   document.querySelectorAll('.quiz-q[data-type="short"]').forEach(qEl=>{
-    const accept = JSON.parse(qEl.dataset.accept).map(a=>a.toLowerCase().trim());
+    const acceptRaw = JSON.parse(qEl.dataset.accept);
+    const accept = acceptRaw.map(a=>a.toLowerCase().trim());
+    const exp = qEl.dataset.exp || '';
     const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
     const input = qEl.querySelector('input');
     const btn = qEl.querySelector('.quiz-check');
     const fb = qEl.querySelector('.quiz-feedback');
+    let attempts = 0;
     function check(){
       if(qEl.classList.contains('locked')) return;
       const val = input.value.toLowerCase().trim();
       const isCorrect = accept.includes(val) && val !== '';
       if(isCorrect){
         qEl.classList.add('locked','answered-correct');
-        fb.textContent = '정답이에요! 🎉'; fb.className = 'quiz-feedback ok';
+        fb.innerHTML = '정답이에요! 🎉' + expHtml(exp);
+        fb.className = 'quiz-feedback ok';
         input.disabled = true; btn.disabled = true;
         updateScore(day);
-      } else {
-        fb.textContent = '다시 시도해보세요. (정답 예: ' + accept[0] + ')'; fb.className = 'quiz-feedback no';
+        return;
       }
+      attempts++;
+      if(attempts >= MAX_ATTEMPTS){
+        qEl.classList.add('locked');
+        input.disabled = true; btn.disabled = true;
+        fb.innerHTML = MAX_ATTEMPTS + '번 틀렸어요. 정답은 <b>' + acceptRaw[0] + '</b> 이에요.' + expHtml(exp);
+      } else {
+        fb.textContent = '다시 시도해보세요. (' + attempts + '/' + MAX_ATTEMPTS + ')';
+      }
+      fb.className = 'quiz-feedback no';
     }
     btn.addEventListener('click', check);
     input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); });
