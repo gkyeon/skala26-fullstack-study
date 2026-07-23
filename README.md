@@ -1,6 +1,6 @@
 # Full-stack Engineering 학습 저장소
 
-AI캠퍼스 Full-stack 부트캠프(3개월, 4일 단위 모듈 진행) 내용을 조원들과 함께 정리하는 사이트입니다.
+AI캠퍼스 Full-stack 부트캠프(3개월, 4일 단위 모듈 진행) 내용을 정리하는 사이트입니다.
 강의별로 내용 요약 · 브라우저 실습 · 퀴즈를 한 페이지에 담고, GitHub Pages로 배포해서 링크만 공유하면 누구나 바로 볼 수 있게 만들었습니다.
 
 🔗 **배포된 사이트**: https://gkyeon.github.io/skala26-fullstack-study/
