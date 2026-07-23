@@ -3,6 +3,8 @@
 AI캠퍼스 Full-stack 부트캠프(3개월, 4일 단위 모듈 진행) 내용을 조원들과 함께 정리하는 사이트입니다.
 강의별로 내용 요약 · 브라우저 실습 · 퀴즈를 한 페이지에 담고, GitHub Pages로 배포해서 링크만 공유하면 누구나 바로 볼 수 있게 만들었습니다.
 
+🔗 **배포된 사이트**: https://gkyeon.github.io/skala26-fullstack-study/
+
 ## 폴더 구조
 
 ```
@@ -17,7 +19,7 @@ site/
 
 ## GitHub Pages로 배포하기 (최초 1회)
 
-1. GitHub에서 새 저장소(repo) 생성 (예: `skala-fullstack-study`). Public으로 만들면 별도 설정 없이 Pages 사용 가능.
+1. GitHub에서 새 저장소(repo) 생성 (예: `skala26-fullstack-study`). Public으로 만들면 별도 설정 없이 Pages 사용 가능.
 2. 이 `site` 폴더 안의 내용을 저장소 루트에 올리기 (터미널 또는 VS Code에서):
    ```bash
    cd site
@@ -25,12 +27,12 @@ site/
    git add .
    git commit -m "init: 학습 사이트 초기 세팅"
    git branch -M main
-   git remote add origin https://github.com/{아이디}/skala-fullstack-study.git
+   git remote add origin https://github.com/{아이디}/skala26-fullstack-study.git
    git push -u origin main
    ```
 3. GitHub 저장소 페이지 → **Settings → Pages** 로 이동
 4. **Build and deployment** 에서 Source를 `Deploy from a branch` 로 설정, Branch는 `main` / `/ (root)` 선택 후 저장
-5. 1~2분 후 `https://{아이디}.github.io/skala-fullstack-study/` 로 접속하면 홈페이지가 뜹니다.
+5. 1~2분 후 `https://{아이디}.github.io/skala26-fullstack-study/` 로 접속하면 홈페이지가 뜹니다.
 6. 조원들에게 이 링크만 공유하면 끝. (Pull 받아서 로컬에서 열어도 바로 동작 — 별도 서버·빌드 과정 없음)
 
 ## 새 강의 추가하기 (매 강의마다 반복)
