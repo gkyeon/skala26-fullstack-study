@@ -244,6 +244,48 @@
   .tldr .txt b{color:var(--accent);}
   body.light .tldr{background:rgba(63,95,214,.06); border-color:rgba(63,95,214,.25);}
 
+  /* ===== Callout boxes (목표 / 심화 / 착각 / 교수님) ===== */
+  .callout{
+    border:1px solid var(--border); background:var(--panel2); border-radius:11px;
+    padding:12px 15px; margin:14px 0;
+  }
+  .callout .ctitle{display:block; font-size:12.5px; font-weight:800; margin-bottom:6px; letter-spacing:.02em;}
+  .callout p{margin:5px 0; font-size:14px; line-height:1.75;}
+  .callout ul{margin:6px 0 2px; padding-left:20px;}
+  .callout li{font-size:14px; line-height:1.7; margin:4px 0;}
+  .callout.goal{background:rgba(79,209,197,.07); border-color:rgba(79,209,197,.3);}
+  .callout.goal .ctitle{color:var(--accent2);}
+  .callout.deep{background:rgba(124,157,255,.07); border-color:rgba(124,157,255,.32);}
+  .callout.deep .ctitle{color:var(--accent);}
+  .callout.myth{background:rgba(246,173,85,.08); border-color:rgba(246,173,85,.32);}
+  .callout.myth .ctitle{color:var(--warn);}
+  .callout.prof{background:rgba(246,135,179,.08); border-color:rgba(246,135,179,.32);}
+  .callout.prof .ctitle{color:var(--day4);}
+  body.light .callout.prof{background:rgba(214,51,132,.06); border-color:rgba(214,51,132,.25);}
+  body.light .callout.prof .ctitle{color:#be3a80;}
+
+  /* ===== 짚고 넘어가기 (Q&A) ===== */
+  .faq{margin:12px 0 4px;}
+  .faq details{
+    border:1px solid var(--border); border-radius:10px; background:var(--panel2); margin:8px 0;
+  }
+  .faq summary{
+    cursor:pointer; padding:11px 15px; font-size:14px; font-weight:600; color:var(--text);
+    list-style:none; line-height:1.6;
+  }
+  .faq summary::-webkit-details-marker{display:none;}
+  .faq summary::before{content:"Q. "; color:var(--accent); font-weight:800;}
+  .faq summary:hover{color:var(--accent);}
+  .faq details[open] summary{border-bottom:1px solid var(--border);}
+  .faq .fa{padding:11px 15px 13px; font-size:14px; line-height:1.85;}
+  .faq .fa::before{content:"A. "; color:var(--accent2); font-weight:800;}
+
+  /* ===== Inline code in prose ===== */
+  p code, .b li code, table.t td code, .callout code, .faq code{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:.88em; color:var(--code-text);
+  }
+
   /* ===== Playground usage guide ===== */
   .pg-guide{
     background:rgba(79,209,197,.08); border:1px solid rgba(79,209,197,.3); border-radius:10px;
@@ -412,62 +454,272 @@
     <span class="day-badge day1">Day 1</span>
     <h2><span class="num">1.</span> 데이터베이스 개요</h2>
   </div>
-  <p class="subtitle">필요성 · 발전 과정 · ACID · WAL · Isolation Level</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 파일로 데이터 관리하다 한계(중복, 동시접속 문제)를 느껴서 DB가 나왔어요. <b>ACID</b>는 '계좌이체 같은 거래가 중간에 끊기거나 꼬이지 않게 보장하는 4가지 약속'. <b>WAL</b>은 '실제 잔고를 바꾸기 전에 통장 여백에 먼저 메모해두는 것'이라고 생각하면 쉬워요.</div></div>
-  <h4>필요성과 발전 과정 (파일시스템 → 계층형 → RDBMS → 분산/클라우드)</h4>
+  <p class="subtitle">왜 파일 대신 DB인가 · 발전 과정 · 트랜잭션과 ACID · WAL · Consensus · Isolation Level</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 파일로 데이터 관리하다 한계(중복, 동시접속, 중간에 죽음)를 느껴서 DB가 나왔어요. <b>ACID</b>는 '계좌이체 같은 거래가 중간에 끊기거나 꼬이지 않게 보장하는 4가지 약속'. <b>WAL</b>은 '실제 잔고를 바꾸기 전에 통장 여백에 먼저 메모해두는 것', <b>Consensus</b>는 '서버가 여러 대일 때 다수결로 진짜 기록을 정하는 것', <b>Isolation Level</b>은 '남의 작업이 얼마나 보이게 할지 고르는 등급'이라고 생각하면 쉬워요.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p>데이터베이스가 무엇을 해결하려고 태어났는지 이해하고, 트랜잭션의 ACID 네 속성을 각각 설명할 수 있게 된다. 그리고 그 위에 얹히는 세 가지를 ACID와 <b>연결해서</b> 볼 수 있게 된다.</p>
+  <ul>
+  <li><b>WAL</b> — ACID의 D(지속성)를 실제로 구현하는 장치</li>
+  <li><b>Consensus</b> — 서버가 여러 대인 분산 환경에서 그 역할을 대신하는 알고리즘</li>
+  <li><b>Isolation Level</b> — ACID의 I(격리성)를 등급으로 나눈 것</li>
+  </ul></div>
+
+  <h3>1) 왜 이게 필요한가 — 파일로 시작하면 어디서 터지는가</h3>
+<p>프로그램이 데이터를 다루는 가장 소박한 방법은 파일이다. <code>sales.csv</code>를 열고, 읽고, 고치고, 닫는다. Python으로 CSV·JSON을 다뤘던 것이 정확히 그 방식이다. 혼자 쓸 때는 아무 문제가 없다. 문제는 다음 세 가지가 동시에 일어날 때 터진다.</p>
 <ul class="b">
-<li>파일 시스템 시대: 앱마다 독자 파일 사용 → 중복 데이터, 일관성 어려움, 단일 사용자 중심</li>
-<li>계층형 DB(IBM IMS): 트리구조, 빠른 탐색이나 유연성 부족, N:M 표현 어려움</li>
-<li>관계형 DBMS(RDBMS): 1970년대 Codd 제안 → SQL 표준화, 인덱스·트랜잭션·정규화 등 최적화 기법 발전</li>
-<li>분산/클라우드 DB: 빅데이터·글로벌 서비스로 확장성/가용성 중시, NewSQL·NoSQL 혼합 (Spanner, Aurora, CockroachDB)</li>
+<li><b>여러 프로그램이 같은 데이터를 쓴다</b> — 주문 시스템과 재고 시스템이 각각 자기 파일을 들고 있으면, 같은 상품의 재고 수량이 두 파일에서 서로 달라진다.</li>
+<li><b>여러 사람이 동시에 고친다</b> — A와 B가 동시에 같은 파일을 읽어 각자 수정하고 저장하면, 나중에 저장한 쪽이 앞사람의 수정을 덮어쓴다. 앞사람의 작업은 흔적도 없이 사라진다.</li>
+<li><b>중간에 죽는다</b> — 계좌 A에서 1만 원을 빼고 계좌 B에 넣는 도중에 정전이 나면, 1만 원이 세상에서 증발한다.</li>
 </ul>
-<h4>ACID 속성 &amp; DBMS별 지원 차이</h4>
+<p>데이터베이스는 이 세 가지를 해결하려고 만들어진 소프트웨어다. "데이터를 저장하는 곳"이라는 설명은 절반만 맞다. 정확히는 <b>여러 주체가 동시에 접근해도 데이터가 깨지지 않도록 보장해 주는 소프트웨어</b>이고, 저장은 그 보장을 하기 위한 부수 작업에 가깝다.</p>
+<h4>DB와 DBMS는 다른 말이다</h4>
 <ul class="b">
-<li><b>A</b>tomicity(원자성) · <b>C</b>onsistency(일관성) · <b>I</b>solation(격리성) · <b>D</b>urability(지속성) — 트랜잭션이 지켜야 할 4대 원칙</li>
-<li>ACID는 "교과서적으로는 모든 DBMS가 지원" — 실제 보장 수준은 엔진/설정마다 다름</li>
-<li>MySQL InnoDB: 완전한 ACID (Redo/Undo Log, MVCC) / MyISAM: Rollback·FK 불가 → 사실상 ACID 미지원</li>
-<li>PostgreSQL: MVCC + WAL + SSI, 모든 격리수준 지원 — 표준에 가장 가까움</li>
-<li>Oracle: Read Committed 기본, 안정적 상용 구현 / Cloud DB(Aurora 등): 스토리지 6방향 복제로 장애 시 빠른 복구</li>
+<li><b>데이터베이스(DB)</b>: 저장된 데이터 자체, 또는 그 데이터의 집합</li>
+<li><b>DBMS(DataBase Management System)</b>: 그 데이터를 관리해 주는 소프트웨어 — PostgreSQL, MySQL, Oracle이 여기에 해당</li>
 </ul>
-<div class="sqlbox"><div class="sqlhead">WAL (Write-Ahead Logging) — 로그가 먼저</div><pre><code>-- PostgreSQL WAL 동작 방식
-BEGIN;
- UPDATE account SET balance = balance - 10000 WHERE id = 'A';
- -- 1단계: WAL 버퍼에 먼저 기록 (로그 우선 원칙)
- -- 2단계: Shared Buffer(메모리)에 페이지 변경 반영 (아직 디스크 미기록, dirty page)
- UPDATE account SET balance = balance + 10000 WHERE id = 'B';
-COMMIT;
- -- COMMIT 로그를 WAL에 기록 후 fsync → 이후 Checkpoint 시점에 데이터 파일 반영
--- 장애 복구 시: pg_wal/ 로그를 순서대로 재실행(Redo), 미커밋 트랜잭션은 Undo
--- 설정: wal_level=replica / synchronous_commit=on(안전) / checkpoint_timeout=5min</code></pre></div>
-<div class="note">WAL = 한 DB 안에서 장애 대비 안전장치 / Consensus(합의 알고리즘) = 분산 DB에서 여러 노드가 같은 결과를 갖도록 보장하는 안전장치 (네트워크 지연/장애 시에도)</div>
-<h4>Isolation Level — 동시성 이상 현상</h4>
-<ul class="b">
-<li><b>Dirty Read</b>: 커밋 전 값을 읽음</li>
-<li><b>Non-Repeatable Read</b>: 같은 행을 두 번 읽었는데 값이 다름 (다른 TX가 UPDATE/DELETE)</li>
-<li><b>Phantom Read</b>: 같은 조건 두 번 조회 시 행 개수가 다름 (다른 TX가 INSERT/DELETE)</li>
-</ul>
-<h4>ANSI 격리 수준별 이상현상 허용 여부</h4>
+
+<h3>2) 필요성과 발전 과정</h3>
 <table class="t"><thead><tr>
-<th>격리수준</th>
-<th>Dirty Read</th>
-<th>Non-Repeatable Read</th>
-<th>Phantom Read</th>
+<th style="width:16%">시대 / 방식</th><th style="width:24%">대표 제품</th><th>특징</th><th style="width:26%">한계</th>
 </tr></thead><tbody>
-<tr><td>Read Uncommitted</td><td>발생 가능</td><td>발생 가능</td><td>발생 가능</td></tr>
-<tr><td>Read Committed</td><td>방지</td><td>발생 가능</td><td>발생 가능</td></tr>
-<tr><td>Repeatable Read</td><td>방지</td><td>방지</td><td>표준상 허용(구현별 상이)</td></tr>
-<tr><td>Serializable</td><td>방지</td><td>방지</td><td>방지</td></tr>
+<tr><td><b>파일 시스템</b><br>1960s</td><td>—</td><td>개별 애플리케이션마다 독자적 파일 사용</td><td>중복 데이터 발생, 일관성 보장 어려움, 동시 접근 불가 → 단일 사용자 중심</td></tr>
+<tr><td><b>계층형 DB</b><br>1970s</td><td>IBM IMS</td><td>트리 구조 기반, 빠른 탐색 가능</td><td>유연성 부족, 1:N에 최적화되어 N:M 관계 표현이 어려움</td></tr>
+<tr><td><b>관계형 DBMS</b><br>1970s~</td><td>Oracle, MySQL, PostgreSQL</td><td>1970년 Codd의 관계형 모델 제안 이후 주류. SQL 도입으로 표준화·범용성 확보, 인덱스·트랜잭션·정규화 등 최적화 기법 축적</td><td>JOIN 비용, 수평 확장(서버 대수 늘리기)의 어려움</td></tr>
+<tr><td><b>NoSQL</b><br>2000s~</td><td>MongoDB, Redis, Cassandra</td><td>유연한 스키마, 수평 확장에 강함</td><td>강한 일관성 보장이 어려움</td></tr>
+<tr><td><b>분산 / Cloud DB</b><br>2010s~</td><td>Google Spanner, AWS Aurora, CockroachDB</td><td>ACID를 지키면서 수평 확장까지 하겠다는 시도(NewSQL). 빅데이터·글로벌 서비스 확산으로 확장성/가용성 중시</td><td>높은 운영 복잡도, NewSQL·NoSQL 혼합 환경 출현</td></tr>
 </tbody></table>
-<div class="sqlbox"><div class="sqlhead">Phantom Read 예시</div><pre><code>-- Session 1
+<div class="callout deep"><span class="ctitle">🧭 이 흐름을 관통하는 축 — 무결성 vs 확장성</span>
+<p>DB 발전은 단순한 저장 방식의 변화가 아니라 <b>데이터 무결성·일관성 vs 확장성</b> 사이의 균형 싸움이다. 무결성/일관성은 "데이터가 틀리지 않게"이고, 확장성은 "많이·빨리 처리되게"다. 둘은 근본적으로 상충한다 — 데이터가 틀리지 않도록 확인하는 절차 자체가 시간이 걸리고, 여러 서버로 나눠 놓을수록 그 확인이 비싸지기 때문이다. 그래서 DB의 역사는 <b>"이번엔 어느 쪽을 얼마나 포기할까"의 역사</b>다.</p></div>
+
+<h3>3) 트랜잭션과 ACID</h3>
+<p><b>트랜잭션(transaction)</b>은 "하나로 취급되어야 하는 작업 묶음"이다. 계좌 이체가 교과서적인 예다.</p>
+<div class="sqlbox"><div class="sqlhead">트랜잭션의 기본형 — 계좌 이체</div><pre><code>BEGIN;                                                        -- 트랜잭션 시작
+UPDATE account SET balance = balance - 10000 WHERE id = 'A';  -- 출금
+UPDATE account SET balance = balance + 10000 WHERE id = 'B';  -- 입금
+COMMIT;                                                       -- 확정</code></pre></div>
+<ul class="b">
+<li><b>BEGIN</b> — 여기서부터 트랜잭션이 시작된다는 선언. 표준은 <code>START TRANSACTION</code>이고 PostgreSQL/MySQL 모두 <code>BEGIN</code>도 받는다.</li>
+<li><b>COMMIT</b> — 지금까지의 변경을 확정한다. 이 시점 이후로는 되돌릴 수 없다.</li>
+<li><b>ROLLBACK</b> — 지금까지의 변경을 전부 취소하고 트랜잭션 시작 전 상태로 되돌린다.</li>
+</ul>
+<p>두 <code>UPDATE</code>는 반드시 둘 다 되거나 둘 다 안 돼야 한다. 하나만 되면 돈이 사라지거나 생겨난다. 이 "둘 다 아니면 아무것도"를 보장하는 단위가 트랜잭션이다.</p>
+<h4>ACID 네 속성 — 무엇으로부터 지켜 주는가</h4>
+<table class="t"><thead><tr>
+<th style="width:20%">속성</th><th style="width:42%">설명</th><th>무엇으로부터 지켜 주는가</th>
+</tr></thead><tbody>
+<tr><td><b>A</b>tomicity<br>(원자성)</td><td>트랜잭션의 모든 작업이 완전히 수행되거나 전혀 수행되지 않아야 함 (송금 = 출금 + 입금 → 둘 다 성공 or 둘 다 취소)</td><td><b>중간에 죽는 것</b>으로부터. 출금만 되고 입금 전에 서버가 꺼져도, 재기동하면 출금이 취소되어 있다.</td></tr>
+<tr><td><b>C</b>onsistency<br>(일관성)</td><td>트랜잭션 수행 전후에 DB는 일관된 상태를 유지</td><td><b>규칙 위반</b>으로부터. "잔액은 음수 불가", "주문의 회원번호는 실재하는 회원" 같은 제약이 트랜잭션 끝에 깨져 있으면 그 트랜잭션을 무효로 만든다.</td></tr>
+<tr><td><b>I</b>solation<br>(격리성)</td><td>트랜잭션이 동시에 실행될 때 서로 간섭하지 않도록 보장</td><td><b>남</b>으로부터. 내가 이체하는 도중의 중간 상태(출금은 됐고 입금은 안 된 상태)를 남이 보지 못하게 한다.</td></tr>
+<tr><td><b>D</b>urability<br>(지속성)</td><td>트랜잭션이 성공적으로 완료되면 그 결과는 영구적으로 반영</td><td><b>전원이 나가는 것</b>으로부터. <code>COMMIT</code> 응답을 받았다면 그 직후 정전이 나도 결과는 남아 있다.</td></tr>
+</tbody></table>
+<div class="callout myth"><span class="ctitle">⚠️ 자주 하는 착각 — A와 C는 같은 말이 아니다</span>
+<p>A는 "전부 아니면 전무"라는 <b>실행 단위</b>에 대한 약속이고, C는 "규칙을 어긴 상태로 끝나지 않는다"는 <b>결과 상태</b>에 대한 약속이다. 출금·입금이 둘 다 성공했는데(A는 지켜짐) 그 결과 잔액이 -5,000원이 됐다면 C가 깨진 것이고, DB는 그 트랜잭션을 롤백한다.</p></div>
+<div class="callout deep"><span class="ctitle">🔎 심화 — ACID 중 C만 성격이 다르다</span>
+<p>A·I·D는 DBMS가 알아서 보장해 주지만, C는 <b>개발자가 제약조건과 애플리케이션 로직으로 정의한 규칙</b>을 DBMS가 대신 검사해 주는 것에 가깝다. 내가 "잔액은 음수 불가"라는 CHECK 제약을 걸어 두지 않았으면 DBMS는 잔액이 음수가 되는 것을 막아 주지 않는다. (제약조건은 6장 DDL에서 다룬다.)</p></div>
+
+<h3>4) DBMS별 ACID 지원 차이</h3>
+<p><b>ACID는 모든 DBMS에서 "교과서적으로는 지원" — 엔진/설정/클라우드 옵션에 따라 실제 보장 수준이 다르다.</b> 제품 소개서에 "ACID 지원"이라고 적혀 있다고 해서 내가 쓰는 설정에서 실제로 보장된다는 뜻이 아니다.</p>
+<ul class="b">
+<li><b>MySQL InnoDB 엔진</b>: 완전한 ACID 지원 (Redo/Undo Log, MVCC)</li>
+<li><b>MySQL MyISAM 엔진</b>: Rollback 불가, FK 없음 → 사실상 ACID 미지원 (현재는 InnoDB가 기본 엔진)</li>
+<li><b>PostgreSQL</b>: MVCC 기반, WAL, SSI(Serializable Snapshot Isolation). 모든 격리 수준 지원 — 가장 표준에 가까운 구현</li>
+<li><b>Oracle</b>: Read Committed 기본, 매우 안정적인 상용 ACID 구현</li>
+<li><b>Cloud DB (Aurora/RDS)</b>: 분산 환경에서 ACID + 수평 확장. 특히 Aurora는 스토리지 레벨 6방향 복제로 장애 시 빠른 복구</li>
+<li>핵심: <b>DB 선택 시 ACID 보장 수준과 성능 트레이드오프를 반드시 확인할 것</b></li>
+</ul>
+<table class="t"><thead><tr>
+<th>DBMS</th><th>Atomicity</th><th>Consistency</th><th>Isolation</th><th>Durability</th><th>특징</th>
+</tr></thead><tbody>
+<tr><td><b>Oracle</b></td><td>강력 지원</td><td>Strict Consistency</td><td>다양한 Level, 기본 Read Consistent</td><td>Redo/Undo로 완벽 보장</td><td>엔터프라이즈급 표준</td></tr>
+<tr><td><b>PostgreSQL</b></td><td>MVCC 기반 보장</td><td>MVCC로 강력한 Consistency</td><td>Serializable 포함 다양한 Level</td><td>WAL 기반</td><td>오픈소스 중 가장 "Oracle-like"</td></tr>
+<tr><td><b>MySQL (InnoDB)</b></td><td>완전 지원</td><td>무결성 제약 준수</td><td>Repeatable Read 기본, Phantom 발생 가능</td><td>Double-write Buffer</td><td>엔진에 따라 차이, InnoDB만 ACID</td></tr>
+<tr><td><b>MySQL (MyISAM)</b></td><td>✗ (Rollback 불가)</td><td>제약 약함</td><td>Locking 기반</td><td>비지속성</td><td>사실상 ACID 미지원</td></tr>
+<tr><td><b>SQL Server</b></td><td>완전 지원</td><td>제약조건·FK 엄격 적용</td><td>Read Uncommitted ~ Serializable</td><td>Transaction Log</td><td>Isolation Level 세부 튜닝 가능</td></tr>
+<tr><td><b>Cloud DB</b><br>(Aurora, Spanner)</td><td>지원</td><td>Strong / Eventual 조정 가능</td><td>다지역 트랜잭션 지원</td><td>분산 WAL/Consensus 기반</td><td>"일관성 vs 가용성" 선택 가능 (CAP Trade-off)</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ 이 표에서 지금 알아 둘 세 가지</div><ul>
+<li><b>스토리지 엔진이 ACID를 결정한다</b> — MySQL이라는 같은 이름 아래에서도 InnoDB냐 MyISAM이냐에 따라 롤백이 되고 안 되고가 갈린다. "MySQL은 ACID를 지원한다"가 반쪽짜리 문장인 이유.</li>
+<li><b>모든 주요 DBMS가 MVCC를 쓴다</b> — MVCC(다중 버전 동시성 제어)는 데이터를 덮어쓰는 대신 여러 버전을 남겨 두는 방식. 읽는 사람은 자기 시점의 버전을 보므로 쓰는 사람과 부딪히지 않는다 → <b>읽기가 쓰기를 막지 않는다</b>. (20장에서 다시 다룸)</li>
+<li><b>Durability의 구현체가 로그다</b> — PostgreSQL의 WAL, Oracle의 Redo/Undo, SQL Server의 Transaction Log, MySQL의 Double-write Buffer는 모두 "데이터 파일보다 먼저 기록해 두는 장치"라는 같은 아이디어의 제품별 이름이다.</li>
+</ul></div>
+
+<h3>5) WAL — 지속성(Durability)의 구현 원리</h3>
+<h4>왜 필요한가</h4>
+<p>"COMMIT하면 영구히 남는다"를 곧이곧대로 구현하려면, COMMIT할 때마다 데이터 파일의 해당 위치를 찾아가 고치고 디스크에 확실히 기록해야 한다. 문제는 이게 너무 느리다는 것이다. 고쳐야 할 행이 파일 여기저기에 흩어져 있으면 디스크가 이리저리 움직이는 <b>랜덤 I/O</b>가 되고, 랜덤 I/O는 순차 I/O보다 훨씬 느리다.</p>
+<h4>핵심 메커니즘</h4>
+<ul class="b">
+<li>DBMS는 <b>데이터 파일은 나중에 고치고, "무엇을 고칠 것인지"를 적은 로그를 먼저 디스크에 쓴다.</b></li>
+<li>로그는 파일 끝에 계속 덧붙이기만 하므로 <b>순차 I/O</b>다 → 빠르다.</li>
+<li>장애가 나도 로그만 있으면 재현할 수 있으므로 안전하다.</li>
+<li>이 메커니즘이 <b>WAL(Write-Ahead Logging)</b> — <b>변경 사항을 실제 데이터 파일에 쓰기 전에 로그(저널)에 먼저 기록하는 방식</b>이다.</li>
+</ul>
+<h4>동작 과정과 장점</h4>
+<ul class="b">
+<li>① 클라이언트가 UPDATE 실행 → ② DB는 즉시 데이터 파일을 고치지 않고 먼저 WAL 로그에 기록 → ③ 로그가 디스크에 안전하게 기록되면 "COMMIT 성공" 응답 → ④ 실제 데이터 파일 반영은 나중에 배치/버퍼 관리자가 수행</li>
+<li>장애 발생 시 로그를 기반으로 <b>Redo</b>(다시 적용) / <b>Undo</b>(취소) 가능</li>
+<li>쓰기 성능 개선 (순차 기록 → 랜덤 I/O 최소화)</li>
+<li>PostgreSQL, Oracle, SQL Server, MySQL(InnoDB) 등 대부분의 DBMS가 사용</li>
+</ul>
+<div class="callout deep"><span class="ctitle">🔑 "COMMIT 성공"의 근거는 데이터 파일이 아니라 로그다</span>
+<p>사용자가 커밋 완료를 확인한 그 순간, 데이터 파일에는 아직 아무것도 안 쓰여 있을 수 있다. 그래도 괜찮은 이유는 <b>로그가 디스크에 있기 때문</b>이다.</p></div>
+<div class="sqlbox"><div class="sqlhead">PostgreSQL WAL — 단계별 흐름</div><pre><code>BEGIN;
+UPDATE account SET balance = balance - 10000 WHERE id = 'A';
+-- 1단계: WAL 버퍼에 변경 내용 기록 (로그 우선 원칙)
+-- 2단계: Shared Buffer(메모리)에 페이지 변경 반영
+-- 3단계: 아직 디스크 데이터 파일에는 미기록 (dirty page)
+
+UPDATE account SET balance = balance + 10000 WHERE id = 'B';
+COMMIT;
+-- COMMIT 로그를 WAL에 기록 후 fsync(디스크 동기화)
+-- 이후 Checkpoint 시점에 데이터 파일에 반영
+
+-- 장애 복구 시:
+--   pg_wal/ 디렉토리의 로그를 순서대로 재실행 (Redo)
+--   COMMIT되지 않은 트랜잭션은 Undo 처리</code></pre></div>
+<ul class="b">
+<li><b>Shared Buffer</b> — PostgreSQL이 디스크 페이지를 캐싱해 두는 공유 메모리 영역. 모든 읽기/쓰기는 일단 여기를 거친다.</li>
+<li><b>dirty page</b> — 메모리에서는 고쳐졌는데 아직 디스크 데이터 파일에는 반영 안 된 페이지. "더럽다"는 건 메모리와 디스크의 내용이 어긋나 있다는 뜻.</li>
+<li><b>fsync</b> — OS에게 "버퍼에 들고 있지 말고 지금 물리 디스크에 확실히 써라"라고 강제하는 시스템 호출. OS도 자체 캐시가 있어서 이걸 호출하지 않으면 "썼다"고 해도 전원이 나가면 날아간다. <b>COMMIT의 안전성은 결국 이 fsync 한 번에 달려 있다.</b></li>
+<li><b>Checkpoint</b> — 쌓인 dirty page를 데이터 파일에 몰아서 반영하고 "여기까지 반영 완료"라고 표시하는 시점. 이 표시가 있어야 복구 시 로그를 처음부터가 아니라 마지막 체크포인트부터만 재생하면 된다.</li>
+<li><b>pg_wal/</b> — PostgreSQL 데이터 디렉터리 안에서 WAL 파일이 쌓이는 실제 디렉터리 (9.6 이전에는 <code>pg_xlog/</code>).</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">postgresql.conf — WAL 관련 설정</div><pre><code>wal_level = replica            -- 복제 레벨
+synchronous_commit = on        -- on: 안전 / off: 성능↑, 최대 200ms 손실 가능
+checkpoint_timeout = 5min      -- 체크포인트 주기</code></pre></div>
+<ul class="b">
+<li><b>wal_level</b> — WAL에 얼마나 상세히 기록할지. <code>replica</code>면 복제 서버를 붙일 수 있을 만큼 기록한다.</li>
+<li><b>synchronous_commit</b> — <b>이 값이 D를 켜고 끄는 스위치다.</b> <code>on</code>이면 COMMIT 시 fsync가 끝날 때까지 기다렸다 응답(안전·느림). <code>off</code>면 fsync를 기다리지 않고 먼저 응답(빠름·직후 정전 시 최근 커밋 일부 유실). "최대 200ms 손실 가능"이 이 창(window)이다.</li>
+<li><b>checkpoint_timeout</b> — 짧게 잡으면 복구가 빠르지만 평소 디스크 쓰기가 잦아지고, 길게 잡으면 그 반대가 된다.</li>
+</ul>
+<div class="note">짚어 둘 것 — <code>synchronous_commit = off</code>는 <b>데이터가 깨지지는 않고 최근 것 일부가 없어질 뿐</b>이다. 트랜잭션이 반쪽만 반영되는 일은 없다(A는 지켜진다). 잃어도 되는 로그성 데이터라면 실무에서 실제로 쓰는 옵션이지만, 돈이 오가는 테이블에는 쓰면 안 된다.</div>
+
+<h3>6) Consensus — 분산 환경의 안전장치</h3>
+<h4>왜 필요한가</h4>
+<p>WAL은 <b>서버 한 대 안에서의 장애</b>를 막아 준다. 그런데 서버가 여러 대라면? 데이터를 3대에 복제해 두었는데 그중 한 대가 네트워크에서 끊긴 사이에 나머지 두 대에만 반영되었다면, 끊겼던 서버가 돌아왔을 때 세 대의 내용이 다르다. 이때 <b>"누구 말이 맞는가"</b>를 정해 주는 장치가 필요하다. 즉, 분산 DB에서는 여러 노드가 동일한 데이터를 가진 상태여야 하고, 네트워크 지연/장애가 발생해도 모든 노드가 같은 결과(합의)를 갖도록 하는 알고리즘을 쓴다.</p>
+<h4>대표 알고리즘과 동작</h4>
+<ul class="b">
+<li><b>Paxos</b> — 이론적으로 가장 유명한 분산 합의 알고리즘</li>
+<li><b>Raft</b> — 구현이 단순해 실제 제품(AWS Aurora, etcd, CockroachDB 등)에서 널리 활용</li>
+<li><b>Google Spanner</b> — Paxos + TrueTime API(전역 시계 동기화) 활용</li>
+<li><b>동작 과정</b>: 클라이언트가 트랜잭션 요청 → Leader 노드가 로그에 기록(<b>→ 여기서도 WAL!</b>) → Follower 노드들과 "투표"를 통해 <b>과반수</b>가 같은 로그에 동의해야 Commit 확정 → 모든 노드에 같은 순서의 로그가 쌓이므로 Strong Consistency 보장</li>
+</ul>
+<div class="callout deep"><span class="ctitle">🔗 Consensus는 WAL을 대체하지 않고 그 위에 얹힌다</span>
+<p>리더가 로그를 쓰는 것까지는 단일 서버 WAL과 똑같고, 거기에 <b>"과반수 노드가 같은 로그를 받았는지 확인"</b> 단계가 추가된 것이다.</p>
+<p><b>왜 하필 과반수인가?</b> 5대 중 3대가 동의했다면, 어떤 두 "과반수 집합"을 잡아도 반드시 겹치는 노드가 하나 이상 있다(3+3 &gt; 5). 그 겹치는 노드가 최신 로그를 갖고 있으므로, 옛 리더가 죽고 새 리더를 뽑아도 확정된 내용이 유실되지 않는다. 과반수는 임의로 고른 수가 아니라 <b>이 겹침을 보장하는 최소값</b>이다.</p></div>
+<ul class="b">
+<li><b>장점</b>: 분산 환경에서도 데이터 일관성 유지 · 장애 시 Leader 재선출 가능 → 고가용성</li>
+<li><b>단점</b>: 네트워크 지연이 늘어나면 성능 저하(특히 글로벌 DB에서 latency 증가) · 쓰기가 항상 <b>과반수 왕복</b>을 기다려야 해서 단일 노드보다 쓰기 지연이 길다</li>
+</ul>
+<h4>WAL vs Consensus 정리</h4>
+<table class="t"><thead><tr>
+<th style="width:14%">구분</th><th>WAL (Write-Ahead Logging)</th><th>Consensus</th>
+</tr></thead><tbody>
+<tr><td><b>적용 범위</b></td><td>단일 DBMS, 단일 노드 중심</td><td>분산 DB, 멀티 노드 환경</td></tr>
+<tr><td><b>목적</b></td><td>장애 복구, 트랜잭션 보장</td><td>분산 노드 간 동일한 상태 유지</td></tr>
+<tr><td><b>동작 원리</b></td><td>로그 먼저 기록 후 데이터 반영<br>(트랜잭션 실행 → WAL 로그 기록 → 디스크 저장 → COMMIT 응답 → 나중에 데이터 파일 반영)</td><td>여러 노드가 투표를 통해 합의<br>(Leader → Followers에 로그 전파 → 다수 동의 후 Commit 확정)</td></tr>
+<tr><td><b>대표 사례</b></td><td>PostgreSQL, Oracle, SQL Server</td><td>Google Spanner, AWS Aurora, CockroachDB</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ Checkpoint — 한 줄 대비</div><ul>
+<li><b>WAL</b> = "한 DB 안에서 장애 대비 안전장치"</li>
+<li><b>Consensus</b> = "여러 DB가 흩어져 있어도 모두 같은 결과를 보장하는 안전장치"</li>
+</ul></div>
+
+<h3>7) Isolation Level — 격리성을 등급으로 나누기</h3>
+<h4>왜 등급이 있는가</h4>
+<p>ACID의 I를 완벽하게 지키는 방법은 사실 간단하다. <b>트랜잭션을 한 번에 하나씩만 실행하면 된다.</b> 그러면 서로 간섭할 여지가 아예 없다. 문제는 그러면 동시 사용자가 1명인 시스템이 된다는 것이다. 그래서 실제 DBMS는 "완벽한 격리"와 "빠른 동시 처리" 사이에서 <b>얼마나 격리할지를 등급으로 골라 쓰게</b> 한다. 등급을 낮출수록 빨라지지만 이상한 현상을 보게 되고, 등급은 "그 현상 중 무엇까지 참을 것인가"로 정의된다.</p>
+<h4>세 가지 이상 현상 — 무엇이 달라졌는가로 구분한다</h4>
+<table class="t"><thead><tr>
+<th style="width:22%">현상</th><th style="width:34%">무엇이 문제인가</th><th>언제 깨지나</th>
+</tr></thead><tbody>
+<tr><td><b>Dirty Read</b></td><td><b>확정되지 않은 값</b>을 봤다</td><td>상대가 아직 COMMIT 안 했는데 읽음</td></tr>
+<tr><td><b>Non-Repeatable Read</b></td><td>같은 행의 <b>값</b>이 바뀌었다</td><td>상대가 UPDATE/DELETE 후 COMMIT</td></tr>
+<tr><td><b>Phantom Read</b></td><td>결과의 <b>행 개수</b>가 바뀌었다</td><td>상대가 INSERT 후 COMMIT</td></tr>
+</tbody></table>
+<p>Dirty Read가 특히 위험한 이유는 <b>상대가 롤백해 버릴 수 있기 때문</b>이다. 존재한 적이 없는 값을 근거로 내 계산이 진행된다.</p>
+<div class="sqlbox"><div class="sqlhead">Phantom Read 예제 — 두 세션</div><pre><code>-- 【 Session 1 】
 BEGIN;
-SELECT COUNT(*) FROM orders WHERE amount &gt;= 100; -- 결과: 5
--- Session 2 (동시)
-BEGIN; INSERT INTO orders(id, amount) VALUES (999, 150); COMMIT;
--- 다시 Session 1
-SELECT COUNT(*) FROM orders WHERE amount &gt;= 100; -- 결과가?
--- READ COMMITTED: 5 → 6 (팬텀 발생)
--- REPEATABLE READ(PG 등 스냅샷 구현): 5 유지 (같은 트랜잭션 내 같은 스냅샷)
---   단, SELECT FOR UPDATE나 같은 범위 UPDATE/DELETE를 잡으면 범위 잠금으로 팬텀 사전 차단
--- SERIALIZABLE: 팬텀 원천 차단 (범위/프레디킷 잠금 또는 SSI)</code></pre></div>
+SELECT COUNT(*) FROM orders WHERE amount &gt;= 100;   -- 결과: 5
+
+-- 【 Session 2 (동시 처리 트랜잭션) 】
+BEGIN;
+INSERT INTO orders(id, amount) VALUES (999, 150);
+COMMIT;
+
+-- 【 다시 Session 1 】
+SELECT COUNT(*) FROM orders WHERE amount &gt;= 100;   -- 결과가?
+
+-- READ COMMITTED  : 5 → 6 으로 증가 → 팬텀 발생
+-- REPEATABLE READ : 5 → 5 유지 (같은 트랜잭션 = 같은 스냅샷; InnoDB/PostgreSQL)
+--   단, Session 1이 SELECT ... FOR UPDATE를 하거나 같은 범위를 UPDATE/DELETE로
+--   잡으면 범위 잠금이 걸려 Session 2의 INSERT가 대기/차단 → 팬텀 사전 차단
+-- SERIALIZABLE    : 팬텀 원천 차단 (범위/프레디킷 잠금 또는 SSI)
+--   Session 2의 INSERT는 대기하거나 충돌로 롤백된다</code></pre></div>
+<div class="note">팬텀의 정확한 정의 — <b>"값이 변해서"가 아니라 "조건에 맞는 새 행이 생겨서 결과 개수가 바뀌는 현상"</b></div>
+<ul class="b">
+<li><b>SELECT ... FOR UPDATE</b> — 읽으면서 동시에 그 행에 쓰기 잠금을 거는 문법. "지금 읽는 이 행을 곧 고칠 거니까 아무도 건드리지 마라"라는 선언 (21장 비관적 Lock이 이걸로 구현된다).</li>
+<li><b>프레디킷 잠금(predicate lock)</b> — 행 하나가 아니라 <code>amount &gt;= 100</code>이라는 <b>조건 자체</b>에 거는 잠금. 아직 존재하지 않는 행까지 막아야 팬텀을 진짜로 막을 수 있기 때문에 필요하다.</li>
+<li><b>Gap Lock</b> — MySQL InnoDB가 쓰는 잠금으로, 인덱스의 <b>레코드와 레코드 사이의 빈 구간</b>을 잠근다. 행이 아니라 틈을 잠그므로 그 틈에 새 행이 INSERT되는 것을 막아 팬텀을 방지한다. <code>next-key lock</code>은 "레코드 잠금 + 갭 잠금"을 합친 것.</li>
+</ul>
+<h4>ANSI 격리 수준</h4>
+<table class="t"><thead><tr>
+<th>격리 수준</th><th>Dirty Read</th><th>Non-Repeatable Read</th><th>Phantom Read</th><th>비고 / DBMS 기본값</th>
+</tr></thead><tbody>
+<tr><td><b>READ UNCOMMITTED</b></td><td>허용</td><td>허용</td><td>허용</td><td>거의 미사용</td></tr>
+<tr><td><b>READ COMMITTED (RC)</b></td><td>방지</td><td>허용</td><td>허용</td><td>기본값인 DBMS가 多 — PostgreSQL, Oracle</td></tr>
+<tr><td><b>REPEATABLE READ (RR)</b></td><td>방지</td><td>방지</td><td>원칙적 허용 → InnoDB는 Gap Lock으로 방지</td><td>구현마다 Phantom 처리 차이 — MySQL InnoDB</td></tr>
+<tr><td><b>SERIALIZABLE</b></td><td>방지</td><td>방지</td><td>방지</td><td>가장 엄격(순차 실행과 동등), 성능 저하 주의</td></tr>
+</tbody></table>
+<div class="note">이 표에서 가장 중요한 단서 — <b>표준 정의상 RR은 Phantom을 허용하지만, DBMS 구현에 따라 범위 잠금/스냅샷으로 실질적으로 막히는 경우가 존재</b>한다.</div>
+<div class="sqlbox norun"><div class="sqlhead">외우는 요령 — 계단으로 기억하기</div><pre><code>READ UNCOMMITTED   아무것도 안 막음
+READ COMMITTED     + Dirty Read 막음
+REPEATABLE READ    + Non-Repeatable Read 막음
+SERIALIZABLE       + Phantom Read 막음
+
+→ 이상 현상 3개가 "위험한 순서대로" 하나씩 없어진다</code></pre></div>
+<h4>DBMS별 기본값과 구현 차이</h4>
+<table class="t"><thead><tr>
+<th style="width:16%">DBMS</th><th style="width:20%">기본값</th><th>특징</th>
+</tr></thead><tbody>
+<tr><td><b>Oracle</b></td><td>READ COMMITTED</td><td>MVCC로 문장 단위 read consistency 제공 → 같은 SELECT 안에서는 일관된 스냅샷 · SERIALIZABLE은 스냅샷 기반으로 충돌 시 <code>ORA-08177</code> 발생(재시도 필요)</td></tr>
+<tr><td><b>PostgreSQL</b></td><td>READ COMMITTED</td><td>MVCC. REPEATABLE READ는 스냅샷 격리(SI) 성격 → 같은 트랜잭션 내 반복 SELECT는 새 행(팬텀)을 보지 않음 · 완전 직렬성이 필요하면 SERIALIZABLE(SSI) 사용 — 필요 시 트랜잭션을 롤백해 직렬성 보장</td></tr>
+<tr><td><b>MySQL (InnoDB)</b></td><td>REPEATABLE READ</td><td>consistent read로 일반 SELECT는 같은 스냅샷을 보므로 팬텀을 사실상 보지 않음 · 단, 잠금 읽기(<code>FOR UPDATE</code>/<code>FOR SHARE</code>)나 UPDATE/DELETE 범위 조건에선 next-key lock으로 팬텀 차단(경합/대기 증가 가능)</td></tr>
+<tr><td><b>SQL Server</b></td><td>READ COMMITTED<br>(락 기반)</td><td><code>READ_COMMITTED_SNAPSHOT</code> 켜면 RC에서도 행 버전(과거 버전) 읽기 가능 · <code>SNAPSHOT</code> 격리 별도 제공 · SERIALIZABLE은 범위 잠금으로 팬텀 차단</td></tr>
+<tr><td><b>Cloud</b></td><td>—</td><td>Aurora MySQL/PostgreSQL: 각 호환 엔진 규칙을 따름 · Spanner: TrueTime/분산 합의로 외부적 직렬성(Strong/Serializable) 보장</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ 이 표에서 실무적으로 뽑아 갈 것</div><ul>
+<li><b>PostgreSQL·Oracle의 기본값은 RC, MySQL의 기본값은 RR</b> — 같은 코드를 두 DB에 올리면 동작이 달라질 수 있다.</li>
+<li><b>SQL Server만 락 기반이 기본</b> — 나머지는 MVCC라 "읽기가 쓰기를 막지 않는다"가 성립하지만, SQL Server의 기본 RC는 읽기가 쓰기를 기다릴 수 있다. <code>READ_COMMITTED_SNAPSHOT</code>을 켜면 MVCC처럼 동작.</li>
+<li><b>SERIALIZABLE은 공짜가 아니다</b> — Oracle은 충돌 시 ORA-08177로 죽이고, PostgreSQL SSI도 직렬성이 깨질 것 같으면 롤백한다. 즉 <b>애플리케이션에 재시도 로직이 있어야 한다.</b> "가장 안전하니까 그냥 SERIALIZABLE"이 안 되는 이유.</li>
+</ul></div>
+<div class="callout prof"><span class="ctitle">🎓 교수님 코멘트</span>
+<p>재무나 대출처럼 금액이 걸린 도메인은 트랜잭션 요건을 강하게 잡아야 하므로 가장 엄격한 SERIALIZABLE을 쓴다. 한 트랜잭션이 끝날 때까지 다른 작업의 접근을 막고, 끝난 뒤에야 반영을 허용하는 등급이다. 반면 이 DBMS별 비교표 자체는 외울 대상이 아니다. <b>"데이터베이스마다 허용 범위가 다르다"</b>는 사실만 기억해 두었다가, 같은 코드인데 조회 결과가 달라 보이는 상황을 만났을 때 이 표를 찾아보면 된다.</p></div>
+<div class="callout deep"><span class="ctitle">🔎 심화 — PostgreSQL의 RR은 표준보다 강하다</span>
+<p>표준상 RR은 팬텀을 허용하지만, PostgreSQL의 RR은 <b>트랜잭션 시작 시점의 스냅샷을 끝까지</b> 보기 때문에 새로 INSERT된 행이 아예 보이지 않는다. 그래서 <b>읽기만 하는 한 팬텀이 발생하지 않는다.</b> 그럼에도 PostgreSQL이 SERIALIZABLE을 따로 두는 이유는, 읽은 값을 근거로 쓰는 패턴(<b>write skew</b>)까지 막으려면 스냅샷만으로는 부족하기 때문이다.</p></div>
+<div class="sqlbox norun"><div class="sqlhead">따라 치기 ① — 내 DB의 기본 격리 수준 확인 (psql)</div><pre><code>SHOW default_transaction_isolation;
+
+--  default_transaction_isolation
+-- -------------------------------
+--  read committed
+-- (1 row)</code></pre></div>
+<div class="sqlbox norun"><div class="sqlhead">따라 치기 ② — 한 트랜잭션에만 다른 수준 적용</div><pre><code>BEGIN;
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SELECT COUNT(*) FROM orders WHERE amount &gt;= 100;
+-- ... 다른 세션에서 INSERT 후 COMMIT 해도 ...
+SELECT COUNT(*) FROM orders WHERE amount &gt;= 100;   -- 개수 그대로
+COMMIT;
+
+-- 주의: SET TRANSACTION ISOLATION LEVEL 은 반드시 트랜잭션의 첫 문장이어야 한다.
+--       이 설정은 해당 트랜잭션에만 적용되고 COMMIT 후엔 기본값으로 돌아간다.</code></pre></div>
+<div class="note">막히면 여기 — <code>ERROR: SET TRANSACTION ISOLATION LEVEL must be called before any query</code>가 뜬다면 <code>BEGIN</code> 다음에 이미 SELECT 같은 걸 실행한 상태다. <code>ROLLBACK;</code> 후 <code>BEGIN;</code> → <code>SET TRANSACTION ...</code> 순서로 다시 치면 된다.</div>
+
+<h3>8) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>데이터를 파일에 저장하면 되는데 왜 굳이 DB를 쓰나요? CSV로도 충분하지 않나요?</summary><div class="fa">혼자 쓰고, 동시에 안 고치고, 중간에 죽어도 상관없는 데이터라면 충분합니다. 실제로 Python 실습에서는 CSV로 다 했지요. DB가 필요해지는 지점은 데이터 양이 아니라 <b>동시성과 무결성</b>입니다. 두 사람이 같은 파일을 동시에 고치는 순간, 또는 작업 도중 중단되면 안 되는 순간부터 파일로는 감당이 안 됩니다. "데이터가 많아지면 DB"가 아니라 <b>"여럿이 건드리면 DB"</b>라고 기억하는 편이 정확합니다.</div></details>
+<details><summary>격리 수준은 무조건 SERIALIZABLE로 두는 게 가장 안전한 것 아닌가요?</summary><div class="fa">안전하지만 권장하지 않습니다. 첫째, 사실상 트랜잭션을 줄 세우는 것이라 동시 처리량이 급격히 떨어집니다. 둘째, 더 중요한데 <b>SERIALIZABLE은 조용히 성공시켜 주는 게 아니라 충돌하면 트랜잭션을 죽입니다.</b> Oracle은 ORA-08177, PostgreSQL SSI는 serialization failure로 롤백합니다. 애플리케이션에 "실패하면 다시 시도한다"는 코드가 없으면 안전해지기는커녕 사용자에게 에러가 그대로 노출됩니다. 대부분의 서비스는 기본값(RC 또는 RR)을 쓰고, 정말 필요한 몇몇 트랜잭션에만 수준을 올리거나 명시적 잠금을 씁니다.</div></details>
+<details><summary>MySQL이 REPEATABLE READ가 기본이면 MySQL이 PostgreSQL보다 더 안전한 건가요?</summary><div class="fa">그렇게 단정할 수 없습니다. 등급 이름만 보면 RR이 RC보다 위지만, 두 DBMS의 구현이 다르기 때문에 이름 비교가 곧 안전성 비교가 되지 않습니다. PostgreSQL의 RC도 문장 단위로는 일관된 스냅샷을 보고, PostgreSQL에서 RR을 켜면 표준 RR보다 오히려 강한 스냅샷 격리가 됩니다. 등급 이름은 <b>표준이 정한 라벨</b>이고, 실제 보장은 <b>그 DBMS가 어떻게 구현했는지</b>로 결정됩니다.</div></details>
+<details><summary>COMMIT을 했는데 데이터 파일에 아직 안 쓰였다면, 그건 지속성이 깨진 것 아닌가요?</summary><div class="fa">아닙니다. 지속성의 기준은 "데이터 파일에 반영되었는가"가 아니라 <b>"다시 살아났을 때 복원할 수 있는가"</b>입니다. WAL 로그가 fsync로 디스크에 확실히 기록되었다면, 지금 당장 전원이 나가도 재기동 시 그 로그를 재생(Redo)해서 같은 상태로 복원할 수 있습니다. 그래서 로그만 안전하면 데이터 파일 반영은 미뤄도 되고, 이 "미룰 수 있다"가 WAL이 빠른 이유이기도 합니다.</div></details>
+<details><summary>WAL이 있으면 Consensus는 필요 없는 것 아닌가요? 둘 다 로그를 쓰잖아요.</summary><div class="fa">둘은 층이 다릅니다. WAL은 <b>한 노드 안에서</b> "이 노드가 죽었다 살아나도 상태를 복원한다"를 보장하고, Consensus는 <b>노드들 사이에서</b> "여러 노드가 같은 순서의 같은 로그를 갖는다"를 보장합니다. 노드가 통째로 죽어서 안 돌아오는 상황은 WAL로 해결이 안 됩니다. 그래서 분산 DB는 두 개를 겹쳐서 씁니다 — Consensus 동작 과정의 "Leader 노드가 로그에 기록"이 그 겹침을 가리킵니다.</div></details>
+<details><summary>Dirty Read는 실제로 언제 일어나나요? 요즘 DB에서도 발생하나요?</summary><div class="fa">거의 안 일어납니다. Dirty Read를 허용하는 유일한 등급인 READ UNCOMMITTED가 현대 DBMS에서 사실상 안 쓰이기 때문입니다. PostgreSQL은 READ UNCOMMITTED를 요청해도 내부적으로 READ COMMITTED로 처리합니다. 그래서 Dirty Read는 <b>격리 수준을 이해하기 위한 기준점</b>으로서 의미가 있지, 실무에서 만나는 버그는 아닙니다. 실무에서 실제로 만나는 건 Non-Repeatable Read와 Phantom, 그리고 그보다 훨씬 흔한 <b>Lost Update</b>(둘이 동시에 읽고 각자 고쳐서 한쪽이 덮어써지는 것)입니다. Lost Update는 21장 낙관적/비관적 Lock에서 다룹니다.</div></details>
+</div>
 </section>
 
 
@@ -2211,6 +2463,7 @@ LIMIT 10;</textarea>
     });
 
   document.querySelectorAll('.sqlbox').forEach(box=>{
+    if(box.classList.contains('norun')) return;   // 설정/출력/메모용 블록은 실행 버튼 제외
     const head = box.querySelector('.sqlhead');
     const code = box.querySelector('code');
     if(!head || !code) return;
