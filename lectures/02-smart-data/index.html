@@ -5869,26 +5869,121 @@ Serverless: 2.0 → 2.5 → 4.0 → 7.5 → 16.0 → ...  (초 단위, 무중단
     <span class="day-badge day4">Day 4</span>
     <h2><span class="num">28.</span> 데이터 웨어하우스 &amp; 분석 DB</h2>
   </div>
-  <p class="subtitle">OLTP vs OLAP · 파티션 프루닝 · 벡터화 실행 · Redshift · BigQuery · Snowflake · ClickHouse</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 우리가 지금까지 배운 DB(OLTP, 실시간 거래처리용)와 분석·보고서 전용 DB(OLAP)는 애초에 설계 목적이 다르다는 걸 짚고 가는 파트예요.</div></div>
-  <h4>분석 DB 핵심 기술 3가지</h4>
+  <p class="subtitle">OLTP vs OLAP · 행 지향 vs 열 지향 · 핵심 기술 3가지(파티션/컬럼 프루닝·벡터화) · 스타 스키마 · 제품 비교</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">한 줄로 하면 <b>"OLTP는 훑지 않으려고 인덱스를 만들고, OLAP는 어차피 훑어야 하니 훑는 것을 빠르게 만든다."</b> 발상 자체가 반대예요. 그래서 저장 방식(<b>열 지향</b>), 스키마(<b>반정규화·스타 스키마</b>), 최적화 기법(<b>프루닝·벡터화</b>)이 전부 달라집니다.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p>9장에서 "DBMS는 지금, DW는 그동안, Data Mining은 앞으로"라고 지도를 그렸다. 이 장은 그중 <b>DW의 내부</b>다 — <b>왜 다른 저장 방식을 쓰고, 왜 반정규화가 여기서는 출발점인지</b>를 이해하는 것이 목표다.</p></div>
+
+  <h3>1) OLTP vs OLAP — 이 장 전체의 뼈대</h3>
+<table class="t"><thead><tr>
+<th style="width:14%">구분</th><th>OLTP (운영 DB)</th><th>OLAP (분석 DB/DWH)</th>
+</tr></thead><tbody>
+<tr><td><b>목적</b></td><td>트랜잭션 처리 (쇼핑, 결제, 재고)</td><td>다차원 분석, 집계</td></tr>
+<tr><td><b>워크로드</b></td><td>잦은 단건 읽기/쓰기 · <b>낮은 지연</b></td><td>대량 스캔 및 집계 · <b>높은 처리량</b></td></tr>
+<tr><td><b>스키마</b></td><td>정규화 (보통 3NF)</td><td><b>De-normalize</b> (스타, 스노우플레이크)</td></tr>
+<tr><td><b>인덱스</b></td><td>B-Tree, PK/UK — 포인트 질의에 최적</td><td>파티션·클러스터링·컬럼형 — <b>Full Scan 최적</b></td></tr>
+<tr><td><b>트랜잭션</b></td><td>강한 ACID · 짧은 트랜잭션</td><td><b>일괄/배치 적재</b> · 읽기 일관성(Snapshot)</td></tr>
+<tr><td><b>저장형식</b></td><td>행 지향 (Row store)</td><td><b>컬럼 지향</b> (Parquet/ORC)</td></tr>
+<tr><td><b>최적화</b></td><td>인덱스 튜닝, 조인 순서</td><td>파티션 프루닝, 컬럼 프루닝, 벡터화</td></tr>
+</tbody></table>
 <ul class="b">
-<li><b>파티션 프루닝</b>: 필요한 날짜/범위 파티션만 읽음 (BigQuery PARTITION BY DATE, Snowflake 마이크로파티션, ClickHouse PARTITION BY)</li>
-<li><b>컬럼 프루닝</b>: SELECT한 컬럼만 읽음 — SELECT * 절대 금지! (스캔 바이트=과금 기준)</li>
-<li><b>벡터화 실행</b>: 컬럼단위 벡터(1000개씩)로 SIMD 처리 — BigQuery/Snowflake/DuckDB/ClickHouse 모두 채택</li>
+<li><b>지연(latency)과 처리량(throughput)은 다른 지표다.</b> OLTP는 "주문 버튼 누르면 30ms 안에 응답"이 목표라 지연을 줄이고, OLAP은 "1억 건을 10초 안에 훑기"가 목표라 총량을 늘린다. 그래서 OLAP은 <b>한 쿼리에 CPU 코어를 전부 붙여 병렬로 갈아 넣는</b> 방향으로 설계된다 — <b>OLTP에서 그렇게 하면 동시 사용자 1000명이 서로를 밟는다.</b></li>
+<li><b>"인덱스" 행이 이 표에서 가장 중요하다.</b> OLTP는 <b>훑지 않기 위해</b> 인덱스를 만들고, OLAP은 <b>어차피 훑어야 하니 훑는 것을 빠르게</b> 만든다.</li>
+<li><b>OLAP에는 락 경합·데드락이 사실상 없다</b> — 쓰는 사람이 <b>적재 파이프라인 한 명</b>뿐이기 때문이다. 대신 <b>읽기 일관성(Snapshot)</b>은 필요하다 — 30초짜리 리포트가 도는 도중에 적재 배치가 들어와도 <b>리포트는 한 시점의 세상을 봐야</b> 한다.</li>
 </ul>
-<h4>스타 스키마 &amp; DW 설계 원칙</h4>
+<div class="callout deep"><span class="ctitle">🔎 22장에서는 "반정규화가 마지막 카드"였는데 여기서는 출발점이다 — 모순인가?</span>
+<p>모순이 아니다. 22장의 규칙은 <b>OLTP 설계에 대한 것</b>이었다. 운영 DB는 갱신 이상이 곧 데이터 사고이므로 정규화를 지키다가 <b>측정 후에만</b> 깬다. 반면 <b>DW는 아무도 UPDATE하지 않는다</b> — 갱신 이상이 생길 여지가 없으니 <b>반정규화의 유일한 비용(동기화 부담)이 애초에 존재하지 않는다.</b> 그래서 DW에서는 반정규화가 <b>공짜에 가깝고</b>, 그러니 처음부터 그렇게 설계한다.</p>
+<p><b>다만 "OLAP은 반정규화니까 정규화는 몰라도 되겠네"가 아니다.</b> DW의 원천 레이어는 여전히 3NF로 두는 경우가 많고, 스타 스키마 자체도 <b>팩트와 디멘전을 나누는 정규화적 판단</b> 위에 서 있다 — <b>반정규화는 정규화를 이해한 다음에만 의도적으로 할 수 있다.</b></p></div>
+
+  <h3>2) 행 지향과 열 지향 — OLAP 성능의 뿌리</h3>
+<div class="sqlbox norun"><div class="sqlhead">같은 표를 디스크에 어떻게 늘어놓느냐의 차이</div><pre><code>행 지향 (PostgreSQL, MySQL, Oracle …)
+  [2024-01-01, 1, 7, 2, 30000][2024-01-01, 5, 7, 1, 15000][2024-01-02, 1, 9, 3, 90000]
+   └────── 한 행이 통째로 붙어 있다 ──────┘
+
+열 지향 (Parquet, ORC, ClickHouse, BigQuery, Snowflake, DuckDB …)
+  order_date  : [2024-01-01, 2024-01-01, 2024-01-02]
+  customer_key: [1, 5, 1]
+  amount      : [30000, 15000, 90000]
+   └────── 한 컬럼이 통째로 붙어 있다 ──────┘</code></pre></div>
 <ul class="b">
-<li><b>스타 스키마</b>: 팩트테이블(거래·이벤트, append-only, 시간파티션) + 디멘전테이블(사용자/상품/시간, SCD Type2)이 별모양으로 둘러쌈</li>
-<li>Surrogate Key(디멘전 대체키), 역할차원(Role-Playing: 날짜 하나로 order_date/ship_date 별칭), Junk Dimension, Conformed Dimension(여러 마트 공용)</li>
-<li>스노우플레이크 스키마: 디멘전을 다시 정규화(계층 자주 바뀔 때) / 3NF DW: 원천레이어는 3NF, 소비레이어(mart)는 스타</li>
+<li><b>① 필요한 컬럼만 읽을 수 있다.</b> <code>SUM(amount)</code>만 필요하면 <code>amount</code> 블록만 읽으면 된다. 행 지향에서는 <b>그 행의 나머지 컬럼이 같은 디스크 페이지에 붙어 있어 어차피 다 읽힌다.</b></li>
+<li><b>② 압축이 훨씬 잘 된다.</b> 같은 컬럼의 값들은 타입도 같고 분포도 비슷하다 — 연속으로 같은 값이면 <b>런렝스 인코딩</b>으로, 카디널리티가 낮은 문자열은 <b>사전 인코딩</b>으로 정수 하나가 된다.</li>
+<li><b>③ CPU가 같은 연산을 반복하기 좋다.</b> 같은 타입의 값이 메모리에 연속으로 놓여 있으니 <b>SIMD 명령어로 한 번에 여러 개</b>를 더할 수 있다(= 벡터화 실행).</li>
+<li>반대로 <b>한 행 전체를 읽거나 쓰는 일</b>은 열 지향이 불리하다 — 주문 한 건을 INSERT하려면 <b>컬럼 수만큼의 블록</b>을 건드려야 한다. <b>그래서 OLTP는 행 지향, OLAP은 열 지향이다.</b></li>
 </ul>
-<div class="sqlbox"><div class="sqlhead">BigQuery 파티션·클러스터 + ClickHouse MergeTree</div><pre><code>-- BigQuery: 파티션+클러스터
-CREATE TABLE mart.fact_sales PARTITION BY DATE(event_ts) CLUSTER BY user_id, item_id AS
-SELECT event_ts, user_id, item_id, qty, amount FROM stg.sales_cleaned;
--- ClickHouse: MergeTree 엔진 (초고속 실시간 OLAP)
-CREATE TABLE fact_events (event_time DateTime, user_id UInt64, amount Decimal(12,2))
-ENGINE=MergeTree PARTITION BY toDate(event_time) ORDER BY (user_id, event_time)
-TTL event_time + INTERVAL 90 DAY;</code></pre></div>
+<div class="callout myth"><span class="ctitle">⚠️ "컬럼 저장이면 무조건 몇십 배"는 아니다</span>
+<p>같은 100만 행을 세 형식으로 저장해 재 보면 <b>CSV 47.9MB → Parquet 1.0MB(48배)</b>가 나오지만, <b>이건 <code>i % 2000</code> 같은 규칙으로 만든 인공 데이터라 반복이 극단적으로 많아 압축이 비현실적으로 잘 된 것</b>이다. 무작위 값으로 다시 재면 <b>24MB → 17.2MB, 1.4배</b> 수준으로 떨어진다.</p>
+<p><b>열 지향의 압축 이득은 "데이터에 반복·정렬·낮은 카디널리티가 있을 때" 커진다.</b> 다행히 실무의 팩트 테이블은 날짜·카테고리·상태 코드처럼 반복이 많은 컬럼이 대부분이라 <b>실제로도 5~15배 정도는 흔하다.</b></p></div>
+
+  <h3>3) 분석 DB 핵심 기술 3가지</h3>
+<table class="t"><thead><tr><th style="width:22%">기술</th><th style="width:38%">하는 일</th><th>조건</th></tr></thead><tbody>
+<tr><td><b>파티션 프루닝</b></td><td>필요한 날짜/범위의 <b>파티션만 읽고 나머지는 통째로 건너뛴다</b></td><td><b>조회 조건에 파티션 키가 있어야 한다</b>(19장)</td></tr>
+<tr><td><b>컬럼 프루닝</b></td><td><code>SELECT</code>에 없는 컬럼은 <b>디스크에서 읽지도 않는다</b></td><td>열 지향 저장 + <b><code>SELECT *</code>를 안 쓸 것</b></td></tr>
+<tr><td><b>벡터화 실행</b></td><td>한 번에 <b>한 행이 아니라 수천 행 배치</b>를 처리 — SIMD·캐시 효율</td><td>엔진이 지원(ClickHouse, DuckDB, BigQuery…)</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ 세 기술이 하나로 이어진다</div><ul>
+<li>파티션 프루닝이 <b>읽을 블록 수</b>를 줄이고, 컬럼 프루닝이 <b>블록 안에서 읽을 컬럼</b>을 줄이고, 벡터화가 <b>읽은 것을 처리하는 속도</b>를 올린다. <b>19장의 "SELECT * 금지"가 여기서는 성능에 직결된다</b> — OLTP에서는 네트워크·메모리 낭비였지만 OLAP에서는 <b>읽는 데이터 양 자체가 몇 배 차이</b>가 난다(그리고 BigQuery처럼 <b>스캔한 바이트로 과금</b>하는 제품에서는 곧 돈이다).</li>
+</ul></div>
+
+  <h3>4) 스타 스키마 — 애초에 어떻게 담아 두나</h3>
+<table class="t"><thead><tr>
+<th style="width:16%"></th><th>팩트(Fact) 테이블</th><th>디멘전(Dimension) 테이블</th>
+</tr></thead><tbody>
+<tr><td>담는 것</td><td>거래·이벤트 (매출액·수량·클릭수)</td><td>사용자 / 상품 / 시간 / 지역</td></tr>
+<tr><td>크기</td><td><b>크다</b> (수억~수십억 행)</td><td>비교적 작다 (수천~수백만 행)</td></tr>
+<tr><td>변화</td><td><b>Append-only</b> (계속 추가만)</td><td>가끔 바뀐다 → <b>SCD Type 2</b> 이력 적용</td></tr>
+<tr><td>물리 설계</td><td><b>시간 파티션</b></td><td>파티션 불필요</td></tr>
+<tr><td>컬럼 구성</td><td>측정값(measure) + FK만 — <b>얇게 길게</b></td><td>서술적인 속성이 잔뜩</td></tr>
+</tbody></table>
+<div class="callout goal"><span class="ctitle">💡 구분하는 기준 한 줄</span>
+<p><b><code>SUM()</code>·<code>AVG()</code>를 씌울 수 있으면 팩트, <code>GROUP BY</code>에 넣게 되면 디멘전.</b> 매출액은 더할 수 있으니 팩트, 지역은 "지역별로 묶어 보는" 것이니 디멘전이다. 중앙에 팩트 하나를 두고 여러 디멘전이 둘러싸므로 <b>별 모양</b>이 된다.</p></div>
+<div class="sqlbox norun"><div class="sqlhead">구조</div><pre><code>                   dim_date
+                      │  (order_date_key / ship_date_key)
+                      ▼
+ dim_customer ──▶ fact_sales ◀── dim_product
+   (SCD Type 2)      ▲            (category …)
+                      │
+                dim_order_flags  (Junk Dimension)</code></pre></div>
+<ul class="b">
+<li><b>팩트가 왜 append-only인가</b> — 이미 일어난 사건을 기록한 것이기 때문이다. 주문이 취소되면 원래 행을 지우는 게 아니라 <b>취소 이벤트를 한 행 더 쌓는다.</b> 이 성질 덕분에 <b>20장의 MVCC 블로트도, 21장의 락 경합도 발생하지 않는다.</b></li>
+<li><b>Surrogate Key(대체키)</b> — 디멘전의 PK는 <b>의미 없는 일련번호</b>로 두고 자연키(<code>customer_id</code>)는 속성으로 남긴다. <b>SCD Type 2 때문</b>이다 — 같은 고객이 여러 시점 버전으로 존재하므로 자연키로는 한 행을 특정할 수 없다(22장).</li>
+<li><b>역할 차원(Role-Playing Dimension)</b> — 같은 <code>dim_date</code>를 <b>주문일·배송일·취소일</b>로 여러 번 참조한다. 테이블을 복사하지 않고 <b>별칭으로 여러 번 조인</b>한다.</li>
+<li><b>Junk Dimension</b> — 카디널리티가 낮은 플래그들(결제수단·쿠폰사용·모바일여부)을 <b>한 테이블로 모아</b> 팩트의 FK 개수를 줄인다.</li>
+<li><b>Conformed Dimension</b> — 여러 팩트 테이블이 <b>같은 디멘전을 공유</b>하게 만든다. 매출 팩트와 재고 팩트가 같은 <code>dim_product</code>를 보면 <b>두 지표를 나란히 비교할 수 있다.</b></li>
+</ul>
+<div class="note"><b>스노우플레이크 스키마</b>는 디멘전을 <b>다시 정규화</b>한 것이다(상품 → 카테고리 → 대분류로 쪼갬). 저장 공간은 줄지만 <b>조인이 늘어난다.</b> 그리고 <b>Cloud DW는 넓은 테이블(wide table)을 선호</b>한다 — 컬럼 프루닝 덕분에 <b>안 읽는 컬럼은 비용이 0</b>이라, 컬럼을 많이 두는 것이 조인보다 싸기 때문이다. <b>"정규화가 저장 공간을 아낀다"는 전제 자체가 열 지향에서는 약해진다.</b></div>
+
+  <h3>5) 제품별 특징과 선택</h3>
+<table class="t"><thead><tr><th style="width:20%">제품</th><th>특징</th></tr></thead><tbody>
+<tr><td><b>BigQuery</b> (GCP)</td><td>서버리스, <b>스캔한 바이트로 과금</b> · 파티션(날짜) + <b>클러스터링</b>(정렬) 설계가 곧 비용 절감 · BI Engine 캐시</td></tr>
+<tr><td><b>Snowflake</b></td><td><b>Storage/Compute 분리</b> — 웨어하우스(컴퓨트)를 용도별로 여러 개 띄운다 · <b>데이터 쉐어링</b>(복사 없이 타 계정에 공유) · <b><code>VARIANT</code></b>(반정형 타입)</td></tr>
+<tr><td><b>Redshift</b> (AWS)</td><td><b>MPP</b>(Massively Parallel Processing) — 노드에 데이터를 분산해 병렬 처리 · 분산 키(DISTKEY)·정렬 키(SORTKEY) 설계가 성능을 좌우</td></tr>
+<tr><td><b>ClickHouse</b></td><td><b>MergeTree</b> 엔진 — 정렬 키 순으로 파트를 쓰고 백그라운드에서 병합 · <b>단일 노드 성능이 압도적</b> · 실시간 분석/로그에 강함</td></tr>
+<tr><td><b>DuckDB</b></td><td><b>"분석용 SQLite"</b> — 설치 없이 파일/메모리에서 Parquet·CSV를 직접 SQL로 조회. <b>로컬 분석의 표준</b>이 되어 가는 중</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ 선택 기준</div><ul>
+<li><b>이미 쓰는 클라우드</b>가 있으면 그쪽 제품이 기본값이다(데이터 이동 비용과 권한 통합 때문).</li>
+<li><b>과금 모델을 먼저 본다</b> — BigQuery는 <b>스캔 바이트</b>, Snowflake는 <b>컴퓨트 가동 시간</b>, Redshift는 <b>노드 시간</b>. <b>같은 워크로드라도 어느 쪽이 싼지가 완전히 갈린다.</b></li>
+<li><b>수십억 행 미만이면 DuckDB/PostgreSQL로 충분한 경우가 많다.</b> 9장에서 본 대로 <b>"DW는 큰 DB가 아니라 방향이 다른 DB"</b>이고, 방향만 맞추면(파티션·컬럼 선택·집계 테이블) 작은 규모에서는 굳이 전용 제품이 필요 없다.</li>
+</ul></div>
+
+  <h3>6) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>운영 DB에서 그냥 분석 쿼리를 돌리면 안 되나요?</summary><div class="fa">규모가 작으면 됩니다. 문제가 되는 지점은 셋입니다. ① <b>부하 간섭</b> — 1억 행을 훑는 리포트가 도는 동안 주문 처리가 느려집니다(그리고 그 리포트는 <b>버퍼 캐시를 통째로 밀어내</b> 이후 OLTP 쿼리까지 느리게 만듭니다). ② <b>저장 방식이 안 맞습니다</b> — 행 지향이라 <code>SUM(amount)</code> 하나에도 <b>모든 컬럼이 읽힙니다.</b> ③ <b>스키마가 안 맞습니다</b> — 정규화된 테이블을 조인해 집계하면 느리고, 그렇다고 운영 DB를 반정규화할 수는 없습니다. 중간 단계로 <b>읽기 복제본에서 분석 쿼리만 돌리는 것</b>이 흔한 절충안입니다.</div></details>
+<details><summary>DW에는 인덱스를 안 만드나요?</summary><div class="fa">전통적인 B-Tree 인덱스는 거의 안 만듭니다 — <b>어차피 대량을 훑기 때문에 인덱스가 이길 구간이 아닙니다</b>(17장의 "5~10% 기준선"을 한참 넘습니다). 대신 다른 장치를 씁니다. <b>파티션</b>(읽을 조각을 줄임), <b>클러스터링/정렬 키</b>(같은 값끼리 모아 두어 블록 단위로 건너뛰게 함), <b>컬럼 통계(zone map/min-max)</b>(블록의 최소·최대값만 보고 스킵). 원리는 17장의 <b>BRIN</b>과 같습니다 — <b>"정렬되어 있으면 통째로 건너뛸 수 있다."</b></div></details>
+<details><summary>스타 스키마 대신 그냥 큰 테이블 하나로 만들면 안 되나요?</summary><div class="fa">실제로 <b>Cloud DW에서는 그렇게 하는 경우가 늘고 있습니다</b>(wide table). 컬럼 프루닝 덕분에 안 읽는 컬럼의 비용이 0에 가깝기 때문입니다. 다만 스타 스키마가 여전히 주는 것이 둘 있습니다. ① <b>디멘전의 이력 관리</b> — 고객 등급이 바뀌었을 때 <b>과거 주문을 그 시점 등급으로 집계</b>하려면 SCD Type 2가 필요하고, 그건 디멘전 테이블이 따로 있어야 합니다. ② <b>재사용</b> — 여러 팩트가 같은 디멘전을 공유하면(Conformed) <b>지표들을 나란히 비교</b>할 수 있습니다. <b>규모가 작고 지표가 하나면 wide table, 조직 전체가 쓰는 DW면 스타 스키마</b>가 기본입니다.</div></details>
+<details><summary>BigQuery에서 <code>SELECT *</code>를 쓰면 왜 그렇게 혼나나요?</summary><div class="fa"><b>스캔한 바이트로 과금하기 때문</b>입니다. 100컬럼 테이블에서 2컬럼만 필요한데 <code>SELECT *</code>를 쓰면 <b>요금이 50배</b>가 됩니다(그리고 느립니다). 같은 이유로 <b><code>LIMIT</code>은 비용을 줄여 주지 않습니다</b> — 스캔은 이미 다 하고 마지막에 자르는 것이기 때문입니다. 비용을 줄이는 방법은 <b>① 컬럼을 줄이고, ② 파티션 조건을 걸고(<code>WHERE date BETWEEN ...</code>), ③ 클러스터링 키로 필터하는 것</b>입니다. <b>"쿼리 한 줄이 곧 청구서"</b>인 환경에서는 19장의 안티패턴이 성능이 아니라 돈 문제가 됩니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>OLTP와 OLAP이 인덱스를 대하는 태도가 어떻게 반대인가?</li>
+<li>열 지향이 유리한 세 가지 이유는? 불리한 경우는?</li>
+<li>DW에서 반정규화가 "공짜에 가까운" 이유는?</li>
+<li>팩트와 디멘전을 구분하는 한 줄 기준은?</li>
+<li>팩트 테이블이 append-only인 것이 20·21장의 무엇을 없애 주는가?</li>
+<li>디멘전에 대체키가 필요한 이유는?</li>
+<li>BigQuery에서 <code>SELECT *</code>가 왜 문제인가? <code>LIMIT</code>은 도움이 되는가?</li>
+</ul></div>
 </section>
 
 
