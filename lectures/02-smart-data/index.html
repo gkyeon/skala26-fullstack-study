@@ -5758,19 +5758,109 @@ CONTEXT:  SQL statement "UPDATE node SET cnt = cnt + 1 WHERE id = NEW.id"
     <span class="day-badge day4">Day 4</span>
     <h2><span class="num">27.</span> 서버리스 &amp; 분산 Cloud DB</h2>
   </div>
-  <p class="subtitle">Aurora Serverless v2 · Google Spanner · Cosmos DB · PlanetScale · Neon · Supabase</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 트래픽에 따라 자동으로 커졌다 작아졌다 하는 최신 클라우드 DB들이에요.</div></div>
-  <h4>서버리스·분산 DB 주요 서비스</h4>
+  <p class="subtitle">두 축 구분 · Aurora Serverless v2(ACU) · Spanner(Paxos·2PC·TrueTime) · Cosmos DB 5단계 일관성 · PlanetScale/Neon/Supabase</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">이름이 붙어 다녀서 한 덩어리처럼 보이지만 <b>서버리스와 분산은 독립적인 축</b>이에요. <b>서버리스</b>는 "용량을 누가 정하나"(자동 스케일), <b>분산</b>은 "쓰기 노드가 몇 대인가". 그래서 <b>Aurora Serverless v2는 서버리스이지만 분산 DB가 아닙니다</b> — 늘어나는 건 그 <b>한 대의 크기</b>지 대수가 아니에요.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 두 축을 먼저 갈라놓기</span>
+  <table class="t"><thead><tr><th style="width:20%"></th><th>서버리스인가</th><th>분산인가</th></tr></thead><tbody>
+  <tr><td>묻는 것</td><td>용량을 누가 정하나</td><td>데이터가 몇 대에 흩어져 있나</td></tr>
+  <tr><td>해결하는 문제</td><td>비용, 용량 계획, 트래픽 급증</td><td>단일 서버 한계, 지역 간 지연, 가용성</td></tr>
+  <tr><td>핵심 기술</td><td>컴퓨트-스토리지 분리, 오토스케일</td><td><b>합의 프로토콜(Paxos/Raft), 분산 트랜잭션</b></td></tr>
+  </tbody></table></div>
 <table class="t"><thead><tr>
-<th>서비스</th>
-<th>특징</th>
+<th style="width:20%">제품</th><th style="width:14%">서버리스</th><th style="width:22%">분산(멀티 라이터)</th><th>한 줄 정체</th>
 </tr></thead><tbody>
-<tr><td>Aurora Serverless v2</td><td>ACU단위 자동스케일, 간헐적/변동성 큰 OLTP 적합</td></tr>
-<tr><td>Google Cloud Spanner</td><td>Paxos/TrueTime기반, 글로벌TX+외부일관성, Strict Serializability</td></tr>
-<tr><td>Azure Cosmos DB</td><td>다중모델(문서/키값/Cassandra/Mongo), 5단계 일관성 선택</td></tr>
-<tr><td>PlanetScale</td><td>Vitess기반, 브랜칭/Online DDL</td></tr>
-<tr><td>Neon</td><td>scale-to-zero, 스토리지-컴퓨트 분리</td></tr>
-<tr><td>Supabase</td><td>Postgres+Auth+Realtime+Edge Functions</td></tr>
+<tr><td><b>Aurora Serverless v2</b></td><td>예 (ACU, 0까지)</td><td><b>아니오 — 쓰기는 한 노드</b></td><td>오토스케일하는 MySQL/PostgreSQL</td></tr>
+<tr><td><b>Google Cloud Spanner</b></td><td>부분</td><td><b>예 — 진짜 분산 SQL</b></td><td>전 지구를 한 대처럼 쓰는 SQL DB</td></tr>
+<tr><td><b>Azure Cosmos DB</b></td><td>예</td><td><b>예 — 멀티 리전 쓰기</b></td><td>일관성을 <b>다이얼로 고르는</b> 다중 모델 NoSQL</td></tr>
+<tr><td><b>PlanetScale</b></td><td>부분</td><td>예 (Vitess 샤딩)</td><td><b>브랜치가 되는</b> 샤딩 MySQL</td></tr>
+<tr><td><b>Neon</b></td><td><b>예 (scale-to-zero)</b></td><td>아니오</td><td>스토리지를 분리한 서버리스 PostgreSQL</td></tr>
+<tr><td><b>Supabase</b></td><td>부분</td><td>아니오</td><td>PostgreSQL + 백엔드 부품 한 세트</td></tr>
 </tbody></table>
+<div class="callout myth"><span class="ctitle">⚠️ 가장 자주 오해되는 칸 — Aurora Serverless v2</span>
+<p>"서버리스"라는 이름 때문에 분산 DB처럼 들리지만 <b>Aurora는 쓰기를 받는 인스턴스가 하나뿐인 구조</b>다(읽기 복제본은 여럿). <b>늘어나는 건 그 한 대의 크기지 대수가 아니다.</b> 반면 Spanner는 처음부터 <b>쓰기가 여러 노드에 갈린다</b> — Spanner에만 "True Distributed SQL"이 붙는 이유다.</p></div>
+
+  <h3>1) Aurora Serverless v2 — ACU와 컴퓨트/스토리지 분리</h3>
+<div class="sqlbox norun"><div class="sqlhead">계단이 아니라 연속적인 다이얼</div><pre><code>전통 RDS:   [ large ] → (재시작) → [ xlarge ] → (재시작) → [ 2xlarge ]
+Serverless: 2.0 → 2.5 → 4.0 → 7.5 → 16.0 → ...  (초 단위, 무중단)</code></pre></div>
+<ul class="b">
+<li><b>ACU(Aurora Capacity Unit)</b> ≈ 메모리 2 GiB + 상응하는 CPU·네트워크. 중요한 것은 <b>ACU가 "인스턴스 타입"이 아니라 연속적인 숫자</b>라는 점이다 — <b>0.5 ACU 단위로 부드럽게</b> 오르내린다.</li>
+<li>설정하는 것은 <b>최소 ACU와 최대 ACU 두 개뿐</b>. 그 사이는 Aurora가 CPU·메모리·연결 수를 보고 알아서 움직인다.</li>
+<li><b>최소를 0으로 둘 수 있다</b>(2024.11~) — 연결이 일정 시간 없으면 인스턴스가 <b>일시 정지</b>하고 그동안 컴퓨트 비용이 청구되지 않는다. <b>"scale-to-zero"</b>가 이것이다. (엔진 버전 제한이 있고, v2가 처음 나온 2022년에는 최소가 0.5 ACU라 <b>"완전히 0은 안 된다"가 오랫동안 약점</b>으로 꼽혔다 — 오래된 블로그를 읽을 때 시점 차이를 감안하자.)</li>
+<li><b>왜 가능한가 — 컴퓨트와 스토리지의 분리.</b> 전통 DB는 데이터가 그 서버의 디스크에 붙어 있어 서버를 바꾸면 데이터를 옮겨야 했다. Aurora는 <b>스토리지가 독립된 계층</b>이라 <b>컴퓨트만 늘렸다 줄였다</b> 할 수 있다.</li>
+</ul>
+<div class="note"><b>실무 포인트는 마지막 줄에 있다</b> — "<b>스케일 이벤트 시 지연 변화 → 커넥션 풀·읽기/쓰기 분리 설계</b>". 용량이 오르내리는 순간 <b>지연이 출렁이고 연결이 재조정</b>되므로, 애플리케이션이 <b>재연결과 짧은 지연 스파이크를 견디게</b> 만들어야 한다. <b>Aurora는 간헐적·변동성 큰 OLTP에 적합</b>하고, 부하가 항상 일정하다면 <b>프로비저닝된 인스턴스가 더 싸다.</b></div>
+
+  <h3>2) Google Cloud Spanner — 진짜 분산 SQL</h3>
+<p>Spanner는 데이터를 <b>split</b>이라는 조각으로 나눠 여러 머신에 분산한다(22장 Range 샤딩과 같은 발상). 문제는 그다음 두 가지이고, <b>이 둘을 푸는 방식이 Spanner의 전부</b>다.</p>
+<ul class="b">
+<li><b>① 한 조각이 죽으면? → 복제본을 여러 대. 그럼 복제본끼리 어떤 게 최신인지 어떻게 합의하나? → Paxos</b></li>
+<li><b>② 여러 조각에 걸친 트랜잭션은? → 2PC + TrueTime</b></li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">Paxos — 과반수(quorum)가 핵심</div><pre><code>쓰기 요청 → 리더 노드가 받는다
+          → 로그 항목을 팔로워들에게 복제한다
+          → 과반수가 "받았다"고 답하면 → 확정(commit)
+          → 클라이언트에게 성공 응답</code></pre></div>
+<ul class="b">
+<li><b>과반수 규칙이 두 가지를 동시에 보장한다.</b> <b>가용성</b> — 3대 중 1대가 죽어도 2대로 과반이 되어 서비스가 계속된다. <b>일관성</b> — <b>어떤 두 과반수는 반드시 최소 한 대를 공유하므로</b> "옛 리더가 확정한 것"과 "새 리더가 확정하는 것"이 모순될 수 없다.</li>
+<li><b>Spanner에서는 각 split이 자기만의 Paxos 그룹을 가진다.</b> DB 하나가 수백 개의 독립적인 Paxos 그룹으로 이루어져 있고 그룹마다 리더가 따로 있다 — <b>쓰기가 한 노드로 몰리지 않는 이유</b>다.</li>
+<li>합의 프로토콜은 <b>Paxos</b>(1989)가 원조이고 이해하기 쉽게 다시 만든 것이 <b>Raft</b>(2014)다. 오늘날 분산 DB는 대부분 이 둘 중 하나를 쓴다.</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">2PC — 22장에서 한 줄 지나갔던 그것</div><pre><code>[1단계 · Prepare]  코디네이터 → 참여자 전원: "커밋할 수 있나?"
+                   참여자 각자: 락 잡고 WAL에 기록한 뒤 "예"/"아니오"
+[2단계 · Commit]   전원이 "예" → "커밋하라" / 하나라도 "아니오" → "롤백하라"</code></pre></div>
+<div class="callout deep"><span class="ctitle">🔎 2PC의 비용과 TrueTime</span>
+<p>1단계에서 "예"라고 답한 참여자는 <b>그 순간부터 반드시 커밋할 수 있어야 한다</b> — 자기 마음대로 롤백할 수 없고 코디네이터의 지시를 기다린다. <b>이 "결정을 유보한 채 잡혀 있는" 상태가 2PC의 비용이자 위험</b>이다(코디네이터가 죽으면 참여자들이 락을 잡은 채 매달린다). PostgreSQL에도 <code>PREPARE TRANSACTION</code>으로 2PC가 들어 있다.</p>
+<p><b>TrueTime</b>은 "여러 대의 시계를 어떻게 맞추나"를 푸는 Google의 장치다. 원자시계와 GPS를 데이터센터에 두고 <b>"현재 시각은 [최소, 최대] 구간 안에 있다"는 불확실성 구간</b>을 API로 노출한다. Spanner는 커밋할 때 <b>그 불확실성만큼 일부러 기다려</b>(commit wait) "이 트랜잭션의 타임스탬프가 확실히 지났다"를 보장한다 — 그래서 <b>외부 일관성(external consistency)</b>, 즉 <b>실제 시간 순서와 트랜잭션 순서가 일치</b>하는 <b>Strict Serializability</b>가 성립한다.</p></div>
+<div class="note"><b>"스키마·핫스팟 설계 중요"</b>가 마지막 줄에 온 이유 — 기본 키 범위로 split을 나누므로 <b>순차 증가 키(타임스탬프, auto increment)를 쓰면 항상 마지막 split으로 쓰기가 몰린다.</b> 22장에서 본 Range 샤딩의 hot spot 문제가 그대로 나타난다. 그래서 Spanner에서는 <b>키를 일부러 흩뜨리는 설계</b>(해시 접두어 등)를 쓴다.</div>
+
+  <h3>3) Azure Cosmos DB — 일관성을 다이얼로 고른다</h3>
+<p>다중 모델·다중 API(문서·키값·그래프·컬럼)를 한 서비스로 제공하고 <b>멀티 리전 쓰기</b>가 된다. 이 절의 핵심은 <b>5단계 일관성</b>이다 — 20장에서 격리 수준을 다이얼로 골랐듯, <b>여기서는 분산 일관성을 다이얼로 고른다.</b></p>
+<table class="t"><thead><tr><th style="width:24%">수준</th><th>보장</th><th>대가</th></tr></thead><tbody>
+<tr><td><b>Strong</b></td><td>항상 최신 값 (선형화 가능)</td><td>지연 최대, 다지역에서 비쌈</td></tr>
+<tr><td><b>Bounded Staleness</b></td><td>"최대 K개 버전 / T초까지만 뒤처짐"</td><td>지연 중간 — <b>낡음의 상한을 정한다</b></td></tr>
+<tr><td><b>Session</b></td><td><b>내 세션 안에서는 내가 쓴 것을 읽는다</b> (기본값)</td><td>다른 사용자에게는 낡을 수 있음</td></tr>
+<tr><td><b>Consistent Prefix</b></td><td>순서는 지켜지되 최신은 아님</td><td>중간 상태를 볼 수 있음</td></tr>
+<tr><td><b>Eventual</b></td><td>언젠가는 같아진다</td><td>지연 최소, 가장 쌈</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ 실무에서 가장 유용한 것은 가운데 둘</div><ul>
+<li><b>Session</b>이 기본값인 이유 — 사용자 입장에서 <b>"내가 방금 쓴 글이 안 보이는" 것이 가장 큰 불만</b>인데, Session은 그것만은 보장하면서 비용은 Strong보다 훨씬 싸다.</li>
+<li><b>Bounded Staleness</b>는 <b>"낡음의 상한을 계약으로 정한다"</b>는 점에서 특별하다 — "최대 5초까지만 뒤처진다"를 알면 그에 맞춰 설계할 수 있다.</li>
+</ul></div>
+
+  <h3>4) 차세대 개발자 DB — PlanetScale · Neon · Supabase</h3>
+<ul class="b">
+<li><b>PlanetScale</b> — Vitess(22장의 MySQL 샤딩 도구) 기반. 특징은 <b>브랜칭</b>이다 — <b>Git처럼 스키마 브랜치를 만들어 변경을 검증하고 머지</b>한다. 6장에서 본 "운영 중 <code>ALTER TABLE</code>의 위험"을 <b>배포 워크플로로 푼 것</b>이다.</li>
+<li><b>Neon</b> — <b>서버리스 PostgreSQL.</b> 스토리지를 분리해 <b>scale-to-zero</b>가 되고, PlanetScale처럼 <b>브랜칭</b>도 제공한다(스토리지 계층의 copy-on-write로 <b>데이터까지 포함한 브랜치</b>를 순식간에 만든다). 개발·테스트 환경마다 실제 데이터 사본을 띄우는 용도로 강력하다.</li>
+<li><b>Supabase</b> — <b>PostgreSQL + 백엔드 부품 한 세트</b>(인증, 스토리지, 실시간 구독, 자동 REST/GraphQL API). DB가 특별한 게 아니라 <b>그냥 PostgreSQL</b>이고, 그 위에 흔히 필요한 것들을 얹어 준다 — <b>14장의 View 권한 제어와 30장의 RLS가 핵심 부품</b>으로 쓰인다.</li>
+<li><b>분산 SQL(NewSQL)</b> — <b>CockroachDB</b>, <b>TiDB</b>, <b>YugabyteDB</b>가 Spanner의 오픈소스 후예다. CockroachDB는 <b>TrueTime 같은 특수 하드웨어 없이</b> 시계 오차 상한을 가정하고 <b>불확실 구간에 걸린 읽기는 재시도</b>하는 방식으로 같은 문제를 푼다.</li>
+</ul>
+
+  <h3>5) 서버리스/분산 vs 전통 RDBMS — 무엇이 달라지나</h3>
+<table class="t"><thead><tr><th style="width:22%">축</th><th>전통 RDBMS</th><th>서버리스/분산</th></tr></thead><tbody>
+<tr><td><b>용량 계획</b></td><td>미리 예측해 인스턴스를 고른다</td><td><b>안 한다</b>(최소/최대만 정함)</td></tr>
+<tr><td><b>일관성 모델</b></td><td>단일 노드 ACID</td><td><b>고르는 것</b>(Strong ~ Eventual) 또는 Strict Serializability</td></tr>
+<tr><td><b>다지역</b></td><td>복제 지연을 감수</td><td>멀티 리전 쓰기 가능(대신 지연·비용)</td></tr>
+<tr><td><b>스키마 변경</b></td><td>락과 다운타임 걱정(6·21장)</td><td>온라인 DDL / <b>브랜칭</b></td></tr>
+<tr><td><b>비용</b></td><td>고정(인스턴스 시간)</td><td><b>사용량 기반</b> — 안 쓰면 0에 가깝고, 폭주하면 그만큼 청구</td></tr>
+</tbody></table>
+
+  <h3>6) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>서버리스면 무조건 싼가요?</summary><div class="fa">아닙니다. <b>변동이 클 때만</b> 쌉니다. 트래픽이 하루 몇 시간만 몰리거나 개발·스테이징 환경처럼 대부분 놀고 있으면 <b>scale-to-zero의 이득이 큽니다.</b> 반대로 <b>부하가 항상 일정하면 프로비저닝된 인스턴스가 더 쌉니다</b> — 서버리스는 유연함의 대가로 단가가 높습니다. 그리고 <b>폭주하면 그만큼 청구된다</b>는 점도 있습니다 — 잘못된 쿼리 하나가 용량을 최대치까지 끌어올리면 <b>느려지는 대신 비싸집니다.</b> 반드시 <b>최대 ACU 상한과 예산 알림</b>을 걸어 두세요.</div></details>
+<details><summary>Spanner를 쓰면 샤딩 걱정을 안 해도 되나요?</summary><div class="fa">조인·트랜잭션 걱정은 안 해도 됩니다 — <b>그게 분산 SQL의 존재 이유</b>입니다. 하지만 <b>키 설계 걱정은 그대로 남습니다.</b> 기본 키 범위로 split을 나누므로 <b>순차 증가 키를 쓰면 마지막 split으로 쓰기가 몰려</b> 22장의 hot spot이 그대로 재현됩니다. 그리고 <b>같이 조회되는 데이터를 같은 split에 두는 설계</b>(interleaved table, co-location)를 안 하면 <b>모든 조인이 노드를 넘나들어</b> 느려집니다. <b>"분산은 자동, 설계는 여전히 사람"</b>입니다.</div></details>
+<details><summary>Cosmos DB의 일관성 수준은 어떻게 고르나요?</summary><div class="fa">기본값인 <b>Session</b>에서 시작하는 것이 맞습니다 — 사용자가 가장 크게 체감하는 <b>"내가 방금 쓴 것이 안 보인다"</b>를 막아 주면서 비용이 합리적입니다. <b>Strong</b>이 필요한 경우는 <b>돈·재고처럼 틀리면 안 되는 값</b>이고, 다지역에서는 <b>지연과 비용이 크게 늘어난다</b>는 것을 감수해야 합니다. 반대로 <b>조회수·좋아요 수처럼 조금 틀려도 되는 값</b>은 <b>Eventual</b>로 내려도 됩니다. <b>수준을 컨테이너(테이블)별로 다르게 줄 수 있다</b>는 점이 실무에서 유용합니다.</div></details>
+<details><summary>분산 SQL이 좋다면 왜 다들 안 쓰나요?</summary><div class="fa">대가가 셋 있습니다. ① <b>비쌉니다</b> — 노드를 여러 대 굴리고 합의 프로토콜이 돌아갑니다. ② <b>지연이 늘어납니다</b> — 모든 쓰기가 과반수 합의를 기다리므로 단일 노드보다 느립니다(특히 다지역이면 물리적 거리만큼). ③ <b>제약이 있습니다</b> — 일부 SQL 기능·확장이 없거나 다르게 동작하고, 트랜잭션 크기에 상한이 있는 경우가 많습니다. <b>대부분의 서비스는 한 대의 PostgreSQL로 충분합니다</b>(22장의 여섯 단계를 다 밟았는지 먼저 확인하세요). 분산 SQL은 <b>"쓰기 처리량이 한 대의 한계를 넘고, 그 대가를 낼 수 있을 때"</b>의 선택입니다.</div></details>
+<details><summary>이 장의 제품 스펙을 외워야 하나요?</summary><div class="fa">외우지 마세요 — <b>가장 빨리 낡는 정보</b>입니다. Aurora 스토리지 상한, Global Database 리전 수, 최소 ACU 값은 이미 여러 번 바뀌었습니다. 대신 <b>구조와 원리를 잡으세요</b> — "컴퓨트/스토리지 분리가 서버리스를 가능하게 한다", "과반수 합의가 가용성과 일관성을 동시에 준다", "2PC는 결정을 유보한 채 잡혀 있는 비용을 낸다". <b>이 원리들은 안 바뀌고, 새 제품이 나와도 그 틀로 읽힙니다.</b></div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>서버리스와 분산은 각각 무엇을 묻는 축인가? Aurora Serverless v2는 어느 쪽인가?</li>
+<li>ACU가 "인스턴스 타입"과 다른 점은? scale-to-zero가 가능한 구조적 이유는?</li>
+<li>Paxos의 과반수 규칙이 동시에 보장하는 두 가지는?</li>
+<li>2PC에서 "예"라고 답한 참여자가 감수하는 비용은?</li>
+<li>Cosmos DB의 기본 일관성이 Session인 이유는?</li>
+<li>Spanner를 써도 여전히 사람이 해야 하는 설계는?</li>
+</ul></div>
 </section>
 
 
