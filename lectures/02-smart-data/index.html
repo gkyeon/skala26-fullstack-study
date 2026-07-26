@@ -1852,58 +1852,309 @@ SET search_path = app, public;   -- 기본 스키마 순서</code></pre></div>
     <span class="day-badge day1">Day 1</span>
     <h2><span class="num">6.</span> SQL 기초 — DDL</h2>
   </div>
-  <p class="subtitle">CREATE DATABASE · CREATE TABLE · ALTER · 데이터 타입 · 제약조건</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: DDL은 테이블의 '뼈대'를 만드는 명령(CREATE, ALTER). 어떤 칸(컬럼)에 어떤 종류(타입)의 값이 들어갈지 정하는 단계예요.</div></div>
-  <div class="sqlbox"><div class="sqlhead">CREATE DATABASE — DBMS별 문법 비교</div><pre><code>-- PostgreSQL (권장)
-CREATE DATABASE skala_db WITH ENCODING='UTF8' LC_COLLATE='en_US.UTF-8'
-  LC_CTYPE='en_US.UTF-8' TEMPLATE=template0;
-\c skala_db
-CREATE SCHEMA app;  CREATE SCHEMA audit;
-SET search_path = app, public;
--- MySQL/MariaDB
-CREATE DATABASE skala_db CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
--- Oracle (DBA 수행, 사용자=스키마 개념)
-CREATE USER skala_user IDENTIFIED BY "StrongPW1!" DEFAULT TABLESPACE users;
-GRANT CREATE SESSION, CREATE TABLE, CREATE SEQUENCE TO skala_user;</code></pre></div>
-<div class="note">UTF-8 및 콜레이션은 처음부터 올바르게! 나중에 바꾸면 전체 데이터 재변환 필요</div>
-<div class="sqlbox"><div class="sqlhead">CREATE TABLE 표준 뼈대 (PostgreSQL)</div><pre><code>-- PostgreSQL
-CREATE TABLE products (
-  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- SERIAL 대신 최신 표준
-  name VARCHAR(200) NOT NULL,
-  price NUMERIC(10,2) NOT NULL CHECK (price &gt;= 0),
-  attrs JSONB,                          -- 강력한 JSONB 연산/인덱스
+  <p class="subtitle">CREATE DATABASE/SCHEMA · CREATE TABLE 4종 비교 · 데이터 타입 차이 · 제약조건 · 이식성 팁 · ALTER TABLE 운영 주의</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: DDL은 테이블의 '뼈대'를 만드는 명령(<code>CREATE</code>, <code>ALTER</code>, <code>DROP</code>)이에요. 어떤 칸(컬럼)에 어떤 종류(타입)의 값이 들어갈지, 어떤 규칙(제약조건)을 지킬지 정하는 단계. <b>DDL은 되돌리기가 어렵다</b>는 게 핵심 — 잘못 넣은 행은 지우면 되지만, 잘못 만든 구조는 데이터가 쌓인 뒤엔 바꾸는 것 자체가 위험한 작업이 됩니다.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p>데이터베이스와 스키마를 만들고, <b>제약조건을 갖춘 테이블</b>을 직접 설계해 <code>CREATE TABLE</code>로 쓸 수 있게 된다. 그리고 DBMS별 타입 차이를 알고 이식성 있는 선택을 하며, 운영 중인 테이블을 <code>ALTER TABLE</code>로 바꿀 때 무엇을 조심해야 하는지 안다.</p></div>
+
+  <h3>1) 왜 이게 필요한가 — SQL의 세 갈래</h3>
+<table class="t"><thead><tr>
+<th style="width:10%">분류</th><th style="width:26%">뜻</th><th style="width:34%">명령</th><th>다루는 것</th>
+</tr></thead><tbody>
+<tr><td><b>DDL</b></td><td>Data Definition Language</td><td><code>CREATE</code>, <code>ALTER</code>, <code>DROP</code>, <code>TRUNCATE</code></td><td><b>그릇</b>(테이블·스키마·인덱스)의 구조</td></tr>
+<tr><td><b>DML</b></td><td>Data Manipulation Language</td><td><code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code></td><td>그릇 안의 <b>내용물</b>(행)</td></tr>
+<tr><td><b>DCL</b></td><td>Data Control Language</td><td><code>GRANT</code>, <code>REVOKE</code></td><td><b>권한</b> (30장에서 다룸)</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ DDL을 DML보다 먼저 배우는 이유</div><ul>
+<li><b>그릇이 없으면 담을 수 없어서</b>다. 그리고 DDL에는 DML에 없는 성질이 하나 있다 — <b>되돌리기가 어렵다.</b> 그래서 이 장의 후반부가 통째로 "미리 확인할 것"과 "운영 중 변경 시 주의"에 할애되어 있다.</li>
+</ul></div>
+
+  <h3>2) CREATE DATABASE — "컨테이너" 만들기</h3>
+<p>5장에서 정리한 계층 구조가 여기서 실제 문법 차이로 나타난다.</p>
+<div class="sqlbox norun"><div class="sqlhead">MySQL / MariaDB — 문자셋/콜레이션을 꼭 지정!</div><pre><code>CREATE DATABASE appdb
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_general_ci;   -- 한국어/다국어 무난</code></pre></div>
+<div class="sqlbox norun"><div class="sqlhead">PostgreSQL — 인코딩/로케일을 함께 정할 것</div><pre><code>CREATE DATABASE appdb
+  WITH ENCODING 'UTF8'
+       LC_COLLATE 'en_US.UTF-8'
+       LC_CTYPE   'en_US.UTF-8'
+       TEMPLATE   template0;</code></pre></div>
+<div class="sqlbox norun"><div class="sqlhead">SQL Server / Oracle</div><pre><code>-- SQL Server: 한국어/UTF-8 쓰려면 콜레이션을 지정
+CREATE DATABASE AppDb
+  COLLATE Korean_100_CI_AS_SC_UTF8;
+
+-- Oracle: "데이터베이스"는 인스턴스/스토리지 단위(관리자가 생성)
+--         개발자는 보통 사용자 = 스키마를 만들어 씀 (DBA가 수행)
+CREATE USER appuser IDENTIFIED BY "StrongPW1!"
+  DEFAULT TABLESPACE users QUOTA UNLIMITED ON users;
+GRANT CREATE SESSION, CREATE TABLE, CREATE SEQUENCE TO appuser;</code></pre></div>
+<div class="callout prof"><span class="ctitle">🎓 실무 이야기 — Oracle은 DB 생성을 DBA가 전담한다</span>
+<p>Oracle 환경에서 데이터베이스 생성 권한은 개발자에게 주어지지 않는다. 설계 단계부터 보안과 권한까지 함께 관리해야 하므로 DBA가 전담한다. 개발자는 사용자 계정만 받아 자기 스키마 안에서 테이블·뷰·함수를 만들어 쓰고 필요한 권한은 승인 절차를 밟아 요청한다. SQL Server에서는 DB를 만들면 <code>dbo</code>(데이터베이스 소유자)가 기본 지정되는데, <code>sa</code> 계정으로 만들면 <b>그 계정이 모든 DB의 소유자 권한을 갖게 되므로 주의</b>해야 한다.</p></div>
+<h4>문자셋과 콜레이션 — 왜 처음에 정해야 하나</h4>
+<ul class="b">
+<li><b>문자셋(Character Set / Encoding)</b>: 글자를 어떤 바이트로 저장할지. UTF-8, EUC-KR 등.</li>
+<li><b>콜레이션(Collation)</b>: 그 글자들을 <b>어떻게 비교하고 정렬할지</b>. 대소문자를 구분하는가? 'a'와 'A'가 같은가?</li>
+<li><code>SELECT 'apple' = 'APPLE';</code>의 결과가 콜레이션에 따라 다르다. <code>..._ci</code>(case-insensitive)면 <code>true</code>, <code>..._cs</code>(case-sensitive)면 <code>false</code>다. SQL Server의 <code>Korean_100_CI_AS</code>는 <code>CI</code>(대소문자 구분 안 함) + <code>AS</code>(악센트 구분함)이다.</li>
+</ul>
+<div class="note"><b>문자셋과 콜레이션은 처음에 정한다.</b> 나중에 바꾸려면 저장된 데이터 전체를 변환해야 해서 시간이 오래 걸리고, 그 과정에서 데이터베이스가 내려앉을 수도 있다. 어떤 언어를 담을 것인지, UTF-8을 쓸 것인지, <b>이모지까지 저장할 것인지</b>를 생성 전에 결정하고 DDL에 명시해 두어야 한다.</div>
+<div class="callout myth"><span class="ctitle">⚠️ MySQL의 <code>utf8</code>은 진짜 UTF-8이 아니다</span>
+<p>MySQL에는 역사적으로 <code>utf8</code>이라는 문자셋이 있었는데, 이게 실은 <b>한 글자당 최대 3바이트만 지원하는 반쪽짜리</b>였다. 이모지처럼 4바이트가 필요한 문자를 저장할 수 없었다. 진짜 UTF-8은 나중에 <code>utf8mb4</code>(mb4 = maximum bytes 4)라는 이름으로 추가되었다. 그래서 <b>MySQL에서 <code>utf8</code>이라고 쓰면 이모지가 깨진다.</b> 반드시 <code>utf8mb4</code>를 쓰자.</p></div>
+<div class="callout deep"><span class="ctitle">🔎 PostgreSQL의 <code>TEMPLATE template0</code>는 무엇인가</span>
+<p>PostgreSQL은 새 DB를 만들 때 기존 템플릿 DB를 복사한다. 기본 템플릿은 <code>template1</code>인데, 여기에 누군가 확장이나 테이블을 추가해 두었으면 그게 딸려 온다. <code>template0</code>는 <b>아무도 손대지 않은 원본</b>이다. 그리고 결정적으로 <code>template1</code>을 복사할 때는 인코딩/로케일을 원본과 다르게 지정할 수 없다. 그래서 인코딩을 명시적으로 정하려면 <code>TEMPLATE template0</code>가 필요하다.</p></div>
+<div class="sqlbox norun"><div class="sqlhead">따라 치기 — 실습용 DB와 스키마 만들기 (psql)</div><pre><code>-- psql postgres 로 접속한 상태에서
+CREATE DATABASE skala_db
+  WITH ENCODING 'UTF8'
+       LC_COLLATE 'en_US.UTF-8'
+       LC_CTYPE   'en_US.UTF-8'
+       TEMPLATE   template0;
+-- CREATE DATABASE
+
+\c skala_db                      -- 이 DB로 접속 전환 (psql 메타 명령)
+-- You are now connected to database "skala_db" as user "dohyeon".
+
+CREATE SCHEMA app;               -- 애플리케이션 스키마
+CREATE SCHEMA audit;             -- 감사 로그 스키마
+SET search_path = app, public;   -- 기본 스키마 순서</code></pre></div>
+<ul class="b">
+<li><code>\c</code> — SQL 문이 아니라 <b>psql 클라이언트의 메타 명령</b>이다. 백슬래시가 붙은 것은 전부 psql 명령이고 DBeaver 같은 다른 클라이언트에서는 안 통한다. 자주 쓰는 것: <code>\l</code>(DB 목록), <code>\dt</code>(테이블 목록), <code>\d 테이블명</code>(테이블 구조), <code>\q</code>(종료).</li>
+<li>프롬프트가 <code>postgres=#</code>에서 <code>skala_db=#</code>로 바뀌면 성공이다.</li>
+</ul>
+<div class="note">막히면 여기 — ① <code>TEMPLATE template0</code>를 빠뜨리면 <code>ERROR: new encoding (UTF8) is incompatible with the encoding of the template database</code>가 난다. ② <code>LC_COLLATE</code>에 적은 로케일이 OS에 없으면 <code>ERROR: invalid locale name</code>이 난다. 없으면 <code>LC_COLLATE 'C'</code>로 두거나 두 줄을 생략해 서버 기본값을 쓴다. 단 <code>C</code>로 두면 정렬이 바이트 순서가 되어 <b>한글 정렬이 사전순과 달라진다.</b></div>
+
+  <h3>3) CREATE TABLE — 같은 테이블, 네 가지 문법</h3>
+<p>같은 상품(<code>products</code>) 테이블을 네 DBMS 문법으로 각각 써 보면 차이가 한눈에 들어온다. 컬럼 구성은 동일하다 — <code>id</code>(식별자) / <code>name</code>(문자) / <code>price</code>(금액) / <code>attrs</code>(JSON) / <code>created_at</code>(생성 시각).</p>
+<div class="sqlbox norun"><div class="sqlhead">PostgreSQL — 우리가 쓸 것</div><pre><code>CREATE TABLE products (
+  id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,  -- SERIAL 대신 최신 표준
+  name       VARCHAR(200) NOT NULL,
+  price      NUMERIC(10,2) NOT NULL CHECK (price &gt;= 0),
+  attrs      JSONB,                                            -- 강력한 JSONB 연산/인덱스
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_products_attrs_color ON products ((attrs-&gt;&gt;'color'));</code></pre></div>
-<h4>데이터 타입 차이 핵심 정리</h4>
-<table class="t"><thead><tr>
-<th>타입</th>
-<th>MySQL</th>
-<th>PostgreSQL</th>
-<th>SQL Server</th>
-<th>Oracle</th>
-</tr></thead><tbody>
-<tr><td>정수/식별자</td><td>INT AUTO_INCREMENT</td><td>GENERATED..AS IDENTITY / SERIAL</td><td>BIGINT IDENTITY(1,1)</td><td>IDENTITY(12c+)/SEQUENCE</td></tr>
-<tr><td>문자열</td><td>VARCHAR/TEXT류</td><td>VARCHAR(n), TEXT(제한없음)</td><td>VARCHAR/NVARCHAR(MAX)</td><td>VARCHAR2, CLOB</td></tr>
-<tr><td>날짜시간</td><td>DATETIME/TIMESTAMP</td><td>TIMESTAMPTZ, now()</td><td>DATETIME2, SYSUTCDATETIME()</td><td>TIMESTAMP WITH TIME ZONE</td></tr>
-<tr><td>불리언</td><td>TINYINT(1) 동의어</td><td>BOOLEAN(진짜)</td><td>BIT</td><td>없음 → NUMBER(1)+CHECK</td></tr>
-<tr><td>JSON</td><td>JSON(8+)</td><td>JSONB(강력)/JSON(원문)</td><td>NVARCHAR+OPENJSON</td><td>12c~ IS JSON, 21c~ JSON타입</td></tr>
-</tbody></table>
-<h4>이식성(Portable SQL) 팁</h4>
+
+-- JSONB 특정 키 인덱싱 예시 (표현식 인덱스)
+CREATE INDEX idx_products_attrs_color
+  ON products ((attrs-&gt;&gt;'color'));</code></pre></div>
 <ul class="b">
-<li>타입은 표준/보편형(INTEGER, NUMERIC(p,s), VARCHAR(n), TIMESTAMP) 중심으로</li>
-<li>예약어/식별자 따옴표 지양, 스네이크케이스 소문자 권장</li>
-<li>CHECK/ENUM 남용 금지 — 규칙 변경 시 스키마 변경 불가 → Lookup 테이블 + FK로 대체</li>
+<li><code>BIGINT GENERATED ALWAYS AS IDENTITY</code> — 자동 증가 PK. <b><code>ALWAYS</code>는 사용자가 이 컬럼에 직접 값을 넣는 것을 금지한다.</b> 직접 넣어야 하면(데이터 이관 등) <code>GENERATED BY DEFAULT AS IDENTITY</code>를 쓴다.</li>
+<li><code>BIGINT</code> vs <code>INT</code> — <code>INT</code>는 약 21억까지다. 크게 자랄 테이블은 처음부터 <code>BIGINT</code>로. 나중에 <code>INT</code>→<code>BIGINT</code> 변경은 <b>테이블 전체 재작성</b>이라 매우 비싸다.</li>
+<li><code>ON products ((attrs-&gt;&gt;'color'))</code> — <b>표현식 인덱스.</b> 컬럼 자체가 아니라 "그 컬럼에서 계산한 값"에 인덱스를 건다. 괄호가 이중인 이유는 문법이 그렇기 때문(바깥은 인덱스 컬럼 목록, 안쪽은 표현식). 이게 있으면 <code>WHERE attrs-&gt;&gt;'color' = 'red'</code>가 빨라진다 — <b>JSON 안의 값으로도 인덱스를 걸 수 있다는 것이 JSONB의 힘</b>이다.</li>
 </ul>
-<div class="sqlbox"><div class="sqlhead">ALTER TABLE — 운영 주의사항</div><pre><code>-- 컬럼 추가 (일반적으로 안전)
+<div class="callout deep"><span class="ctitle">🔎 왜 <code>SERIAL</code>이 아니라 <code>IDENTITY</code>인가</span>
+<p>PostgreSQL에는 옛날부터 <code>SERIAL</code>이라는 축약형이 있었다. 여전히 동작하지만 <b>비표준</b>이고, 내부적으로 시퀀스와 컬럼의 소유 관계가 느슨해서 컬럼을 지워도 시퀀스가 남는 등의 문제가 있다. <code>IDENTITY</code>는 SQL 표준이고 이런 문제가 없다. <b>새로 쓴다면 <code>IDENTITY</code>를 쓰자.</b></p></div>
+<div class="sqlbox norun"><div class="sqlhead">MySQL / MariaDB</div><pre><code>CREATE TABLE products (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  name       VARCHAR(200) NOT NULL,
+  price      DECIMAL(10,2) NOT NULL CHECK (price &gt;= 0),
+  attrs      JSON NULL,                          -- MySQL 8.0.16+ / MariaDB 10.2+ 유효
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB
+  DEFAULT CHARSET = utf8mb4;</code></pre></div>
+<div class="callout myth"><span class="ctitle">⚠️ MySQL 8.0.16 미만에서 CHECK는 조용히 무시됐다</span>
+<p><b>문법 에러가 나지 않고 파싱만 하고 무시</b>되었다. 개발자는 제약이 걸린 줄 알고 있는데 실제로는 음수 가격이 들어간다. <b>"에러가 안 났으니 됐다"가 통하지 않는 대표적 예</b>다. 그리고 MariaDB의 JSON은 물리적으로 <code>LONGTEXT</code>라서 인덱싱하려면 가상컬럼+인덱스 패턴을 써야 한다.</p></div>
+<div class="sqlbox norun"><div class="sqlhead">SQL Server / Oracle</div><pre><code>-- SQL Server
+CREATE TABLE dbo.Products (
+  Id        BIGINT IDENTITY(1,1) PRIMARY KEY,
+  Name      NVARCHAR(200) NOT NULL,             -- N 접두사 = 유니코드
+  Price     DECIMAL(10,2) NOT NULL
+              CONSTRAINT CK_Products_Price CHECK (Price &gt;= 0),
+  Attrs     NVARCHAR(MAX) NULL,                 -- JSON 전용 타입 없음
+  CreatedAt DATETIME2 NOT NULL
+              CONSTRAINT DF_Products_CreatedAt DEFAULT SYSUTCDATETIME()
+);
+
+-- Oracle
+CREATE TABLE products (
+  id         NUMBER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,  -- 12c+
+  name       VARCHAR2(200 CHAR) NOT NULL,                          -- CHAR semantics 권장
+  price      NUMBER(10,2) NOT NULL,
+  attrs      CLOB,                              -- 12c~: IS JSON 제약, 21c~: JSON 타입
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL,
+  CONSTRAINT ck_products_price CHECK (price &gt;= 0)
+);</code></pre></div>
+<ul class="b">
+<li><b>제약에 이름을 붙였다.</b> 이름을 안 주면 DBMS가 <code>CK__Products__Price__3B75D760</code> 같은 임의의 이름을 붙이는데, 나중에 이 제약을 지우거나 고칠 때 그 이름을 찾아야 해서 불편하다. <b>에러 메시지에도 그 이름이 나오므로 원인 파악이 빨라진다.</b></li>
+<li><code>NVARCHAR</code> — SQL Server에서 <code>VARCHAR</code>는 비유니코드라 한글에 문제가 생길 수 있다. <code>N</code> 접두사가 붙은 쪽을 쓴다.</li>
+<li><b><code>VARCHAR2(200 CHAR)</code></b> — Oracle에서 <code>VARCHAR2(200)</code>은 기본이 <b>200바이트</b>다. UTF-8에서 한글은 3바이트이므로 <b>200바이트면 한글 66자밖에 안 들어간다.</b> <code>CHAR</code>를 명시해야 200글자가 된다 — <b>한글을 다루는 시스템에서 자주 터지는 사고</b>다.</li>
+</ul>
+
+  <h3>4) 데이터 타입 차이 핵심 정리</h3>
+<table class="t"><thead><tr>
+<th style="width:12%">분류</th><th>MySQL / MariaDB</th><th>PostgreSQL</th><th>SQL Server</th><th>Oracle</th>
+</tr></thead><tbody>
+<tr><td><b>식별자</b></td><td><code>INT AUTO_INCREMENT</code></td><td><code>GENERATED AS IDENTITY</code>(표준) / <code>SERIAL</code></td><td><code>BIGINT IDENTITY(1,1)</code></td><td><code>IDENTITY</code>(12c+) / <code>SEQUENCE</code>+<code>TRIGGER</code></td></tr>
+<tr><td><b>문자열</b></td><td><code>VARCHAR(n)</code>, <code>TEXT</code> 계열</td><td><code>VARCHAR(n)</code>, <code>TEXT</code>(실무에서 TEXT 많이)</td><td><code>NVARCHAR</code>, 대용량은 <code>NVARCHAR(MAX)</code></td><td><code>VARCHAR2(n BYTE|CHAR)</code>, <code>CLOB</code></td></tr>
+<tr><td><b>이진</b></td><td><code>BLOB</code> 계열</td><td><code>BYTEA</code>, 대용량은 Large Object API</td><td><code>VARBINARY(MAX)</code></td><td><code>BLOB</code></td></tr>
+<tr><td><b>날짜/시간</b></td><td><code>DATETIME</code>, <code>TIMESTAMP</code></td><td><code>TIMESTAMPTZ</code>, <code>now()</code></td><td><code>DATETIME2</code> 권장, <code>SYSUTCDATETIME()</code></td><td><code>TIMESTAMP WITH TIME ZONE</code>, <code>SYSTIMESTAMP</code></td></tr>
+<tr><td><b>불리언</b></td><td><code>BOOLEAN</code> = <code>TINYINT(1)</code></td><td><b>진짜 <code>BOOLEAN</code></b></td><td><code>BIT</code></td><td>없음 → <code>NUMBER(1)</code>+<code>CHECK</code></td></tr>
+<tr><td><b>JSON</b></td><td>8+ 네이티브 / MariaDB는 <code>LONGTEXT</code></td><td><b><code>JSONB</code></b>(인덱싱 강력), <code>JSON</code>(원문 보존)</td><td>전용 타입 없음 + <code>OPENJSON</code></td><td>12c~ <code>IS JSON</code>, 21c~ <code>JSON</code> 타입</td></tr>
+<tr><td><b>ENUM/ARRAY</b></td><td><code>ENUM</code> 있음</td><td><code>ENUM</code>, <code>ARRAY</code> 모두 강력</td><td>직접 지원 ✗</td><td>직접 지원 ✗</td></tr>
+</tbody></table>
+<div class="callout deep"><span class="ctitle">🔎 타임존 — 이름과 실제가 다르다 (가장 자주 터지는 함정)</span>
+<ul>
+<li><b>MySQL의 <code>TIMESTAMP</code></b>는 저장할 때 세션 타임존 기준으로 UTC로 변환해 저장하고, 읽을 때 다시 세션 타임존으로 변환해 돌려준다. 즉 <b>타임존 정보를 저장하지는 않지만 변환은 한다.</b> 그래서 세션 타임존 설정에 따라 같은 데이터가 다른 값으로 보인다. 반면 <code>DATETIME</code>은 아무 변환도 하지 않는다.</li>
+<li><b>PostgreSQL의 <code>TIMESTAMPTZ</code>도 타임존을 저장하지는 않는다.</b> 항상 UTC로 저장하고 조회 시 세션 타임존으로 변환한다. "이 이벤트는 서울 시간 기준이었다"를 기억해야 한다면 타임존 이름을 별도 컬럼에 저장해야 한다. 그럼에도 권장되는 이유는 <b>여러 지역의 시각을 하나의 축(UTC)에 정렬해 주기 때문</b>이다.</li>
+</ul></div>
+<ul class="b">
+<li><b>자동 증가 번호는 빈 자리를 채우지 않는다.</b> 1~5를 넣고 3번을 지우면 다음 행은 6을 받는다. 테이블 중간이 비어 보이는 것은 정상이며, <b>이 값을 "몇 번째 행"이라는 의미로 읽으면 안 된다.</b> SQL Server의 <code>IDENTITY(1,1)</code>은 앞이 시작값, 뒤가 증가폭이라 <code>IDENTITY(1,10)</code>이면 1, 11, 21로 올라간다.</li>
+<li><b>MySQL의 <code>BOOLEAN</code>은 <code>TINYINT(1)</code>의 동의어</b>라 <code>INSERT ... VALUES (5)</code>가 통과한다. PostgreSQL의 <code>BOOLEAN</code>은 <code>true</code>/<code>false</code>/<code>NULL</code>만 허용하고 정수를 넣으면 에러다.</li>
+<li><b>파일은 대개 오브젝트 스토리지(S3 등)에 두고 DB에는 경로만 저장</b>한다. DB에 넣으면 백업 크기가 폭증하고 조회할 때마다 DB 부하가 걸린다. 작은 썸네일이나 트랜잭션과 원자적으로 처리되어야 하는 경우에만 DB에 넣는다.</li>
+</ul>
+<h4>ENUM보다 참조 테이블 + FK</h4>
+<div class="sqlbox norun"><div class="sqlhead">Lookup 테이블 패턴 — ENUM을 지원하는 DBMS에서도 권장</div><pre><code>-- 상태값을 따로 테이블로 만듦
+CREATE TABLE status_types (
+  status_code VARCHAR(20) PRIMARY KEY,
+  description VARCHAR(100)
+);
+INSERT INTO status_types VALUES ('ACTIVE','활성 사용자'), ('BLOCKED','차단됨'), ('PENDING','승인 대기');
+
+-- users 테이블이 status_code를 참조
+CREATE TABLE users (
+  id          BIGINT PRIMARY KEY,
+  email       VARCHAR(200) NOT NULL,
+  status_code VARCHAR(20) NOT NULL,
+  CONSTRAINT fk_users_status FOREIGN KEY (status_code)
+    REFERENCES status_types(status_code)
+);</code></pre></div>
+<ul class="b">
+<li><b>값을 추가할 때 스키마 변경이 필요 없다.</b> ENUM에 값을 추가하려면 <code>ALTER TYPE</code>/<code>ALTER TABLE MODIFY</code>가 필요하고 후자는 테이블 전체 재작성이 일어날 수 있다. 참조 테이블은 <code>INSERT</code> 한 줄이다.</li>
+<li><b>설명을 붙일 수 있다.</b> 각 코드의 의미, 정렬 순서, 화면 표시명을 함께 관리할 수 있다.</li>
+<li><b>이식성이 좋다.</b> 모든 DBMS에서 똑같이 동작한다.</li>
+</ul>
+
+  <h3>5) 제약조건 — 무결성의 4대장</h3>
+<table class="t"><thead><tr><th style="width:16%">구분</th><th>특징 / 추가 옵션</th></tr></thead><tbody>
+<tr><td><b>NOT NULL</b></td><td>빈 값 금지</td></tr>
+<tr><td><b>DEFAULT</b></td><td>값 없으면 이걸로. <code>DEFAULT CURRENT_TIMESTAMP</code>, <code>DEFAULT 0</code> — <b>함수 이름은 벤더별로 다름</b>(SQL Server는 <code>GETDATE()</code>/<code>SYSUTCDATETIME()</code>)</td></tr>
+<tr><td><b>CHECK</b></td><td>수학/논리식으로 값 제한. MySQL 8.0.16+ / MariaDB 10.2+ / PG / SQL Server / Oracle. <b>과도한 복잡식은 지양, 핵심 규칙만</b></td></tr>
+<tr><td><b>FOREIGN KEY</b></td><td>참조 무결성. 자식 → 부모(PK/UNIQUE). <code>ON DELETE</code>/<code>ON UPDATE</code>로 동작 정의. <b>Oracle은 <code>ON DELETE</code>만</b>(ON UPDATE 미지원), <code>DEFERRABLE</code>은 PG·Oracle 가능 / SQL Server 없음</td></tr>
+</tbody></table>
+<div class="callout deep"><span class="ctitle">🔎 여기서 놓치지 말 것 세 가지</span>
+<ul>
+<li><b>PK와 UNIQUE가 이 표에 없다.</b> 4대장이라 부르지만 실제 테이블 제약은 여섯 종류다(+ <code>PRIMARY KEY</code>, <code>UNIQUE</code>). 둘은 2장에서 키로 이미 다뤘기 때문에 빠진 것이다.</li>
+<li><b><code>DEFERRABLE</code></b>은 제약 검사를 <b>트랜잭션 끝으로 미루는</b> 옵션이다. A가 B를 참조하고 B도 A를 참조하면 어느 쪽을 먼저 INSERT해도 FK 위반이 나는데, <code>DEFERRABLE INITIALLY DEFERRED</code>로 걸면 둘 다 넣고 COMMIT할 때 한꺼번에 검사한다.</li>
+<li><b>FK 컬럼에 인덱스를 직접 만들어야 한다</b> — 아래 참고.</li>
+</ul></div>
+<div class="callout myth"><span class="ctitle">⚠️ PK/UNIQUE에는 인덱스가 자동 생성되지만 FK에는 안 된다</span>
+<p>(MySQL InnoDB만 예외적으로 자동 생성한다.) PostgreSQL에서 FK 인덱스가 없으면 두 가지가 느려진다. (1) <code>JOIN</code>할 때 자식 쪽을 전부 훑는다. (2) <b>부모를 삭제할 때</b> "이 부모를 참조하는 자식이 있나?"를 확인하려고 자식 테이블 전체를 훑는다. <b>부모 한 행 삭제가 수 초씩 걸리는 원인이 대개 이것</b>이다.</p>
+<p><code>CREATE INDEX idx_students_major ON students (major_id);</code> — FK를 걸었으면 인덱스도 같이 만들자.</p></div>
+
+  <h3>6) 이식성(Portable SQL) 팁</h3>
+<ul class="b">
+<li><b>타입은 표준/보편형으로</b> — <code>INTEGER</code>, <code>NUMERIC(p,s)</code>, <code>VARCHAR(n)</code>, <code>TIMESTAMP</code> 중심</li>
+<li><b>예약어/식별자 따옴표 지양</b> — 벤더별 따옴표가 다름(<code>"</code>, <code>`</code>, <code>[]</code>) + <b>스네이크케이스 소문자 권장</b></li>
+<li><b><code>DEFAULT</code>의 함수명은 통일 불가</b> → 마이그레이션 스크립트에서 분기</li>
+<li><b>CHECK/ENUM 남용 ✗</b> — 규칙이 바뀌면 스키마 변경이 필요하다. 많으면 <b>Lookup 테이블 + FK</b>로</li>
+<li><b>JSON은 스키마-리스</b>지만, 접근 경로가 자주 쓰이면 가상컬럼/인덱스로 최적화</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">식별자 따옴표가 왜 문제인가 — PostgreSQL은 따옴표 없는 식별자를 소문자로 접는다</div><pre><code>-- 권장
+CREATE TABLE order_items (...);
+SELECT * FROM order_items;      -- OK, ORDER_ITEMS 로 써도 OK
+
+-- 피할 것
+CREATE TABLE "OrderItems" (...);
+SELECT * FROM OrderItems;       -- ERROR: relation "orderitems" does not exist
+SELECT * FROM "OrderItems";     -- 따옴표를 영원히 달고 다녀야 함</code></pre></div>
+<p>3장에서 dbdiagram.io가 내보낸 SQL이 전부 따옴표로 감싸여 있었던 것을 기억하자. 소문자로만 지었다면 문제가 없지만, 대문자가 섞이면 이후 모든 쿼리가 따옴표에 묶인다. <b>처음부터 소문자 스네이크케이스로 짓는 것</b>이 이 문제를 통째로 피하는 방법이다.</p>
+<h4>자주 겪는 일</h4>
+<ul class="b">
+<li><b>MySQL 구버전 CHECK 무시</b> — 8.0.16 미만이면 동작 안 함</li>
+<li><b>Oracle의 <code>ON UPDATE</code> FK 미지원</b> — 모델 설계로 해결(애플리케이션에서 PK 업데이트 금지). 반대로 말하면 <b>PK를 바꿔야 하는 설계 자체를 하지 말라</b>는 뜻이기도 하다. 2장에서 대체키를 권한 이유가 여기서도 확인된다.</li>
+<li><b>대용량 텍스트의 DEFAULT</b> — MySQL <code>TEXT</code>/<code>BLOB</code>엔 <code>DEFAULT</code> 불가</li>
+<li><b>타임존 혼선</b> — 서버/클라이언트 TZ가 다르면 <code>TIMESTAMP WITH TIME ZONE</code>(PG/Oracle) 또는 UTC 고정(SQL Server <code>SYSUTCDATETIME</code>) 전략</li>
+</ul>
+<div class="callout prof"><span class="ctitle">🎓 실무 이야기 — 가장 많이 발목 잡는 것은 타임존</span>
+<p>실무에서 가장 많이 발목을 잡은 것이 타임존이었다. 어느 쪽에서 찍힌 타임스탬프인지가 뒤엉키면서 오류가 났고, 나중에 고치려니 <b>이미 쌓인 데이터 때문에 손대기 어려웠다.</b> 문자셋과 마찬가지로 타임존도 프로젝트 초기에 정해 문서로 남겨야 한다.</p></div>
+
+  <h3>7) 체크리스트 (스키마 리뷰용)</h3>
+<div class="cp"><div class="cphead">✔ 과제 제출 전에 이 여섯 줄을 그대로 훑어보자</div><ul>
+<li><b>PK는 단일/숫자/불변인가?</b> (자연키 대신 대체키 권장)</li>
+<li><b>FK에 필요한 인덱스가 있는가?</b></li>
+<li><b>금액/수량은 <code>DECIMAL</code>/<code>NUMERIC</code>으로 스케일을 고정했는가?</b></li>
+<li><b>시간 컬럼은 기본값/타임존 정책이 일관적인가?</b></li>
+<li><b>JSON 컬럼은 꼭 필요한가?</b> 자주 쓰는 키에 인덱스 계획이 있는가?</li>
+<li><b>CHECK/ENUM이 변경 가능성을 과도하게 제한하진 않는가?</b></li>
+</ul></div>
+<p>여섯 항목 모두 이 과정 어딘가에서 이미 나온 이야기다 — 2장(대체키), 4장(NUMERIC, 인덱스), 5장(JSON), 이 장(타임존, ENUM). <b>체크리스트가 지금까지 배운 것의 요약</b>인 셈이다.</p>
+
+  <h3>8) ALTER TABLE — 운영 중 변경 주의사항</h3>
+<div class="note"><b>운영 중인 DB의 스키마를 바꾸는 일은 가능하면 하지 않는 것이 원칙</b>이다. 그래도 반드시 해야 한다면 아래를 하나씩 확인하며 진행한다.</div>
+<div class="sqlbox norun"><div class="sqlhead">형태별 위험도</div><pre><code>-- ① 컬럼 추가 (일반적으로 안전)
 ALTER TABLE students ADD COLUMN phone VARCHAR(20);
--- 인덱스 생성 (운영 중 잠금 없이) — CONCURRENTLY: PostgreSQL 전용
-CREATE INDEX CONCURRENTLY idx_students_grade ON students (grade);
--- TRUNCATE vs DELETE
-TRUNCATE TABLE temp_data; -- 빠름, 자동커밋, 트리거 미실행
-DELETE FROM temp_data;    -- 느림, 롤백 가능, 트리거 실행, WHERE 가능
--- 컬럼 삭제(CASCADE: 의존 뷰/인덱스 함께 삭제)
-ALTER TABLE students DROP COLUMN IF EXISTS phone CASCADE;</code></pre></div>
-<div class="cp"><div class="cphead">✔ Checkpoint</div><ul><li>운영 중 DDL 변경(대용량 테이블): pt-online-schema-change(MySQL), pg_repack(PostgreSQL)</li></ul></div>
+
+-- ② 컬럼 타입 변경 (주의: 대용량 테이블에서는 전체 재작성 발생)
+ALTER TABLE students ALTER COLUMN phone TYPE VARCHAR(30);
+
+-- ③ NOT NULL 추가 (기존 NULL 없는 경우만)
+ALTER TABLE students ALTER COLUMN phone SET NOT NULL;
+
+-- ④ 제약조건 추가 (기존 모든 행을 검사한다)
+ALTER TABLE students
+  ADD CONSTRAINT chk_email_format CHECK (email LIKE '%@%');
+
+-- ⑤ 컬럼 삭제 (신중히 — CASCADE: 의존 뷰/인덱스 함께 삭제)
+ALTER TABLE students DROP COLUMN IF EXISTS phone CASCADE;
+
+-- ⑥ 인덱스 생성 (운영 중 잠금 없이)
+CREATE INDEX CONCURRENTLY idx_students_grade ON students (grade);</code></pre></div>
+<ul class="b">
+<li><b>① 컬럼 추가는 대체로 안전</b>하다. PostgreSQL 11+ 및 최신 MySQL은 기본값이 있어도 메타데이터만 고치고 끝나므로 대용량에서도 즉시 끝난다.</li>
+<li><b>② 타입 변경은 위험하다.</b> 모든 행을 새 타입으로 다시 써야 하므로 테이블 전체가 재작성되고 그동안 잠긴다. 다만 PostgreSQL에서 <code>VARCHAR(20)</code> → <code>VARCHAR(30)</code>처럼 <b>길이를 늘리기만 하는 변경은 재작성 없이</b> 끝난다(줄이는 것은 재작성).</li>
+<li><b>③</b> 이미 NULL인 행이 하나라도 있으면 실패한다. 순서는 <b>(1) NULL인 행을 채우고 → (2) NOT NULL을 건다.</b></li>
+<li><b>④</b> 대용량이면 <code>NOT VALID</code> 옵션을 알아 두자. <code>ADD CONSTRAINT ... CHECK (...) NOT VALID</code>로 걸면 <b>기존 행은 검사하지 않고 앞으로 들어올 행에만 적용</b>한다. 나중에 한가할 때 <code>VALIDATE CONSTRAINT</code>로 검사하면 되고, 이때는 강하게 잠그지 않는다.</li>
+<li><b>⑤</b> <code>IF EXISTS</code>는 없어도 에러를 내지 않아 스크립트를 여러 번 돌려도 안전해진다(<b>멱등성</b>). <code>CASCADE</code>는 의존하는 뷰·인덱스·제약까지 <b>같이 지운다</b> — 무엇이 딸려 지워지는지 모른 채 실행할 수 있어 위험하다. 먼저 <code>CASCADE</code> 없이 실행해 무엇이 막는지 확인하는 편이 안전하다.</li>
+<li><b>⑥</b> 일반 <code>CREATE INDEX</code>는 만드는 동안 <b>테이블에 쓰기를 막는다.</b> <code>CONCURRENTLY</code>는 테이블을 두 번 훑는 방식으로 쓰기를 막지 않는다. 대신 더 오래 걸리고, <b>트랜잭션 블록 안에서는 쓸 수 없으며</b>, 실패하면 무효(invalid) 인덱스가 남아 지우고 다시 만들어야 한다.</li>
+</ul>
+<h4>TRUNCATE vs DELETE</h4>
+<table class="t"><thead><tr><th style="width:16%"></th><th>TRUNCATE</th><th>DELETE</th></tr></thead><tbody>
+<tr><td>분류</td><td>DDL</td><td>DML</td></tr>
+<tr><td>방식</td><td>데이터 파일을 통째로 버림</td><td>행을 하나씩 지움</td></tr>
+<tr><td>속도</td><td>매우 빠름 (행 수와 무관)</td><td>느림 (행 수에 비례)</td></tr>
+<tr><td>WHERE</td><td>불가</td><td>가능</td></tr>
+<tr><td>트리거</td><td>(행 트리거) 미실행</td><td>실행</td></tr>
+<tr><td>롤백</td><td><b>DBMS마다 다름</b></td><td>가능</td></tr>
+</tbody></table>
+<div class="sqlbox norun"><div class="sqlhead">따라 치기 — PostgreSQL에서 TRUNCATE를 롤백해 보기</div><pre><code>CREATE TABLE temp_data (id INT);
+INSERT INTO temp_data VALUES (1), (2), (3);
+
+BEGIN;
+TRUNCATE TABLE temp_data;
+SELECT COUNT(*) FROM temp_data;   -- 0
+ROLLBACK;
+
+SELECT COUNT(*) FROM temp_data;   -- 3  ← 되돌아온다!</code></pre></div>
+<div class="callout myth"><span class="ctitle">⚠️ "TRUNCATE는 되돌릴 수 없다"는 MySQL/Oracle 기준의 이야기</span>
+<p><b>PostgreSQL과 SQL Server에서 TRUNCATE는 트랜잭션 안에서 실행할 수 있고 롤백된다.</b> MySQL에서 같은 코드를 실행하면 TRUNCATE가 암묵적 커밋을 일으켜 <code>ROLLBACK</code>을 해도 0으로 남는다. 다만 PostgreSQL의 TRUNCATE도 <code>ACCESS EXCLUSIVE</code> 잠금을 걸어서 그 사이 아무도 그 테이블을 읽지 못한다 — <b>안전하다고 운영 중에 함부로 쓸 것은 아니다.</b></p></div>
+<div class="callout deep"><span class="ctitle">🔎 운영 중 DDL 변경에 쓰는 도구</span>
+<p><code>pt-online-schema-change</code>(MySQL), <code>pg_repack</code>(PostgreSQL). 하는 일은 같다 — <b>원본과 같은 구조의 새 테이블을 만들고, 데이터를 조금씩 복사하면서 그동안의 변경도 따라 반영한 뒤, 마지막에 순간적으로 이름만 바꿔치기한다.</b> 그래서 서비스 중단 없이 스키마를 바꿀 수 있다. "대용량 테이블의 DDL은 전용 도구를 쓴다"는 사실만 알아 두자.</p></div>
+
+  <h3>9) 함정 / 감점 포인트</h3>
+<ul class="b">
+<li><b>테이블 생성 순서 틀리기</b> — FK가 참조하는 테이블이 먼저 있어야 한다. <code>students</code>가 <code>majors</code>를 참조하면 <code>majors</code>를 먼저. 또는 테이블을 다 만든 뒤 <code>ALTER TABLE ... ADD FOREIGN KEY</code>로 나중에 거는 방법도 있다.</li>
+<li><b>제약조건 없이 테이블만 만들기</b> — 8장 실습이 "제약조건 포함 DDL 작성"을 명시한다. <code>NOT NULL</code>·<code>CHECK</code>·<code>FK</code>·<code>DEFAULT</code>가 하나도 없는 DDL은 설계를 안 한 것으로 읽힌다.</li>
+<li><b>금액에 <code>FLOAT</code></b> · <b>FK 인덱스 누락</b> · <b><code>utf8</code> vs <code>utf8mb4</code> 혼동</b> · <b>한글 컬럼명·테이블명 사용</b></li>
+<li><b><code>DROP</code> 계열을 무심코 넣기</b> — <code>DROP TABLE ... CASCADE</code>를 스크립트에 넣어 두면 실행 순서에 따라 데이터가 날아간다. <code>DROP TABLE IF EXISTS</code>를 맨 위에 두는 것이 흔한 관례인데, <b>그 위험을 알고 쓰는 것과 모르고 쓰는 것은 다르다.</b></li>
+</ul>
+
+  <h3>10) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>제약조건은 애플리케이션에서 검사하면 되는데 왜 DB에도 거나요? 중복 아닌가요?</summary><div class="fa">중복이 맞지만 필요한 중복입니다. 첫째, <b>애플리케이션은 하나가 아닙니다</b> — 웹 서버, 배치 스크립트, 관리자가 직접 치는 psql, 마이그레이션 도구가 모두 같은 DB를 건드립니다. 둘째, <b>DB 제약은 동시성 상황에서도 확실합니다</b> — "중복 이메일이 있나 SELECT로 확인 → INSERT" 사이에 다른 요청이 끼어들 수 있지만 UNIQUE 제약은 그 틈이 없습니다. 셋째, <b>제약은 문서입니다</b> — 스키마만 봐도 "점수는 0~100"이라는 업무 규칙을 알 수 있습니다. 실무 원칙은 "<b>중요한 규칙은 DB에, 사용자 경험을 위한 사전 검사는 애플리케이션에</b>" 양쪽 다 두는 것입니다.</div></details>
+<details><summary><code>VARCHAR(200)</code>이라고 쓰면 200바이트를 미리 잡아 두나요? 길이를 크게 잡으면 낭비인가요?</summary><div class="fa">아닙니다. PostgreSQL·MySQL·SQL Server의 <code>VARCHAR</code>는 <b>가변 길이</b>라서 실제 저장된 길이만큼만 씁니다(길이 정보용 1~4바이트 추가). 그래서 길이를 넉넉히 잡는 것 자체에 저장 공간 페널티는 없습니다. 다만 길이 제한의 진짜 목적은 공간 절약이 아니라 <b>업무 규칙 표현</b>입니다. 규칙이 없다면 PostgreSQL에서는 그냥 <code>TEXT</code>가 낫습니다. 참고로 <code>CHAR(n)</code>은 다릅니다 — 고정 길이라서 짧은 값도 공백으로 채워 n만큼 저장합니다. 특별한 이유가 없으면 <code>CHAR</code>는 쓰지 않습니다.</div></details>
+<details><summary><code>SERIAL</code>이 더 짧고 편한데 왜 <code>GENERATED ALWAYS AS IDENTITY</code>를 쓰나요?</summary><div class="fa">세 가지입니다. 첫째, <b>표준입니다</b> — <code>SERIAL</code>은 PostgreSQL 전용, <code>IDENTITY</code>는 SQL 표준이라 이식에 유리합니다. 둘째, <b>소유 관계가 명확합니다</b> — <code>SERIAL</code>은 시퀀스와 컬럼의 연결이 느슨해서 컬럼을 지워도 시퀀스가 남거나 권한이 따로 놀 수 있습니다. 셋째, <b><code>ALWAYS</code>로 실수를 막습니다</b> — <code>SERIAL</code> 컬럼에는 누구나 임의의 값을 직접 INSERT할 수 있어서 시퀀스와 실제 값이 어긋나고 나중에 "중복 키" 에러가 터집니다. 기존 코드를 고칠 필요는 없지만 <b>새로 쓴다면 <code>IDENTITY</code></b>가 낫습니다.</div></details>
+<details><summary>TRUNCATE가 DELETE보다 빠르다면 항상 TRUNCATE를 쓰면 되지 않나요?</summary><div class="fa">아닙니다. 첫째, <b>TRUNCATE는 <code>WHERE</code>를 못 씁니다</b> — 전체 삭제만 됩니다. 둘째, <b>트리거가 실행되지 않습니다</b> — 삭제 시 감사 로그를 남기는 트리거가 있다면 건너뜁니다. 셋째, <b>강한 잠금을 겁니다</b> — PostgreSQL의 TRUNCATE는 <code>ACCESS EXCLUSIVE</code> 잠금이라 그동안 아무도 그 테이블을 읽을 수 없습니다. DELETE는 지우는 행만 잠급니다. 그래서 "테스트 데이터 전부 초기화"에는 TRUNCATE, 운영 중 부분 삭제는 DELETE입니다.</div></details>
+<details><summary>CHECK 제약을 많이 걸면 데이터가 더 안전해지는 것 아닌가요? 왜 "남용 ✗"인가요?</summary><div class="fa">안전해지기는 합니다. 문제는 <b>바뀔 때의 비용</b>입니다. <code>CHECK (status IN ('ACTIVE','BLOCKED','PENDING'))</code>이라고 걸어 두면 새 상태값을 추가할 때 <code>ALTER TABLE</code>로 제약을 지우고 다시 만들어야 하고, 대용량에서는 재검사가 오래 걸리고 잠금도 생깁니다. 참조 테이블이면 <code>INSERT</code> 한 줄입니다. 판단 기준은 <b>"이 규칙이 바뀔 가능성이 있는가"</b> — <code>price &gt;= 0</code>처럼 바뀔 일 없는 규칙은 CHECK가 맞고, 코드 목록처럼 늘어날 것은 참조 테이블이 맞습니다.</div></details>
+<details><summary><code>ALTER TABLE</code>로 컬럼을 추가하는 게 왜 위험한가요? 그냥 컬럼 하나 늘리는 건데요.</summary><div class="fa">컬럼 추가 자체는 대체로 안전합니다. 위험한 것은 <b>타입 변경, NOT NULL 추가, 제약 추가</b>입니다. 이것들은 모든 기존 행을 검사하거나 다시 써야 하므로 테이블이 크면 그 시간 동안 잠깁니다. 1억 행 테이블의 <code>VARCHAR</code>→<code>INT</code> 변경은 수십 분이 걸릴 수 있습니다. 그래서 운영에서는 (1) 스테이징에서 시간을 재보고, (2) <code>NOT VALID</code>·<code>CONCURRENTLY</code>로 잠금을 줄이고, (3) 큰 변경은 <code>pg_repack</code> 같은 도구를 씁니다. <b>"개발 DB에서 3초 걸렸으니 운영에서도 3초"가 성립하지 않는다</b>는 게 핵심입니다.</div></details>
+<details><summary>FK 인덱스를 자동으로 안 만들어 준다니, 그냥 DBMS의 부족한 점 아닌가요?</summary><div class="fa">의도적인 선택에 가깝습니다. 인덱스는 공짜가 아니고(쓰기 비용 + 디스크), FK가 있다고 항상 그 컬럼으로 조회하는 것은 아니기 때문입니다. 로그 테이블이 사용자 FK를 갖고 있지만 실제로는 시간순 조회만 한다면, 그 인덱스는 쓰이지도 않으면서 INSERT만 느리게 만듭니다. 그래서 PostgreSQL·Oracle은 개발자에게 판단을 맡깁니다. 다만 <b>부모를 삭제하는 작업이 있다면 인덱스가 거의 필수</b>입니다. 실무 기준은 "<b>FK 컬럼으로 조회하거나 부모를 삭제할 일이 있으면 인덱스를 만든다</b>"이고, 대부분 해당됩니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>DDL·DML·DCL에 각각 어떤 명령이 속하는가?</li>
+<li>MySQL에서 <code>utf8</code>과 <code>utf8mb4</code>의 차이는? PostgreSQL에서 <code>TEMPLATE template0</code>를 지정하는 이유는?</li>
+<li><code>GENERATED ALWAYS AS IDENTITY</code>와 <code>SERIAL</code>의 차이를 세 가지 말할 수 있는가?</li>
+<li>Oracle의 <code>VARCHAR2(200)</code>과 <code>VARCHAR2(200 CHAR)</code>는 어떻게 다른가? 한글에서 왜 문제가 되는가?</li>
+<li>제약조건 중 인덱스가 자동으로 생기는 것과 안 생기는 것은?</li>
+<li>PostgreSQL에서 TRUNCATE는 롤백되는가? MySQL에서는?</li>
+<li><code>CREATE INDEX CONCURRENTLY</code>는 무엇을 해결하는가? 대가는?</li>
+</ul></div>
 </section>
 
 
