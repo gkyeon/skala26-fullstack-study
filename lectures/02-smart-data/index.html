@@ -5090,67 +5090,173 @@ SELECT pg_terminate_backend(pid);   -- 세션 자체를 끊는다</code></pre></
     <span class="day-badge day3">Day 3</span>
     <h2><span class="num">22.</span> 고급 DB 설계</h2>
   </div>
-  <p class="subtitle">BCNF·4NF·5NF · 반정규화 · SCD · 샤딩 · MSA DB 패턴 (+부록: 백업/VACUUM/모니터링)</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 정규화를 더 깐깐하게(BCNF) 하거나, 반대로 성능을 위해 일부러 중복을 허용(반정규화)하거나, 데이터가 너무 많을 때 여러 서버로 쪼개는 것(샤딩)까지 다루는 심화 설계예요.</div></div>
-  <h4>BCNF (Boyce-Codd Normal Form)</h4>
+  <p class="subtitle">BCNF·4NF·5NF · 정규화 vs 반정규화 · SCD(시간 축) · 샤딩(공간 축) · CDC · MSA 패턴(Saga·CQRS·Outbox)</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">2장에서 3NF까지 배웠죠. 이 장은 <b>양쪽으로 더 나갑니다</b> — <b>더 엄격하게</b>(BCNF·4NF·5NF)와 <b>더 느슨하게</b>(반정규화). 그리고 설계에 축을 둘 더합니다 — <b>시간 축</b>(SCD: "이 고객은 예전에 서울에 살았다"를 보존)과 <b>공간 축</b>(샤딩: 데이터를 여러 서버로). 마지막은 MSA에서 <b>트랜잭션이 서비스 경계를 못 넘을 때</b> 쓰는 패턴들이에요.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p>2장의 정규화, 19장의 파티셔닝, 20장의 트랜잭션이 여기서 <b>한 단계씩 확장</b>된다. 각 절의 핵심 질문은 하나다 — <b>"무엇을 얻고 무엇을 내주는가."</b></p></div>
+
+  <h3>1) BCNF · 4NF · 5NF — 더 엄격하게</h3>
 <ul class="b">
-<li>조건: 모든 결정자(Determinant)가 후보키(Candidate Key)여야 함</li>
-<li>예: 학습지원(교수,과목,강의실) — 교수→강의실 함수종속(교수는 항상 같은 강의실) → 교수는 후보키 아닌데 강의실을 결정 = BCNF 위반</li>
-<li>해결: 교수강의실(교수,강의실) + 강의배정(교수,과목) 두 테이블로 분리</li>
-<li>3NF: 함수종속 보존 우선(비후보 결정자 허용 가능) vs BCNF: 정합성 우선(엄격). 실무는 3NF까지 적용(JOIN비용·복잡도 고려)</li>
+<li><b>BCNF</b> — 3NF + <b>모든 결정자가 후보키</b>여야 한다. 3NF는 "비-키 속성이 다른 비-키 속성에 종속되는 것"을 막지만 <b>결정자가 키의 일부인 경우</b>는 못 잡는다. <b>후보키가 여러 개이고 서로 겹칠 때</b>만 3NF와 결과가 갈린다.</li>
+<li><b>4NF</b> — <b>다치 종속(Multivalued Dependency)</b> 제거. "한 교수가 여러 과목을 가르치고, 동시에 여러 교재를 쓴다"처럼 <b>서로 독립적인 두 다중값</b>이 한 테이블에 있으면 조합이 곱해져 폭발한다.</li>
+<li><b>5NF</b> — <b>조인 종속</b> 제거. 세 개 이상으로 쪼갰다가 다시 조인해야 원본이 복원되는 드문 경우.</li>
 </ul>
-<h4>정규화 vs 반정규화 선택</h4>
+<div class="cp"><div class="cphead">✔ 왜 실무는 3NF에서 멈추나</div><ul>
+<li>BCNF 이상이 3NF와 다른 결과를 내는 스키마가 <b>실무에서 드물다.</b> 그리고 더 쪼갤수록 <b>JOIN 비용이 늘어난다.</b> 2장에서 본 그대로 <b>실무 목표선은 3NF</b>이고, BCNF 이상은 <b>"이런 이상 현상이 이론적으로 존재한다"를 아는 것</b>으로 충분하다.</li>
+<li>다만 <b>이름과 한 줄 정의는 말할 수 있어야 한다</b> — 면접에서 "3NF와 BCNF의 차이는?"이 자주 나온다.</li>
+</ul></div>
+
+  <h3>2) 정규화 vs 반정규화 — 더 느슨하게</h3>
 <table class="t"><thead><tr>
-<th></th>
-<th>정규화 유지(OLTP)</th>
-<th>반정규화 허용(OLAP)</th>
+<th style="width:18%"></th><th>정규화 유지 (OLTP)</th><th>반정규화 허용 (OLAP)</th>
 </tr></thead><tbody>
-<tr><td>중심</td><td>쓰기(INSERT/UPDATE) 중심, 무결성 최우선</td><td>읽기(집계 SELECT) 중심, JOIN비용 감소 우선</td></tr>
-<tr><td>적합</td><td>은행계좌, 주문처리, 사용자등록</td><td>대시보드, 보고서, AI/ML 피처테이블</td></tr>
-<tr><td>기법</td><td>3NF~BCNF 적용, 성능은 인덱스로 해결</td><td>중복컬럼/집계컬럼 추가, 안전대안=Materialized View</td></tr>
+<tr><td>중심 작업</td><td>쓰기(INSERT/UPDATE) 중심</td><td>읽기(집계 SELECT) 중심</td></tr>
+<tr><td>우선 가치</td><td>데이터 무결성 최우선</td><td>JOIN 비용 감소 우선</td></tr>
+<tr><td>중복</td><td>없음 (이상 현상 방지)</td><td>허용 (<b>동기화 필요</b>)</td></tr>
+<tr><td>적합</td><td>은행 계좌, 주문 처리, 회원 변경</td><td>대시보드·보고서, AI/ML 피처 테이블</td></tr>
+<tr><td>성능 해법</td><td>성능 문제 → <b>인덱스로 해결</b></td><td>안전 대안: <b>Materialized View</b></td></tr>
 </tbody></table>
-<div class="sqlbox"><div class="sqlhead">SCD(Slowly Changing Dimension) — 이력 데이터 관리</div><pre><code>-- SCD Type 1: 덮어쓰기(이력없음) — UPDATE customers SET city='부산' WHERE id=42;
--- SCD Type 2: 이력보존(새 행 추가, 기간관리) — 실무 표준
-CREATE TABLE customer_history (
-  id BIGSERIAL PRIMARY KEY, customer_id INT, name TEXT, city TEXT,
-  valid_from DATE NOT NULL, valid_to DATE, is_current BOOLEAN DEFAULT TRUE );
--- 변경 발생시: 기존행 종료 + 새행 삽입
-UPDATE customer_history SET valid_to=CURRENT_DATE-1, is_current=FALSE
-  WHERE customer_id=42 AND is_current=TRUE;
-INSERT INTO customer_history (customer_id,name,city,valid_from) VALUES (42,'홍길동','부산',CURRENT_DATE);
--- 특정 시점 조회: WHERE valid_from&lt;=:date AND (valid_to IS NULL OR valid_to&gt;=:date)</code></pre></div>
-<div class="cp"><div class="cphead">✔ Checkpoint</div><ul><li>SCD Type 3: 현재+이전값을 별도 컬럼으로 보존</li>
-<li>SCD Type 6: Type 1+2+3 혼합</li></ul></div>
-<h4>샤딩(Sharding) — 수평 분할 전략</h4>
 <ul class="b">
-<li><b>파티셔닝</b>: 단일 DB 인스턴스 내 논리/물리 분할 vs <b>샤딩</b>: 여러 DB 인스턴스에 물리 분산(수평확장)</li>
-<li>Range 샤딩(ID범위기준), Hash 샤딩(user_id % N, 균등분산이나 이관 어려움), Directory 샤딩(샤드맵 테이블)</li>
-<li>구현도구: Citus(PostgreSQL), Vitess(MySQL, YouTube 출신), TiDB(Spanner 영감)</li>
-<li>주의사항: Cross-shard JOIN 불가(앱레벨 처리), 분산 트랜잭션 복잡(2PC 필요), 샤딩 전 파티셔닝/Read Replica로 충분한지 먼저 검토</li>
+<li><b>OLTP</b>는 <b>짧은 트랜잭션이 아주 많이</b> 들어오고 한 번에 다루는 행이 적다 — <b>정확성이 생명.</b> <b>OLAP</b>은 <b>긴 쿼리가 가끔</b> 들어오고 한 번에 수백만 행을 훑는다 — <b>속도가 생명.</b> 같은 회사의 같은 데이터라도 <b>다른 DB에 다른 모양으로</b> 두는 것이 보통이다(28장).</li>
+<li><b>두 기법</b> — <b>중복 컬럼 추가</b>(<code>orders</code>에 <code>customer_name</code>을 복사해 조인 제거), <b>집계 컬럼 추가</b>(<code>posts.comment_count</code>를 세어 둠).</li>
 </ul>
-<table class="t"><thead><tr>
-<th>MSA DB 패턴</th>
-<th>설명</th>
-</tr></thead><tbody>
-<tr><td>Database per Service</td><td>서비스별 독립 DB 소유 → 독립배포, 기술선택 자유. 단점: 분산TX 복잡, 데이터 일관성 어려움</td></tr>
-<tr><td>Saga 패턴</td><td>분산TX를 로컬TX 체인으로 처리, 실패시 보상TX(Compensating). Choreography(이벤트기반) vs Orchestration(중앙조정)</td></tr>
-<tr><td>CQRS</td><td>읽기(Query)/쓰기(Command) 모델 분리. 쓰기=RDBMS(정규화,ACID), 읽기=비정규화캐시/ReadReplica</td></tr>
-<tr><td>Outbox 패턴</td><td>트랜잭션 내 이벤트발행 보장. 메인로직+아웃박스테이블 INSERT를 같은TX로 → CDC(Debezium)→Kafka</td></tr>
-<tr><td>CDC</td><td>DB변경을 실시간 이벤트스트림으로. PG: Logical Decoding+wal2json / MySQL: Binlog+Debezium</td></tr>
+<div class="callout myth"><span class="ctitle">⚠️ 반정규화의 진짜 비용은 "동기화"다</span>
+<p><b>중복을 만든 순간, 그 둘을 항상 같게 유지할 책임이 생긴다. 그리고 그 책임은 DB가 아니라 개발자에게 있다.</b> 고객이 개명하면 <code>customers.name</code>과 <b>모든</b> <code>orders.customer_name</code>을 함께 고쳐야 하고, 한 군데라도 빠지면 <b>2장에서 배운 갱신 이상이 그대로 재현된다.</b> 즉 <b>반정규화란 정규화가 없애 준 이상 현상을 다시 불러들이는 대신 속도를 사는 거래</b>다.</p>
+<table class="t"><thead><tr><th style="width:30%">동기화 방법</th><th>장점</th><th>단점</th></tr></thead><tbody>
+<tr><td>애플리케이션 코드로 함께 갱신</td><td>단순</td><td><b>빠뜨리기 쉽다</b></td></tr>
+<tr><td><b>트리거</b> (25장)</td><td>빠뜨릴 수 없다</td><td>숨은 동작이라 디버깅이 어렵고 쓰기가 느려진다</td></tr>
+<tr><td><b>Materialized View</b></td><td>DB가 관리, <b>원본은 정규화 유지</b></td><td>갱신 시점까지 데이터가 낡는다</td></tr>
+</tbody></table></div>
+<div class="callout goal"><span class="ctitle">💡 순서를 지켜라 — 반정규화는 마지막 카드</span>
+<p><b>1) 정규화된 채로 인덱스(17장) → 2) 쿼리 재작성(19장) → 3) Materialized View(14장) → 4) 그래도 안 되면 반정규화</b></p>
+<p>3번을 "안전 대안"이라 부르는 이유가 있다. <b>MV는 원본 테이블을 정규화된 채로 두고 조인·집계 결과만 따로 저장한다</b> — 즉 중복은 만들되 <b>그 중복의 관리 책임을 DB에게 넘긴다.</b> 원본이 여전히 유일한 진실이므로 불일치가 나도 <code>REFRESH</code> 한 번이면 복구된다. <b>컬럼을 직접 복사하는 진짜 반정규화는 그 복구 수단조차 없다.</b></p></div>
+<div class="note">감점 포인트 — 과제에서 "성능을 위해 반정규화했습니다"라고 쓰려면 <b>먼저 정규화된 설계를 보이고, 실제 측정치(<code>EXPLAIN ANALYZE</code>)로 문제를 증명한 뒤, 동기화 전략까지</b> 함께 적어야 한다. <b>측정 없이 처음부터 중복 컬럼을 둔 설계는 "정규화를 못 한 것"과 구분되지 않는다 — 반정규화는 결론이지 출발점이 아니다.</b></div>
+
+  <h3>3) SCD — 시간 축을 설계에 넣기</h3>
+<div class="callout myth"><span class="ctitle">⚠️ <code>UPDATE customers SET city='부산'</code> 한 줄이 과거를 다시 쓴다</span>
+<p>이 한 줄로 <b>"이 고객은 예전에 서울에 살았다"는 사실이 영구히 사라진다.</b> 그래서 작년 매출을 지역별로 집계하면 <b>작년의 서울 주문이 부산 실적으로 잡힌다</b> — <b>과거가 현재에 의해 조용히 다시 쓰이는 것</b>이다.</p></div>
+<p><b>SCD(Slowly Changing Dimension)</b>는 "가끔 바뀌지만 이력이 중요한 속성"을 어떻게 저장할지의 전략 모음이다. 이름의 <b>Dimension(차원)</b>은 고객·상품·지역처럼 <b>분석의 기준이 되는 데이터</b>를 말한다(매출액처럼 측정되는 값은 <b>Fact</b>. 28장).</p>
+<table class="t"><thead><tr><th style="width:16%">유형</th><th style="width:34%">방식</th><th>언제</th></tr></thead><tbody>
+<tr><td><b>Type 1</b></td><td>덮어쓰기 (이력 없음)</td><td><b>이력이 필요 없을 때는 이게 정답.</b> 오타 수정처럼 "과거 값이 애초에 틀린 값"이었던 경우</td></tr>
+<tr><td><b>Type 2</b></td><td><b>새 행 추가 + 유효 기간</b></td><td><b>가장 널리 쓰인다.</b> 이력 분석이 필요한 모든 곳</td></tr>
+<tr><td><b>Type 3</b></td><td>이전 값 컬럼 하나만 추가(<code>prev_city</code>)</td><td>"직전 값"만 필요할 때. 두 단계 전은 못 본다</td></tr>
+<tr><td><b>Type 6</b></td><td>1+2+3 혼합</td><td>현재값 조회도 빠르고 이력도 필요할 때</td></tr>
 </tbody></table>
-<div class="sqlbox"><div class="sqlhead">[참고] 백업/VACUUM/Connection Pool 운영 실무</div><pre><code>-- 논리백업
-pg_dump -U postgres -d mydb -Fc -f backup.dump  -- 압축 바이너리(권장)
-pg_dumpall -U postgres &gt; full_cluster_backup.sql -- 전체 클러스터(전역객체 포함)
--- Table Bloat 확인
-SELECT relname, n_dead_tup, n_live_tup,
- ROUND(n_dead_tup::NUMERIC/NULLIF(n_live_tup+n_dead_tup,0)*100,1) AS dead_pct
-FROM pg_stat_user_tables ORDER BY n_dead_tup DESC LIMIT 10;
-VACUUM orders;         -- Dead tuple 회수(잠금없음, 공간 미반환)
-VACUUM FULL orders;    -- 완전 재작성(배타적잠금, 공간 반환)
--- pgBouncer: pool_mode=transaction(권장) — 20개 DB연결로 2000개 앱연결 처리</code></pre></div>
-<h4>DB 성능 최적화 4단계 접근법</h4>
+<div class="sqlbox norun"><div class="sqlhead">Type 2 — 값이 바뀌면 덮지 않고 새 행을 추가한다</div><pre><code>CREATE TABLE customer_history (
+    id          BIGSERIAL PRIMARY KEY,   -- 대리키! customer_id는 반복되므로 PK가 될 수 없다
+    customer_id INT  NOT NULL,
+    name        TEXT NOT NULL,
+    city        TEXT NOT NULL,
+    valid_from  DATE NOT NULL,
+    valid_to    DATE,                    -- NULL = 현재 유효
+    is_current  BOOLEAN DEFAULT TRUE
+);
+
+-- 변경 처리: 기존 행을 닫고 새 행을 연다 (한 트랜잭션 안에서)
+UPDATE customer_history SET valid_to = CURRENT_DATE, is_current = FALSE
+ WHERE customer_id = 42 AND is_current;
+INSERT INTO customer_history (customer_id, name, city, valid_from)
+VALUES (42, '홍길동', '부산', CURRENT_DATE);
+
+-- 조회 두 가지
+SELECT * FROM customer_history WHERE customer_id=42 AND is_current;              -- 현재값
+SELECT * FROM customer_history WHERE customer_id=42
+  AND valid_from &lt;= DATE '2024-06-01' AND (valid_to IS NULL OR valid_to &gt; DATE '2024-06-01');  -- 그 시점의 값</code></pre></div>
 <ul class="b">
-<li>1단계 설계 최적화(영향력 가장 큼: 정규화수준, PK선택, FK인덱스, 데이터타입) → 2단계 쿼리 최적화 → 3단계 인덱스 최적화 → 4단계 DB설정 최적화(shared_buffers, work_mem, Connection Pool)</li>
+<li><code>id BIGSERIAL PRIMARY KEY</code>는 <b>대리키(surrogate key)</b>다 — <code>customer_id</code>는 여러 행에 반복되므로 PK가 될 수 없고, <b>한 고객의 여러 시점 버전을 구분할 키</b>가 따로 필요하다.</li>
+<li><code>is_current</code>는 <code>valid_to IS NULL</code>로도 알 수 있는 정보를 <b>일부러 중복</b>해 둔 것이다 — 앞 절의 반정규화 예다. 읽기 쉽고 인덱스 걸기도 편하지만 <b>둘이 어긋나지 않게 유지할 책임이 생긴다.</b></li>
+<li>겹치는 기간이 생기지 않게 하려면 <b>DB가 막게 하는 편이 안전하다</b> — PostgreSQL의 <code>EXCLUDE</code> 제약(<code>btree_gist</code> 확장 + <code>daterange</code>)으로 "같은 고객의 유효 기간이 겹치면 거부"를 걸 수 있다.</li>
 </ul>
+
+  <h3>4) 샤딩 — 공간 축으로 확장하기</h3>
+<table class="t"><thead><tr><th style="width:16%"></th><th>파티셔닝 (19장)</th><th>샤딩</th></tr></thead><tbody>
+<tr><td>범위</td><td><b>단일 DB 인스턴스 내</b> 분할</td><td><b>여러 DB 인스턴스</b>에 분산</td></tr>
+<tr><td>목적</td><td>큰 테이블 관리·프루닝</td><td><b>수평 확장(Scale-out)</b></td></tr>
+<tr><td>조인</td><td>자유롭다</td><td><b>샤드를 넘는 조인 불가</b></td></tr>
+<tr><td>트랜잭션</td><td>평범한 트랜잭션</td><td><b>분산 트랜잭션(2PC) 필요</b></td></tr>
+</tbody></table>
+<p>차이는 딱 하나, <b>"한 대인가 여러 대인가"</b>다. <b>그리고 그 하나가 모든 것을 바꾼다</b> — 한 대 안에서는 당연했던 JOIN·트랜잭션·<code>ORDER BY</code>·<code>COUNT(*)</code>가 여러 대로 흩어지는 순간 전부 어려운 문제가 된다.</p>
+<table class="t"><thead><tr><th style="width:16%">전략</th><th>장점</th><th>단점</th></tr></thead><tbody>
+<tr><td><b>Range</b></td><td>범위 조회 효율, 샤드 추가 쉬움</td><td><b>hot spot</b> — 신규 가입자가 전부 마지막 샤드로 몰리면 그 한 대만 터진다</td></tr>
+<tr><td><b>Hash</b></td><td><b>균등 분산</b></td><td>범위 조회 흩어짐, <b>re-sharding 어려움</b>(N을 바꾸면 거의 모든 데이터의 소속이 바뀐다)</td></tr>
+<tr><td><b>Directory</b></td><td>유연, 개별 이관 가능</td><td><b>SPOF</b>(맵 테이블이 죽으면 아무것도 못 찾는다), 조회마다 맵 참조</td></tr>
+<tr><td><b>Geo</b></td><td>지연 시간 ↓, <b>데이터 주권 규제</b> 대응</td><td>지역 간 이동·조회가 복잡</td></tr>
+</tbody></table>
+<div class="callout deep"><span class="ctitle">🔎 일관된 해싱과 구현 도구</span>
+<p>Hash 샤딩의 재배치 문제를 줄이는 표준 해법이 <b>일관된 해싱(consistent hashing)</b>이다 — 샤드를 해시 링 위에 배치해 샤드를 하나 추가해도 <b>그 구간의 데이터만</b> 옮기면 되게 한다(Cassandra, DynamoDB가 이 방식).</p>
+<p>도구는 <b>Citus</b>(PostgreSQL, <b>SQL을 그대로 사용</b>), <b>Vitess</b>(MySQL, YouTube에서 나옴), <b>TiDB</b>(분산 NewSQL). 핵심은 <b>직접 만들지 말라</b>는 것이다 — 애플리케이션에서 <code>user_id % 4</code>로 접속할 DB를 고르는 코드를 짜면 <b>그 순간부터 조인·트랜잭션·재배치·집계를 전부 손으로 구현</b>해야 한다.</p></div>
+<div class="callout goal"><span class="ctitle">💡 샤딩까지 가기 전에 밟는 여섯 단계</span>
+<p><b>1) 인덱스·쿼리 튜닝(17~19장) → 2) 파티셔닝(19장) → 3) Read Replica → 4) 수직 확장(더 큰 서버) → 5) Cloud DB 자동 확장 → 6) 그래도 안 되면 샤딩</b></p>
+<p><b>Read Replica</b>가 3번을 차지할 만큼 중요하다 — 원본의 복제본을 여러 대 두고 <b>읽기 쿼리만 그쪽으로</b> 보낸다. <b>데이터는 여전히 온전히 한 벌</b>이므로 JOIN도 트랜잭션도 그대로 되고, 대부분의 서비스는 읽기가 쓰기보다 훨씬 많아 <b>이것만으로 충분한 경우가 많다.</b> 대가는 <b>복제 지연</b> — 방금 쓴 것을 바로 읽으면 아직 안 보일 수 있다.</p>
+<p><b>샤딩이 어려운 진짜 이유는 기술이 아니라 샤딩 키 선택이다.</b> 한 번 고르면 되돌리기가 극도로 어려운데, 잘못 고르면 데이터가 한쪽으로 쏠리고 흔한 쿼리가 매번 모든 샤드를 훑게 된다. 좋은 키의 조건은 <b>카디널리티가 높고, 분포가 균등하며, 대부분의 쿼리가 그 키를 조건에 포함하는 것</b>이다. 21장의 "락 경합은 같은 행에 몰릴 때"가 여기서는 <b>"부하는 같은 샤드에 몰릴 때"</b>로 나타난다.</p></div>
+
+  <h3>5) CDC — DB 변경을 실시간 이벤트로</h3>
+<p>데이터가 흩어지면 새 문제가 생긴다 — <b>한 곳의 변경을 다른 곳에 어떻게 전달할 것인가.</b> 가장 단순한 방법("5분마다 전체를 다시 읽기")은 느리고 무겁고 무엇이 바뀌었는지 모른다. <b>CDC는 대신 DB가 이미 쓰고 있는 로그를 읽는다.</b></p>
+<div class="cp"><div class="cphead">✔ 핵심 발상</div><ul>
+<li><b>DB는 어차피 모든 변경을 로그에 쓰고 있다.</b> 20장의 WAL이 그것이고 원래 목적은 장애 복구와 복제였다. CDC는 <b>그 로그를 한 번 더 읽어 "무엇이 바뀌었는지"의 이벤트 스트림으로 바꾼다</b> — <b>애플리케이션 코드를 전혀 건드리지 않고, 성능 부담도 거의 없이</b> 변경을 잡아낼 수 있는 이유다.</li>
+<li>PostgreSQL은 <b>WAL(Logical Decoding)</b>, MySQL은 <b>Binlog</b>를 읽고, 도구는 <b>Debezium</b> → Kafka가 표준이다.</li>
+<li><b>활용</b>: 실시간 동기화 · <b>DW 적재</b>(28장) · <b>마이크로서비스 이벤트 전파</b>(아래 Outbox의 핵심 부품)</li>
+</ul></div>
+<div class="note"><code>wal_level = logical</code>이어야 CDC가 된다(기본값 <code>replica</code>로는 불가). 그리고 <b>복제 슬롯(replication slot)</b>은 소비자가 어디까지 읽었는지 DB가 기억해 주는 장치라 소비자가 잠시 죽어도 이벤트를 안 놓친다 — <b>다만 소비자가 영영 돌아오지 않으면 WAL이 계속 쌓여 디스크가 찬다.</b> 20장의 장수 트랜잭션이 VACUUM을 막던 것과 <b>같은 구조의 사고</b>이며 CDC 운영에서 가장 흔한 장애다.</div>
+
+  <h3>6) MSA Database 패턴 — 트랜잭션이 서비스 경계를 못 넘을 때</h3>
+<p><b>Database per Service</b> — 각 마이크로서비스가 독립적인 DB를 소유한다. <b>왜 굳이 쪼개는가?</b> DB를 공유하면 서비스가 독립적이지 않기 때문이다 — 주문팀이 컬럼 하나를 바꿀 때 결제팀 코드가 깨지면 <b>서비스를 나눈 의미가 사라진다.</b></p>
+<div class="callout myth"><span class="ctitle">⚠️ 대가는 정확히 20~21장에서 배운 것을 잃는 것이다</span>
+<p><b><code>BEGIN ... COMMIT</code>이 서비스 경계를 넘지 못한다.</b> "주문 넣고 결제하고 재고 빼기"를 하나의 원자적 트랜잭션으로 묶을 수 없다. 아래 세 패턴은 전부 <b>그 잃어버린 것을 다른 방식으로 되찾으려는 시도</b>다.</p></div>
+<h4>Saga — 보상 트랜잭션</h4>
+<div class="sqlbox norun"><div class="sqlhead">분산 환경에서는 ROLLBACK을 쓸 수 없다</div><pre><code>정상:  주문 생성 → 결제 승인 → 재고 차감 → 배송 등록
+실패:  주문 생성 → 결제 승인 → 재고 차감 실패!
+보상:                ← 결제 취소(환불) ← 주문 취소</code></pre></div>
+<ul class="b">
+<li>결제 서비스는 <b>이미 커밋해 버렸다.</b> 그래서 <b>"되돌리는 일을 하는 새 트랜잭션"</b>을 실행한다 — <b>결제를 취소하는 게 아니라 환불을 하는 것</b>이다.</li>
+<li>20장의 원자성과 결정적으로 다른 점: <b>중간 상태가 외부에 보인다.</b> 결제가 승인됐다가 환불되는 과정을 고객이 실제로 본다. 분산 시스템은 원자성을 포기하고 <b>"결국에는 일관돼진다"(최종 일관성)</b>로 타협한다.</li>
+<li><b>Choreography</b>(중앙 조정자 없이 각 서비스가 이벤트를 듣고 자율적으로 — 결합도는 낮지만 <b>전체 흐름이 코드 어디에도 안 보여</b> 디버깅이 어렵다) vs <b>Orchestration</b>(중앙 조정자가 순서대로 호출 — 흐름이 한곳에 명시되지만 <b>조정자가 병목이자 SPOF</b>).</li>
+</ul>
+<h4>CQRS — 읽기와 쓰기를 아예 다른 저장소로</h4>
+<p><b>CQRS는 앞에서 본 "정규화 vs 반정규화"를 아예 서로 다른 저장소로 분리한 것</b>이다. 한 테이블을 정규화할지 반정규화할지 고민하는 대신 <b>둘 다 만들고 용도별로 나눠 쓴다</b> — 쓰기는 정규화된 RDBMS로 정확하게(Command), 읽기는 미리 조인·집계해 둔 별도 저장소에서 빠르게(Query). <b>그 사이를 잇는 것이 방금 배운 CDC</b>이고, 그래서 읽기 쪽은 <b>항상 조금 낡아 있다</b>(최종 일관성).</p>
+<h4>Outbox — 이벤트도 그냥 같은 DB에 INSERT한다</h4>
+<div class="sqlbox norun"><div class="sqlhead">"DB는 커밋됐는데 이벤트가 발행되지 않았다"를 원리적으로 막는다</div><pre><code>-- 문제: 서로 다른 두 시스템에 원자적으로 쓰는 것은 불가능하다
+with conn:
+    cur.execute("INSERT INTO orders ...")
+kafka.send("order_created", ...)     # 이 사이에 프로세스가 죽으면?
+
+-- 해법: 이벤트도 같은 DB, 같은 트랜잭션에
+BEGIN;
+  INSERT INTO orders (id, customer_id, amount) VALUES (1001, 42, 50000);
+  INSERT INTO outbox (topic, payload)
+  VALUES ('order_created', '{"order_id":1001,"amount":50000}');
+COMMIT;    -- 둘 다 커밋되거나 둘 다 안 되거나
+
+메인 로직 + Outbox INSERT  →  같은 트랜잭션
+        ↓
+CDC (Debezium)  →  Kafka  →  소비자 서비스
+        ↓
+   최소 1회 전달 보장 (at-least-once)</code></pre></div>
+<ul class="b">
+<li><b>비즈니스 데이터와 같은 DB, 같은 트랜잭션</b>이므로 20장의 원자성이 그대로 보장된다 — <b>"주문은 생겼는데 이벤트는 없는" 상태가 원리적으로 불가능</b>하다. 애플리케이션은 Kafka를 직접 부르지 않고 <b>CDC가 <code>outbox</code> 테이블의 변경을 읽어</b> 보낸다.</li>
+<li><b>"최소 1회 전달"의 뜻</b> — 이벤트가 <b>한 번은 반드시</b> 도착하지만 <b>두 번 이상 도착할 수도 있다</b>(네트워크 장애로 재전송). 그래서 <b>소비자 쪽이 같은 이벤트를 여러 번 받아도 결과가 같도록(멱등, idempotent) 만들어야 한다</b> — 보통 이벤트 ID를 기록해 두고 이미 처리한 것은 건너뛴다.</li>
+<li>참고로 <b>21장의 <code>SKIP LOCKED</code>만으로도 Outbox 발행기를 만들 수 있다</b> — 여러 워커가 <code>outbox</code>에서 중복 없이 이벤트를 집어 가면 된다.</li>
+</ul>
+
+  <h3>7) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>실무에서 BCNF 이상을 정말 안 쓰나요?</summary><div class="fa">쓰는 경우가 드뭅니다. BCNF가 3NF와 다른 결과를 내려면 <b>후보키가 여러 개이고 서로 겹쳐야</b> 하는데, 실무 스키마는 대개 <b>의미 없는 대리키 하나를 PK로</b> 쓰기 때문에 그런 구조가 잘 안 나옵니다(2장). 4NF·5NF는 더 드뭅니다. 다만 <b>이름과 한 줄 정의는 알아 두세요</b> — 면접에서 "3NF와 BCNF의 차이"가 자주 나오고, "모든 결정자가 후보키여야 한다"는 한 줄이면 충분합니다.</div></details>
+<details><summary>처음부터 반정규화해서 만들면 안 되나요?</summary><div class="fa">권장하지 않습니다. <b>측정 없는 반정규화는 "정규화를 못 한 것"과 구분되지 않습니다.</b> 그리고 실제로 대부분의 성능 문제는 <b>인덱스 하나로 해결</b>됩니다 — 반정규화까지 갈 필요가 없었던 경우가 훨씬 많습니다. 순서는 <b>인덱스 → 쿼리 재작성 → Materialized View → 반정규화</b>이고, MV까지가 <b>"원본은 정규화된 채로 두는"</b> 안전 구간입니다. 반정규화는 그 뒤로 넘어가는 것이라 <b>되돌릴 수단이 없어집니다.</b></div></details>
+<details><summary>SCD Type 2를 쓰면 조회가 다 복잡해지지 않나요?</summary><div class="fa">복잡해지는 것이 맞고, 그래서 <b>모든 테이블에 적용하지 않습니다.</b> 판단 기준은 <b>"이 값의 과거를 물어볼 일이 있는가"</b>입니다 — 고객의 등급·지역·소속처럼 <b>분석의 기준이 되는 속성</b>은 Type 2가 필요하고, 전화번호나 비밀번호처럼 최신값만 의미 있는 것은 Type 1이 맞습니다. 조회 복잡도는 <b>현재값 조회용 View</b>(<code>WHERE is_current</code>)를 하나 만들어 두면 대부분 흡수됩니다 — 애플리케이션은 그 View를 쓰고, 이력 분석만 원본 테이블을 봅니다.</div></details>
+<details><summary>샤딩은 언제 해야 하나요?</summary><div class="fa"><b>거의 대부분의 경우 답은 "아직 아니다"</b>입니다. 순서를 다 밟았는지 먼저 확인하세요 — 인덱스·쿼리 튜닝, 파티셔닝, <b>Read Replica</b>, 수직 확장(더 큰 서버), 클라우드 자동 확장. 특히 <b>Read Replica로 해결되는 경우가 아주 많습니다</b>(대부분의 서비스는 읽기가 압도적으로 많습니다). 샤딩이 정말 필요한 지점은 <b>쓰기 처리량이 한 대의 한계를 넘을 때</b>이고, 그때조차 <b>Citus 같은 도구를 쓰지 직접 만들지 않습니다.</b> 그리고 샤딩 키를 잘못 고르면 <b>되돌리기가 극도로 어렵다</b>는 점이 가장 큰 리스크입니다.</div></details>
+<details><summary>Outbox 패턴이 있으면 이벤트가 절대 유실되지 않나요?</summary><div class="fa">유실되지 않습니다. 다만 <b>중복될 수는 있습니다</b>(at-least-once). 그래서 <b>소비자가 멱등해야 한다</b>는 조건이 붙고, 이걸 빼먹으면 "환불이 두 번 되는" 사고가 납니다. 그리고 Outbox에도 운영 부담이 있습니다 — ① <b><code>outbox</code> 테이블이 계속 커지므로</b> 발행 완료된 행을 주기적으로 지워야 하고, ② CDC 소비자가 죽으면 <b>복제 슬롯 때문에 WAL이 쌓여 디스크가 찹니다.</b> 그래도 "DB는 커밋됐는데 이벤트가 없는" 상태를 원리적으로 막아 주므로 <b>MSA에서 사실상 표준</b>입니다.</div></details>
+<details><summary>Saga의 "중간 상태가 보인다"는 게 실무에서 문제가 되지 않나요?</summary><div class="fa">문제가 되고, 그래서 <b>설계로 흡수합니다.</b> 방법은 세 가지입니다. ① <b>사용자에게 보이는 상태를 설계한다</b> — "결제 처리 중", "주문 확인 중"처럼 중간 상태를 <b>정상적인 화면</b>으로 만듭니다. ② <b>순서를 바꿉니다</b> — 되돌리기 어려운 작업(결제)을 <b>마지막에</b> 두면 보상할 일이 줄어듭니다. ③ <b>보상 자체를 사용자 경험으로 만듭니다</b> — 환불 알림, 재고 부족 안내. 근본적으로 <b>분산 시스템에서는 원자성을 포기하는 대신 최종 일관성을 얻는 거래</b>이고, 그 거래를 감수할 만큼 서비스를 나눌 이유가 있는지가 먼저 물어야 할 질문입니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>BCNF가 3NF와 다른 결과를 내는 조건은? 실무는 왜 3NF에서 멈추는가?</li>
+<li>반정규화의 진짜 비용은 무엇인가? 동기화 방법 세 가지와 각각의 단점은?</li>
+<li>반정규화 전에 밟아야 할 세 단계는? Materialized View를 "안전 대안"이라 부르는 이유는?</li>
+<li>SCD Type 1과 Type 2의 차이는? Type 2에서 대리키가 필요한 이유는?</li>
+<li>파티셔닝과 샤딩의 결정적 차이 하나는? 샤딩 전에 검토할 대안들은?</li>
+<li>CDC는 무엇을 읽는가? 복제 슬롯의 위험은?</li>
+<li>Outbox 패턴이 푸는 문제는? "최소 1회 전달"이 소비자에게 요구하는 것은?</li>
+</ul></div>
 </section>
 
 
