@@ -4863,34 +4863,225 @@ raise RuntimeError("재시도 한도 초과")</code></pre></div>
     <span class="day-badge day3">Day 3</span>
     <h2><span class="num">21.</span> Lock &amp; Deadlock 관리</h2>
   </div>
-  <p class="subtitle">Row Lock · Advisory Lock · 감지 · 해소 · 모니터링</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 두 작업이 서로 상대방이 가진 걸 기다리다 영원히 멈추는 상황(교착상태, Deadlock)과 그 해결법이에요.</div></div>
-  <h4>Lock 종류 및 PostgreSQL Lock 구조</h4>
+  <p class="subtitle">Lock 계층과 자동 테이블 락 · 낙관적/비관적 락 · NOWAIT / SKIP LOCKED · Deadlock 해소 4가지 · 대기 세션 모니터링</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">20장에서 MVCC 덕분에 <b>읽기가 쓰기를 안 막는다</b>고 했죠. 이 장은 <b>남은 영역</b> — <b>쓰기끼리는 여전히 부딪힙니다.</b> 핵심 셋만 기억하세요. ① <b>락은 COMMIT/ROLLBACK 때까지 절대 안 풀린다</b>(그래서 트랜잭션을 짧게), ② <b>Deadlock은 잠그는 순서가 엇갈릴 때</b> 생긴다(그래서 <code>ORDER BY</code>로 순서 통일), ③ 잠긴 행을 만나면 <b>기다릴지·즉시 실패할지·건너뛸지</b>를 고를 수 있다.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p>20장 마지막에서 <b><code>Serializable</code>(낙관적)과 <code>SELECT ... FOR UPDATE</code>(비관적)는 같은 문제를 푸는 두 방식</b>이라고 했다. 이 장은 그 비관적 쪽의 실제 문법과, 그것을 쓸 때 반드시 따라오는 <b>Deadlock</b>을 다룬다.</p></div>
+
+  <h3>1) Lock 계층 — 무엇이 무엇을 잠그나</h3>
 <ul class="b">
-<li>Row-Level Lock(Tuple Lock): 행단위 충돌방지(UPDATE/DELETE) / Table-Level Lock: ACCESS SHARE~ACCESS EXCLUSIVE / Advisory Lock: 사용자정의 논리락</li>
-<li>FOR UPDATE(배타적 락, 대기) / FOR UPDATE NOWAIT(즉시 ERROR) / FOR UPDATE SKIP LOCKED(잠긴행 건너뜀 — 작업큐 처리에 유용)</li>
+<li><b>Row-Level Lock</b> — 행 단위 충돌 방지. <code>UPDATE</code>, <code>DELETE</code>, <code>SELECT ... FOR UPDATE</code>가 잡는다.</li>
+<li><b>Table-Level Lock</b> — 테이블 전체. <code>ACCESS SHARE</code>, <code>ROW EXCLUSIVE</code>, <code>ACCESS EXCLUSIVE</code> 등.</li>
+<li><b>Advisory Lock</b> — 사용자 정의 논리 락. <b>DB가 아니라 내가 의미를 부여하는</b> 락이다.</li>
 </ul>
-<div class="sqlbox"><div class="sqlhead">SKIP LOCKED 패턴 (분산 작업큐/배치처리 필수 패턴)</div><pre><code>-- SKIP LOCKED: 여러 Worker가 중복없이 작업 큐 분배 (경쟁 소비자 패턴)
+<div class="callout myth"><span class="ctitle">⚠️ 테이블 락은 <code>LOCK TABLE</code>을 쳐야 걸리는 게 아니다 — 모든 SQL이 자동으로 잡는다</span>
+<table class="t"><thead><tr><th style="width:52%">명령</th><th>자동으로 잡는 테이블 락</th></tr></thead><tbody>
+<tr><td><code>SELECT</code></td><td>ACCESS SHARE</td></tr>
+<tr><td><code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code></td><td>ROW EXCLUSIVE</td></tr>
+<tr><td><code>CREATE INDEX CONCURRENTLY</code>, <code>VACUUM</code>, <code>ANALYZE</code></td><td>SHARE UPDATE EXCLUSIVE</td></tr>
+<tr><td><code>CREATE INDEX</code>(일반)</td><td>SHARE (<b>쓰기를 막는다</b>)</td></tr>
+<tr><td><code>DROP TABLE</code>, <code>TRUNCATE</code>, 대부분의 <code>ALTER TABLE</code>, <code>VACUUM FULL</code></td><td><b>ACCESS EXCLUSIVE</b></td></tr>
+</tbody></table>
+<p>핵심은 이름이 아니라 <b>어떤 조합이 서로 충돌하는가</b>다. <b><code>ROW EXCLUSIVE</code>끼리는 충돌하지 않는다</b>(그래서 서로 다른 행의 UPDATE는 얼마든지 동시에 돈다). 반면 <b><code>ACCESS EXCLUSIVE</code>는 모든 것과 충돌한다 — <code>SELECT</code>조차 막는다.</b></p></div>
+<div class="callout myth"><span class="ctitle">⚠️ <code>ALTER TABLE</code> 한 줄이 서비스 전체를 세운다</span>
+<p>운영 중 <code>ALTER TABLE</code>을 날렸는데 앞에 긴 트랜잭션이 하나 걸려 있으면, <code>ALTER TABLE</code>이 ACCESS EXCLUSIVE를 <b>기다리는 동안 그 뒤에 도착하는 모든 SELECT까지 함께 줄을 선다</b> — <b>락 대기는 선착순 큐</b>이기 때문이다. "스키마 변경 한 줄 날렸는데 서비스 전체가 멈췄다"는 사고가 이렇게 난다.</p>
+<div class="sqlbox norun"><div class="sqlhead">그래서 마이그레이션에는 반드시 lock_timeout을 먼저 건다</div><pre><code>SET lock_timeout = '3s';
+ALTER TABLE items ADD COLUMN memo TEXT;</code></pre></div>
+<p>17장에서 <code>CREATE INDEX CONCURRENTLY</code>를 쓴 이유도 같은 맥락이다 — 일반 <code>CREATE INDEX</code>는 <code>SHARE</code>라 <b>쓰기를 막지만</b>, <code>CONCURRENTLY</code>는 <code>SHARE UPDATE EXCLUSIVE</code>라 막지 않는다.</p></div>
+<div class="callout deep"><span class="ctitle">🔎 행 락은 <code>pg_locks</code>에서 이렇게 보인다</span>
+<div class="sqlbox norun"><div class="sqlhead">두 세션이 같은 행을 UPDATE할 때</div><pre><code>  pid  |   locktype    |       mode       | granted |  relname
+ 37305 | relation      | RowExclusiveLock | t       | items    ← 먼저 잡은 세션
+ 37305 | transactionid | ExclusiveLock    | t       |
+ 37306 | relation      | RowExclusiveLock | t       | items    ← 테이블 락은 둘 다 받았다
+ 37306 | tuple         | ExclusiveLock    | t       | items
+ 37306 | transactionid | ShareLock        | f       |          ← 이 줄이 대기의 정체</code></pre></div>
+<ul>
+<li><b><code>granted</code>가 <code>f</code>인 줄이 곧 "기다리는 중"</b>이다. 락 대기를 찾을 때 보는 첫 번째 컬럼.</li>
+<li>대기의 실체는 <code>locktype = transactionid</code>다. <b>PostgreSQL은 행 락을 별도 자료구조에 저장하지 않는다</b> — 행에 "나를 잠근 트랜잭션 ID"를 적어 두고 뒤에 온 세션은 <b>그 트랜잭션 ID에 대한 락을 기다린다.</b> 그래서 <b>행을 몇 개 잠그든 메모리 사용량이 늘지 않고</b>, 락 에스컬레이션(행 락이 많아지면 테이블 락으로 승격)이 PostgreSQL에 없다.</li>
+</ul></div>
+<div class="cp"><div class="cphead">✔ 락 유지 시간 — 이 장에서 가장 실무적인 세 줄</div><ul>
+<li>락은 <b>COMMIT 또는 ROLLBACK 시점에 자동 해제</b>된다. <b>중간에 푸는 명령이 없다</b>(<code>UNLOCK</code> 같은 것은 존재하지 않는다).</li>
+<li>트랜잭션이 길수록 락 유지 시간이 늘고 → <b>충돌 확률이 올라간다.</b></li>
+<li>따라서 <b>"락을 언제 푸느냐"를 제어하는 유일한 수단은 "트랜잭션을 언제 끝내느냐"뿐</b>이다.</li>
+</ul></div>
+
+  <h3>2) 낙관적 Lock vs 비관적 Lock</h3>
+<table class="t"><thead><tr>
+<th style="width:14%"></th><th>낙관적 Lock</th><th>비관적 Lock</th>
+</tr></thead><tbody>
+<tr><td>전제</td><td>충돌이 <b>드물다</b></td><td>충돌이 <b>빈번하다</b></td></tr>
+<tr><td>충돌 처리</td><td>버전 컬럼으로 감지 → 저장 시 충돌 → <b>재시도</b></td><td>즉시 행 잠금 → 다른 트랜잭션은 <b>대기</b></td></tr>
+<tr><td>구현</td><td><code>UPDATE ... WHERE version = :old</code> → <b>0행 갱신 = 충돌</b></td><td><code>SELECT ... FOR UPDATE</code> → COMMIT 시 해제</td></tr>
+<tr><td>적합</td><td>블로그·설정 변경, <b>긴 사용자 세션</b></td><td>은행 이체·좌석 예매·재고 차감, <b>짧은 트랜잭션(ms)</b></td></tr>
+</tbody></table>
+<div class="callout goal"><span class="ctitle">💡 진짜 판단 기준 — 트랜잭션 길이</span>
+<p><b>긴 사용자 세션이면 낙관적, 짧은 서버 트랜잭션이면 비관적.</b> 이유가 있다 — 사용자가 편집 화면을 열어 10분간 글을 고치는 동안 그 행을 <code>FOR UPDATE</code>로 잠가 둘 수는 없다. <b>사용자가 브라우저를 닫아 버리면 락이 영원히 안 풀린다.</b> 그래서 <b>사람의 생각 시간(think time)이 끼는 곳에는 비관적 락을 쓸 수 없다.</b></p></div>
+<div class="sqlbox norun"><div class="sqlhead">낙관적 락 — 조건 한 줄이 전부다</div><pre><code>-- Session 2가 먼저 저장
+UPDATE posts SET title='S2가 고침', version=version+1 WHERE id=1 AND version=1;
+UPDATE 1
+
+-- Session 1이 뒤늦게 저장 시도
+UPDATE posts SET title='S1이 고침', version=version+1 WHERE id=1 AND version=1;
+UPDATE 0        ← "내가 읽은 뒤 누가 먼저 고쳤다"는 신호. 에러가 아니다!</code></pre></div>
+<div class="callout myth"><span class="ctitle">⚠️ <code>UPDATE 0</code>을 확인하지 않으면 락을 안 건 것과 같다</span>
+<p>이것이 낙관적 락의 <b>유일하고 가장 흔한 버그</b>다. 이 시점에 앱은 사용자에게 "다른 사람이 먼저 수정했습니다"를 물어야 한다 — <b>조용히 성공한 척하면 사용자가 쓴 내용이 사라진다.</b> JPA/Hibernate의 <code>@Version</code>은 이 검사를 자동으로 해 주고 <code>OptimisticLockException</code>을 던진다.</p></div>
+<div class="sqlbox norun"><div class="sqlhead">비관적 락 — 읽으면서 동시에 잠근다</div><pre><code>BEGIN;
+SELECT * FROM items WHERE id = 1 FOR UPDATE;   -- 여기서 이미 잠긴다
+-- ... 재고 확인, 계산 ...
+UPDATE items SET stock = stock - 1 WHERE id = 1;
+COMMIT;                                         -- 여기서 풀린다</code></pre></div>
+<p>그냥 <code>SELECT</code>는 아무것도 안 잠그므로(MVCC), <b>읽은 값을 근거로 판단해 쓸 거라면 <code>FOR UPDATE</code>가 필요하다.</b> 강도는 네 단계 — <code>FOR UPDATE</code>(가장 강함) &gt; <code>FOR NO KEY UPDATE</code> &gt; <code>FOR SHARE</code>(여러 세션이 동시에 잡을 수 있고 쓰기만 차단) &gt; <code>FOR KEY SHARE</code>(FK 검사에 내부적으로 사용).</p>
+
+  <h3>3) 대기 전략 세 가지 — 기다릴까, 실패할까, 건너뛸까</h3>
+<p><b>이게 이 장에서 실무에 가장 자주 쓰는 지식이다.</b> 잠긴 행을 만났을 때의 행동을 고를 수 있다.</p>
+<ul class="b">
+<li><b>① 기본 — 기다린다(블로킹).</b> <b>대기에는 기본 시한이 없다</b>(<code>lock_timeout</code> 기본값 0 = 무제한). 걸어 두면 <code>ERROR: canceling statement due to lock timeout</code>.</li>
+<li><b>② <code>FOR UPDATE NOWAIT</code> — 즉시 실패한다.</b> SQLSTATE <b><code>55P03</code></b>. 애플리케이션에서 이 코드로 잡아 <b>"지금 다른 사람이 처리 중입니다"를 즉시 응답</b>할 수 있다. 쓰는 자리는 <b>사용자를 기다리게 하면 안 되는 화면</b>(좌석 선택, 쿠폰 발급).</li>
+<li><b>③ <code>FOR UPDATE SKIP LOCKED</code> — 잠긴 행은 건너뛴다.</b> <b>분산 작업 큐·이메일 발송 큐·배치 처리에서는 사실상 필수 패턴</b>이다.</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">작업 큐 패턴 — 여러 워커가 중복 없이 일감을 집어 간다</div><pre><code>BEGIN;
 WITH picked AS (
-  SELECT id FROM job_queue WHERE status='READY' ORDER BY id
-  FOR UPDATE SKIP LOCKED LIMIT 10 )
-UPDATE job_queue SET status='RUNNING' FROM picked WHERE job_queue.id=picked.id
-RETURNING job_queue.*;</code></pre></div>
-<div class="sqlbox"><div class="sqlhead">Deadlock 발생 구조와 해소법</div><pre><code>-- Deadlock: 교차대기 (Session1: row1잠금→row2요청 / Session2: row2잠금→row1요청)
--- → 순환대기! PostgreSQL이 자동감지 → ERROR: deadlock detected → 한쪽 자동 ROLLBACK
--- 해결1: 항상 동일 순서로 Lock 획득(ORDER BY id) — 핵심!
-WITH targets AS (SELECT id FROM items WHERE id=ANY(ARRAY[1,2]) ORDER BY id FOR UPDATE)
-UPDATE items SET stock=stock-1 FROM targets WHERE items.id=targets.id;
--- 해결2: 트랜잭션 짧게 유지 (HTTP호출/파일I/O는 트랜잭션 밖에서)
--- 해결3: Advisory Lock으로 업무단위 직렬화: SELECT pg_advisory_xact_lock(42);
--- 해결4: 재시도 전략(에러코드 40P01) — 지수 백오프 + Jitter</code></pre></div>
-<div class="sqlbox"><div class="sqlhead">Deadlock 모니터링</div><pre><code>-- 대기 중인 세션 확인 (blocking/waiting)
-SELECT bl.pid AS waiting_pid, wl.pid AS blocking_pid, bl.query AS waiting_query
-FROM pg_catalog.pg_locks l1 JOIN pg_catalog.pg_stat_activity bl ON bl.pid=l1.pid
-JOIN pg_catalog.pg_locks l2 ON l1.locktype=l2.locktype AND l1.pid&lt;&gt;l2.pid
-JOIN pg_catalog.pg_stat_activity wl ON wl.pid=l2.pid WHERE NOT l1.granted AND l2.granted;
--- 세션 강제 종료
-SELECT pg_cancel_backend(pid);    -- 쿼리만 취소(graceful)
-SELECT pg_terminate_backend(pid); -- 연결 자체 종료(강제)</code></pre></div>
+    SELECT id FROM job_queue
+    WHERE status = 'READY'
+    ORDER BY id                    -- 처리 순서 + 데드락 방지(모두 같은 순서로 잠금)
+    FOR UPDATE SKIP LOCKED
+    LIMIT 10
+)
+UPDATE job_queue SET status='RUNNING', started_at=now()
+FROM picked WHERE job_queue.id = picked.id
+RETURNING job_queue.*;             -- 방금 가져간 행을 그대로 돌려받는다
+
+[Worker 1]  id = 1, 2, 3, 4, 5
+[Worker 2]  id = 6, 7, 8, 9, 10    ← 겹치지 않는다. 기다리지도 않았다</code></pre></div>
+<ul class="b">
+<li><code>SKIP LOCKED</code>를 빼면 <b>Worker 2가 멈춘다</b>(Worker 1이 커밋한 뒤 깨어나 6~10을 가져간다). 즉 <b><code>SKIP LOCKED</code>의 이득은 정확성이 아니라 처리량</b>이다 — 워커가 10개면 9개가 놀지 않는다.</li>
+<li>이 패턴이 있어서 <b>가벼운 작업 큐는 별도 메시지 브로커(Kafka, RabbitMQ) 없이 PostgreSQL 테이블만으로 만들 수 있다.</b> 일감과 비즈니스 데이터가 같은 트랜잭션에 들어가므로 <b>"DB는 커밋됐는데 큐 발행이 실패" 같은 정합성 문제가 아예 없다</b>(9장의 이중 쓰기 문제).</li>
+</ul>
+<table class="t"><thead><tr><th style="width:52%">상황</th><th>선택</th></tr></thead><tbody>
+<tr><td>순서대로 반드시 처리, 잠깐 기다려도 됨</td><td>기본(블로킹)</td></tr>
+<tr><td>사용자 화면, 즉답이 필요</td><td><code>NOWAIT</code> (55P03 처리)</td></tr>
+<tr><td>워커 여러 개가 일감을 나눠 가짐</td><td><code>SKIP LOCKED</code></td></tr>
+<tr><td>배치·마이그레이션, 무한 대기는 곤란</td><td><code>SET lock_timeout</code></td></tr>
+</tbody></table>
+
+  <h3>4) Deadlock — 서로를 기다리는 순환</h3>
+<div class="sqlbox norun"><div class="sqlhead">락을 잡는 순서가 서로 엇갈릴 때 생긴다</div><pre><code>-- Session 1                                 -- Session 2
+UPDATE items SET stock=stock-1 WHERE id=1;   -- row 1 락 획득
+                                             UPDATE ... WHERE id=2;   -- row 2 락 획득
+UPDATE ... WHERE id=2;   -- row 2 요청 → S2를 기다린다
+                                             UPDATE ... WHERE id=1;   -- row 1 요청 → S1을 기다린다
+
+S1 ──기다림──▶ S2
+ ▲              │
+ └───기다림─────┘        순환. 둘 다 영원히 못 끝난다</code></pre></div>
+<div class="sqlbox norun"><div class="sqlhead">PostgreSQL이 스스로 찾아내 한쪽을 죽인다</div><pre><code>ERROR:  40P01: deadlock detected
+DETAIL:  Process 37314 waits for ShareLock on transaction 1106; blocked by process 37315.
+         Process 37315 waits for ShareLock on transaction 1105; blocked by process 37314.
+HINT:  See server log for query details.
+CONTEXT:  while updating tuple (0,38) in relation "items"</code></pre></div>
+<ul class="b">
+<li><b><code>40P01</code></b> — Deadlock의 SQLSTATE. <b>20장의 직렬화 실패 <code>40001</code>과 다른 코드</b>다(둘 다 재시도 대상이지만 원인이 다르다).</li>
+<li><code>DETAIL</code> 두 줄이 <b>순환 그 자체</b>다 — 실무에서 데드락 로그를 받으면 이 두 줄로 어느 두 프로세스가 얽혔는지 즉시 알 수 있다.</li>
+<li><b><code>HINT: See server log</code></b> — <b>어떤 쿼리였는지는 클라이언트에 안 나온다.</b> 서버 로그를 봐야 하고, 그래서 <code>log_lock_waits = on</code> 설정이 필요하다.</li>
+<li><b>감지 시점</b>은 <code>deadlock_timeout</code>(기본 <b>1초</b>) 이후다. 락을 기다리기 시작하면 일단 1초를 기다리고, 그래도 안 풀리면 그때 순환을 검사한다 — <b>순환 검사가 비싸기 때문</b>이다. 이 값을 줄이면 데드락이 아닌 평범한 대기에도 검사가 자주 돌아 CPU를 쓰고 로그도 늘어난다. <b>데드락이 실제로 잦은 시스템에서만 낮춘다.</b></li>
+<li>죽은 쪽은 롤백되고 <b>살아남은 쪽은 그대로 진행</b>된다. 죽은 세션은 <code>ROLLBACK</code>을 칠 때까지 모든 명령을 거부한다(<code>25P02: current transaction is aborted</code>).</li>
+</ul>
+
+  <h3>5) Deadlock 해소 — 네 가지</h3>
+<h4>해결 1 — 항상 같은 순서로 잠근다 (가장 근본적)</h4>
+<div class="sqlbox norun"><div class="sqlhead">순서를 통일하면 데드락은 원리적으로 발생할 수 없다</div><pre><code>BEGIN;
+WITH targets AS (
+    SELECT id FROM items
+    WHERE id = ANY (ARRAY[1, 2])
+    ORDER BY id                      -- 핵심. 항상 id 오름차순으로 잠근다
+    FOR UPDATE
+)
+UPDATE items SET stock = stock - 1
+FROM targets WHERE items.id = targets.id;
+COMMIT;</code></pre></div>
+<ul class="b">
+<li><code>ORDER BY id</code> + <code>FOR UPDATE</code> 조합이 전부다. <b>두 트랜잭션이 어떤 조합의 행을 노리든 낮은 id부터 잡으므로</b> 먼저 잡은 쪽이 무조건 이기고 진 쪽은 순순히 기다린다 — <b>순환이 만들어질 수 없다.</b></li>
+<li><b>함정</b>: <code>ORDER BY</code>는 <b>CTE 안에</b> 있어야 한다. 바깥 <code>UPDATE</code>에 붙이는 것으로는 락 획득 순서가 보장되지 않는다 — <b>락은 CTE의 <code>FOR UPDATE</code>가 행을 읽는 순간 잡히기 때문</b>이다.</li>
+<li>실무에서 "순서 통일"은 SQL 한 줄로 끝나지 않고 <b>애플리케이션 전체에 걸친 규약</b>이어야 한다. 계좌 이체에서 "항상 계좌번호가 작은 쪽을 먼저 잠근다"를 팀 전체가 지켜야 A→B와 B→A가 동시에 일어나도 안전하다. <b>코드 한 곳에서만 순서를 어겨도 데드락이 난다.</b></li>
+</ul>
+<h4>해결 2 — 트랜잭션을 짧게 유지한다</h4>
+<div class="sqlbox norun"><div class="sqlhead">락을 잡은 채 외부 API를 부르지 않는다</div><pre><code># 나쁜 예 — 락을 잡은 채 외부 호출
+with conn:
+    cur.execute("SELECT * FROM orders WHERE id=%s FOR UPDATE", (oid,))
+    result = payment_api.charge(...)      # 여기서 3초. 그동안 락 유지
+    cur.execute("UPDATE orders SET status=%s WHERE id=%s", (result, oid))
+
+# 좋은 예 — 외부 호출을 트랜잭션 밖으로
+result = payment_api.charge(...)          # 락 없이 먼저
+with conn:
+    cur.execute("UPDATE orders SET status=%s WHERE id=%s AND status='PENDING'", (result, oid))
+                                          #  ↑ 비관적 락을 뺀 자리는 낙관적 조건으로 메운다</code></pre></div>
+<ul class="b">
+<li><b>비즈니스 로직·HTTP 호출·파일 I/O는 트랜잭션 밖에서.</b> 락은 COMMIT까지 안 풀리므로, 트랜잭션 안에서 3초 걸리는 결제 API를 부르면 <b>행 락을 3초 동안 붙잡고 있는 것</b>이다(타임아웃이라도 나면 30초).</li>
+<li>꼭 필요한 테이블/행만 접근 · <b>격리 수준은 <code>READ COMMITTED</code> 유지</b> — 격리 수준을 올리면 스냅샷이 트랜잭션 내내 유지되어 <b>트랜잭션이 사실상 길어지는 효과</b>가 나고 충돌·실패가 늘어난다(20장).</li>
+</ul>
+<h4>해결 3 — Advisory Lock ("행이 아니라 개념"을 잠근다)</h4>
+<div class="sqlbox norun"><div class="sqlhead">여러 테이블을 건드리는 작업에 단일 관문을 세운다</div><pre><code>BEGIN;
+SELECT pg_advisory_xact_lock(42);      -- "user_id=42에 대한 작업"이라는 논리 락
+UPDATE users    SET balance = balance - 1000 WHERE id = 42;
+INSERT INTO payments (user_id, amount) VALUES (42, 1000);
+COMMIT;                                 -- 트랜잭션 종료 시 자동 해제</code></pre></div>
+<ul class="b">
+<li><b>PostgreSQL은 이 숫자가 무슨 뜻인지 전혀 모른다 — 의미는 전적으로 내가 부여한다.</b> 여기서 42는 행 번호가 아니라 "42번 사용자에 대한 작업"이라는 <b>업무 개념</b>이고, 그래서 <b>42번 사용자와 관련된 모든 작업이 한 줄로 직렬화된다.</b></li>
+<li><b>왜 데드락 해소책이 되는가</b> — 여러 테이블·여러 행을 건드리는 복잡한 작업은 <b>락 순서를 통일하기가 매우 어렵다.</b> 그럴 때 "이 업무 단위는 한 번에 하나만"이라는 <b>단일 관문</b>을 앞에 세우면 안쪽의 락 순서가 어떻든 <b>동시 실행 자체가 없어 데드락도 없다.</b></li>
+<li><b>함정 ①</b>: <code>pg_advisory_lock(42)</code>(<code>xact</code> 없는 버전)은 <b>세션 락</b>이라 COMMIT해도 안 풀린다. 부르는 것을 잊으면 <b>커넥션 풀에서 재사용되는 그 연결이 락을 계속 들고 다닌다.</b> → <b>특별한 이유가 없으면 <code>_xact_</code> 버전을 쓴다.</b></li>
+<li><b>함정 ②</b>: 키가 <b>전역 네임스페이스</b>다. 라이브러리가 우연히 같은 숫자를 쓰면 엉뚱한 것끼리 직렬화된다 → 2인자 버전이나 <code>hashtext('order:' || id)</code>를 쓴다.</li>
+</ul>
+<h4>해결 4 — 재시도 전략 (최후의 안전망)</h4>
+<div class="sqlbox norun"><div class="sqlhead">40P01과 40001을 함께 잡는 것이 요령</div><pre><code>def run_with_retry(conn, work, max_retry=5):
+    for attempt in range(max_retry):
+        try:
+            with conn:
+                work(conn)
+            return
+        except (psycopg2.errors.DeadlockDetected,          # 40P01
+                psycopg2.errors.SerializationFailure):     # 40001
+            time.sleep(random.uniform(0.1, 0.5) * (2 ** attempt))   # 지터 + 지수 백오프
+    raise RuntimeError("재시도 한도 초과")</code></pre></div>
+<p><code>40P01</code>(데드락)과 <code>40001</code>(직렬화 실패)은 <b>원인이 다르지만 대응은 똑같다 — 트랜잭션 전체를 처음부터 다시.</b> 그리고 재시도할 때 <b>외부 API를 다시 부르지 않도록</b> 트랜잭션 안에는 순수 DB 작업만 둔다(해결 2와 연결).</p>
+
+  <h3>6) 모니터링 — 지금 무엇이 무엇을 막고 있나</h3>
+<div class="sqlbox norun"><div class="sqlhead">차단 관계 조회와 강제 종료</div><pre><code>-- 짧은 방법: 나를 막고 있는 PID들
+SELECT pid, pg_blocking_pids(pid) AS blocked_by, state,
+       now() - query_start AS waiting_for, left(query, 60)
+FROM pg_stat_activity
+WHERE cardinality(pg_blocking_pids(pid)) &gt; 0;
+
+-- 강제 종료 (마지막 수단)
+SELECT pg_cancel_backend(pid);      -- 현재 쿼리만 취소 (부드럽다)
+SELECT pg_terminate_backend(pid);   -- 세션 자체를 끊는다</code></pre></div>
+<table class="t"><thead><tr><th style="width:38%">설정</th><th>역할</th></tr></thead><tbody>
+<tr><td><code>lock_timeout</code></td><td>락을 기다리는 최대 시간. <b>기본 0(무제한)</b> — 마이그레이션·배치에 반드시 건다</td></tr>
+<tr><td><code>statement_timeout</code></td><td>쿼리 하나의 최대 실행 시간</td></tr>
+<tr><td><code>idle_in_transaction_session_timeout</code></td><td><b>트랜잭션을 열어 놓고 노는 세션을 끊는다</b> — 20장의 Table Bloat와 이 장의 락 대기를 동시에 막는 설정</td></tr>
+<tr><td><code>deadlock_timeout</code></td><td>순환 검사 시작까지의 대기(기본 1s). <code>log_lock_waits</code>의 기준 시간도 겸한다</td></tr>
+<tr><td><code>log_lock_waits = on</code></td><td>오래 기다린 락을 서버 로그에 남긴다. <b>데드락 원인 쿼리를 알려면 필수</b></td></tr>
+</tbody></table>
+
+  <h3>7) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>MVCC 덕분에 읽기가 안 막힌다면서 왜 <code>SELECT</code>가 멈추나요?</summary><div class="fa">두 가지 경우입니다. ① <b><code>ACCESS EXCLUSIVE</code> 테이블 락</b> — <code>ALTER TABLE</code>, <code>TRUNCATE</code>, <code>VACUUM FULL</code>이 잡으면 <b><code>SELECT</code>조차 막힙니다.</b> MVCC가 보장하는 것은 "행 버전 읽기가 안 막힌다"이지 "테이블 락과 무관하다"가 아닙니다. ② <b><code>SELECT ... FOR UPDATE</code></b> — 이건 이름만 SELECT이지 <b>쓰기 의도를 선언한 문장</b>이라 다른 쓰기 락과 부딪힙니다. 진단은 <code>pg_locks</code>에서 <b><code>granted = f</code>인 줄</b>을 찾는 것부터입니다.</div></details>
+<details><summary>낙관적 락과 <code>SELECT FOR UPDATE</code> 중 무엇을 골라야 하나요?</summary><div class="fa">기준은 <b>트랜잭션 길이</b>입니다. <b>사람의 생각 시간이 끼면 낙관적</b>(편집 화면, 설정 변경), <b>서버가 ms 단위로 끝내는 처리면 비관적</b>(재고 차감, 좌석 확정)입니다. 그리고 <b>충돌 빈도</b>도 봅니다 — 경합이 거의 없으면 낙관적이 훨씬 빠르고(대기가 0), 같은 행에 수천 명이 몰리면 낙관적은 대부분 실패해 재시도 폭풍이 나므로 비관적이 낫습니다. 실무에서는 <b>둘을 섞어</b> 씁니다 — 화면 편집은 낙관적으로, 최종 확정 구간만 짧게 <code>FOR UPDATE</code>로.</div></details>
+<details><summary>데드락이 나면 제 코드가 잘못된 건가요?</summary><div class="fa">대개는 그렇지만 <b>0으로 만들 수는 없습니다.</b> 순서 통일(해결 1)로 대부분 없앨 수 있지만, 여러 기능이 서로 다른 경로로 같은 테이블을 건드리는 시스템에서는 완전한 통일이 현실적으로 어렵습니다. 그래서 <b>재시도(해결 4)는 선택이 아니라 기본 안전망</b>입니다. 다만 <b>데드락이 빈번하다면 그건 설계 신호</b>입니다 — 로그의 <code>DETAIL</code> 두 줄로 얽힌 두 쿼리를 찾아 <b>잠그는 순서를 맞추거나</b>, 복잡하면 <b>Advisory Lock으로 단일 관문</b>을 세웁니다.</div></details>
+<details><summary><code>SKIP LOCKED</code>를 쓰면 일감을 빠뜨리지 않나요?</summary><div class="fa">빠뜨리지 않습니다. <b>건너뛴 행은 다른 워커가 이미 처리 중인 행</b>이고, 그 워커가 커밋하면 상태가 <code>RUNNING</code>으로 바뀝니다. 만약 그 워커가 죽으면 트랜잭션이 롤백되어 <b>다시 <code>READY</code> 상태로 돌아오므로</b> 다음 폴링에서 누군가 집어 갑니다. 주의할 점은 <b>워커가 일감을 가져간 뒤 오래 붙잡고 있다가 죽는 경우</b>입니다 — 이건 <code>started_at</code>이 오래된 <code>RUNNING</code> 행을 되살리는 별도 청소 작업(reaper)으로 처리합니다.</div></details>
+<details><summary>운영 중에 락 때문에 서비스가 멈췄습니다. 뭘 먼저 하나요?</summary><div class="fa">순서가 있습니다. <b>(1) 원인 세션 찾기</b> — <code>pg_stat_activity</code>에서 <code>pg_blocking_pids()</code>가 비어 있지 않은 세션들을 보고, <b>그 사슬의 맨 앞(아무도 안 기다리는데 남을 막고 있는 세션)</b>을 찾습니다. <b>(2) 그 세션의 정체 확인</b> — <code>state</code>가 <code>idle in transaction</code>이면 <b>트랜잭션을 열어 놓고 노는 세션</b>이고, 애플리케이션 버그일 가능성이 높습니다. <b>(3) 정리</b> — <code>pg_cancel_backend()</code>를 먼저 시도하고(현재 쿼리만 취소), 안 되면 <code>pg_terminate_backend()</code>. <b>(4) 재발 방지</b> — <code>idle_in_transaction_session_timeout</code>과 <code>lock_timeout</code>을 걸어 둡니다.</div></details>
+<details><summary>락을 중간에 풀 수는 없나요?</summary><div class="fa">없습니다. <b><code>UNLOCK</code> 같은 명령이 존재하지 않습니다.</b> 한 번 잡은 락은 <b>COMMIT 또는 ROLLBACK까지 절대 안 풀립니다.</b> (<code>SAVEPOINT</code>로 부분 롤백을 하면 그 이후에 잡은 락만 풀립니다.) 이 사실이 이 장의 거의 모든 조언으로 이어집니다 — <b>트랜잭션을 짧게, 외부 호출은 트랜잭션 밖으로, 대기에는 타임아웃을</b>. "락을 언제 푸느냐"를 제어하는 유일한 수단이 <b>"트랜잭션을 언제 끝내느냐"</b>이기 때문입니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>테이블 락은 언제 걸리는가? <code>ACCESS EXCLUSIVE</code>가 위험한 이유는?</li>
+<li>락은 언제 풀리는가? 중간에 푸는 방법이 있는가?</li>
+<li>낙관적 락에서 반드시 확인해야 하는 것은? 안 하면 어떻게 되는가?</li>
+<li><code>NOWAIT</code>와 <code>SKIP LOCKED</code>는 각각 어떤 상황에 쓰는가?</li>
+<li>Deadlock은 왜 생기는가? 가장 근본적인 해결책은? <code>ORDER BY</code>를 어디에 써야 하는가?</li>
+<li><code>40P01</code>과 <code>40001</code>의 차이는? 대응은 같은가 다른가?</li>
+<li>Advisory Lock이 필요한 상황은? <code>_xact_</code> 버전을 권하는 이유는?</li>
+</ul></div>
 </section>
 
 
