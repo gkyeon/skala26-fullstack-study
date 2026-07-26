@@ -3109,33 +3109,239 @@ Hash Join  (cost=12.5..45.8 rows=200 width=32)
     <span class="day-badge day2">Day 2</span>
     <h2><span class="num">12.</span> JOIN 종류 상세</h2>
   </div>
-  <p class="subtitle">INNER · OUTER · SELF · CROSS · Anti-Join · Semi-Join</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 여러 테이블을 합쳐 보는 여러 방법이에요. INNER=둘 다 있는 것만, LEFT=왼쪽 기준으로 다 보여주고 없으면 빈칸(NULL).</div></div>
-  <table class="t"><thead><tr>
-<th>종류</th>
-<th>설명</th>
-</tr></thead><tbody>
-<tr><td>INNER JOIN</td><td>두 테이블 모두 매칭되는 행만(교집합) — JOIN만 쓰면 기본값</td></tr>
-<tr><td>LEFT OUTER JOIN</td><td>왼쪽 전체 + 오른쪽 없으면 NULL</td></tr>
-<tr><td>RIGHT OUTER JOIN</td><td>오른쪽 전체 + 왼쪽 없으면 NULL (실무에선 LEFT로 방향 바꿔쓰는게 관례)</td></tr>
-<tr><td>FULL OUTER JOIN</td><td>양쪽 모두 보존. MySQL 미지원 → LEFT UNION RIGHT로 우회</td></tr>
-<tr><td>SELF JOIN</td><td>같은 테이블 2개처럼 조인 (직원-상사 계층)</td></tr>
-<tr><td>CROSS JOIN</td><td>카르테시안 곱(N×M) — 의도적으로만 사용</td></tr>
+  <p class="subtitle">INNER · LEFT · RIGHT · FULL OUTER · SELF · CROSS · Anti/Semi-Join · 조용히 틀어지는 6가지 함정</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 쪼개 놓은 테이블을 다시 붙이는 문법이에요. <b>JOIN이 어려운 이유는 문법이 아닙니다</b> — <code>JOIN ... ON ...</code>은 한 줄이면 배워요. 어려운 건 <b>결과가 조용히 틀어지는 방식이 많다</b>는 점. LEFT를 써 놓고 <code>WHERE</code>에 오른쪽 조건을 걸면 INNER로 바뀌고, 1:N 조인 후 <code>SUM</code>을 하면 값이 뻥튀기됩니다. <b>전부 에러가 안 나고 그냥 틀린 숫자가 나와요.</b></div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <ul>
+  <li>여섯 조인(INNER · LEFT · RIGHT · FULL OUTER · SELF · CROSS)을 <b>구분해서</b> 쓴다</li>
+  <li><b>Anti-Join</b>과 <b>Semi-Join</b> 패턴을 세 가지 방법으로 표현하고 무엇이 안전한지 안다</li>
+  <li>JOIN에서 <b>결과가 조용히 틀어지는 여섯 가지 함정</b>과 그 대책을 안다</li>
+  </ul></div>
+
+  <h3>1) JOIN의 정의 — 카르테시안 곱 + 조건 필터링</h3>
+<div class="callout deep"><span class="ctitle">🔎 개념적으로 JOIN은 두 단계다</span>
+<p><code>1단계: 모든 조합을 만든다 (A의 각 행 × B의 각 행)</code><br><code>2단계: 조건에 맞는 것만 남긴다 (ON 조건)</code></p>
+<p>A가 3행, B가 4행이면 1단계에서 12행이 만들어지고 2단계에서 조건에 맞는 것만 남는다.</p>
+<ul>
+<li><b><code>ON</code> 조건을 빼면 2단계가 없다</b> → 12행이 그대로 나온다. 이것이 <b>카르테시안 곱</b>이고 1000×1000이면 100만 행이다.</li>
+<li><b>조건이 느슨하면 많이 남는다</b> → 1:N 관계에서 행이 늘어나는 이유다.</li>
+</ul>
+<p>이건 <b>의미론적</b> 설명이지 DB가 실제로 그렇게 실행한다는 뜻은 아니다(11장 참고). 하지만 <b>"행이 왜 늘었지?"를 따질 때는 이 2단계 모델로 생각하는 것이 정확하다.</b></p></div>
+
+  <h3>2) JOIN 네 종류 — INNER · LEFT · RIGHT · FULL OUTER</h3>
+<div class="sqlbox norun"><div class="sqlhead">네 종류를 한 그림으로</div><pre><code>students          enrollments
+  1 홍길동   ←→   1 DB
+  2 이순신   ←→   2 알고리즘
+  3 강감찬          (없음)
+  (없음)          9 고아수강
+
+INNER      → 홍길동, 이순신                              (양쪽 다 있는 것)
+LEFT       → 홍길동, 이순신, 강감찬(NULL)                 (왼쪽 전부)
+RIGHT      → 홍길동, 이순신, 고아수강(NULL)               (오른쪽 전부)
+FULL OUTER → 홍길동, 이순신, 강감찬(NULL), 고아수강(NULL)  (양쪽 전부)</code></pre></div>
+<ul class="b">
+<li><b>INNER JOIN</b> — 양쪽에 모두 매칭되는 행만(교집합). <code>INNER</code> 키워드는 생략 가능하지만 <b>리포트나 협업 코드에서는 의도를 명시</b>하는 편이 읽기 좋다. 핵심 성질은 <b>양쪽에 없으면 사라진다</b>는 것 — "전체 학생 수를 세려고 JOIN했더니 숫자가 줄었다"의 원인이다.</li>
+<li><b>LEFT OUTER JOIN</b> — 왼쪽 전체 + 오른쪽 없으면 NULL. <b>"기준이 되는 목록이 있고 거기에 정보를 덧붙이고 싶을 때"</b> 쓴다. 전체 학생 명단을 보여 주되 수강 정보가 있으면 같이 보여 준다.</li>
+<li><b>RIGHT OUTER JOIN</b> — <b>LEFT JOIN으로 방향을 바꿔 쓰는 것이 실무 관례</b>다. 이유는 <b>읽는 방향과 논리 방향이 일치하기 때문</b> — SQL은 왼쪽에서 오른쪽으로 읽는데 RIGHT JOIN은 "나중에 나온 테이블이 기준"이라 머릿속에서 한 번 뒤집어야 한다. 테이블이 3~4개면 훨씬 헷갈린다.</li>
+<li><b>FULL OUTER JOIN</b> — 양쪽 모두 전체 보존. <b>MySQL 미지원</b> → <code>LEFT JOIN UNION RIGHT JOIN</code>으로 우회. 실무에서는 드물고 주로 <b>두 목록을 대조할 때</b>(데이터 검증) 쓴다.</li>
+</ul>
+<div class="callout myth"><span class="ctitle">⚠️ FULL OUTER 우회에서 <code>UNION ALL</code>을 쓰면 틀린다</span>
+<p><code>UNION</code>은 중복을 제거하므로 양쪽에 다 있는 행이 두 번 나오지 않는다. <b><code>UNION ALL</code>을 쓰면 매칭된 행이 두 번씩 나와서 틀린다.</b></p>
+<p>덧붙여 — "고아 수강(학생 없는 enroll)"이라는 표현이 나오는데, <b>FK가 제대로 걸려 있으면 이런 행은 존재할 수 없다.</b> 즉 RIGHT JOIN으로 고아를 찾아야 하는 상황 자체가 <b>"FK가 없거나 데이터가 깨졌다"는 신호</b>다.</p></div>
+<h4>네 조인의 행 수를 분해해서 읽기</h4>
+<table class="t"><thead><tr><th style="width:14%">덩어리</th><th>뜻</th></tr></thead><tbody>
+<tr><td><b>M</b></td><td>양쪽 키가 맞아떨어진 행 (매칭 쌍의 총 개수)</td></tr>
+<tr><td><b>L</b></td><td>왼쪽에만 있고 짝이 없는 행</td></tr>
+<tr><td><b>R</b></td><td>오른쪽에만 있고 짝이 없는 행 (<b>고아 행</b>)</td></tr>
 </tbody></table>
-<div class="sqlbox"><div class="sqlhead">Anti-Join 패턴</div><pre><code>-- Anti-Join: 한 번도 수강하지 않은 학생 (3가지 방법)
--- 1) LEFT JOIN + IS NULL (직관적)
-SELECT s.name FROM student s LEFT JOIN enroll e ON e.student_id=s.id WHERE e.student_id IS NULL;
--- 2) NOT EXISTS (성능 우수, NULL 안전 - 권장!)
-SELECT s.name FROM student s WHERE NOT EXISTS (SELECT 1 FROM enroll e WHERE e.student_id=s.id);
--- 3) NOT IN (NULL 함정 주의! 서브쿼리에 NULL 있으면 전체 결과가 빈 집합)
-SELECT s.name FROM student s WHERE s.id NOT IN (SELECT student_id FROM enroll);</code></pre></div>
-<div class="cp"><div class="cphead">✔ Checkpoint</div><ul><li>NOT IN vs NOT EXISTS: NULL 안전성·성능 모두 NOT EXISTS가 우수 → NOT EXISTS 선호</li></ul></div>
-<div class="sqlbox"><div class="sqlhead">실무 활용 패턴</div><pre><code>-- SELF JOIN: 직원-상사 계층
-SELECT e.name AS employee, m.name AS manager
-FROM employees e LEFT JOIN employees m ON m.id = e.manager_id;
--- 고객별 주문통계 (LEFT JOIN + COALESCE)
-SELECT c.customer_name, COUNT(o.order_id) AS order_count, COALESCE(SUM(o.amount),0) AS total_spent
-FROM customers c LEFT JOIN orders o ON o.customer_id=c.customer_id
-GROUP BY c.customer_id, c.customer_name ORDER BY total_spent DESC;</code></pre></div>
+<div class="sqlbox norun"><div class="sqlhead">네 조인의 행 수 = 세 덩어리의 조합 (학생 1000명 예시)</div><pre><code>INNER JOIN       = M              INNER  2300 = M 2300
+LEFT JOIN        = M + L          LEFT   2400 = M 2300 + L 100   (무수강 학생 100명)
+RIGHT JOIN       = M + R          RIGHT  2302 = M 2300 + R 2     (고아 수강 기록 2건)
+FULL OUTER JOIN  = M + L + R      FULL   2402 = M 2300 + L 100 + R 2</code></pre></div>
+<div class="cp"><div class="cphead">✔ 여기서 두 가지가 읽힌다</div><ul>
+<li><b>LEFT가 RIGHT보다 항상 크지 않다.</b> 어느 쪽이 큰지는 순전히 L과 R 중 무엇이 많으냐로 정해진다.</li>
+<li><b>R이 0이 아니라는 것 자체가 설계 정보다.</b> 수강 테이블의 <code>student_id</code>에 <b>FK 제약이 걸려 있지 않다</b>는 뜻이다. RIGHT/FULL JOIN이 의미를 갖는 상황은 대개 <b>제약이 빠져 있는 데이터</b>다.</li>
+<li>리포트에 "LEFT JOIN이라 2400행"이라고만 쓰는 것과 <b>"2300 + 무수강 100"으로 분해해 쓰는 것</b>은 읽는 사람에게 완전히 다르게 보인다.</li>
+</ul></div>
+
+  <h3>3) SELF JOIN · CROSS JOIN</h3>
+<div class="sqlbox"><div class="sqlhead">SELF JOIN — 같은 테이블을 2개처럼 (직원-상사, 연습장 실행 가능)</div><pre><code>SELECT e.emp_name AS 직원, m.emp_name AS 상사
+FROM employees e
+LEFT JOIN employees m ON m.id = e.manager_id
+ORDER BY m.emp_name, e.emp_name;</code></pre></div>
+<ul class="b">
+<li>같은 테이블을 <code>e</code>(직원 역할)와 <code>m</code>(상사 역할) 두 별칭으로 부른다. <b>별칭이 없으면 어느 쪽 <code>name</code>인지 구분할 수 없어 에러가 난다</b> — SELF JOIN에서 별칭은 선택이 아니라 필수다.</li>
+<li><b><code>LEFT JOIN</code>인 이유가 중요하다.</b> 최상위 관리자는 <code>manager_id</code>가 NULL이라 상사가 없다. <code>INNER JOIN</code>을 쓰면 <b>사장이 결과에서 사라진다.</b></li>
+<li>SELF JOIN은 <b>한 단계 관계만</b> 조회한다. "사장부터 말단까지 전체 조직도"처럼 깊이를 알 수 없는 계층은 <b>14장의 재귀 CTE</b>가 필요하다.</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">CROSS JOIN — 카르테시안 곱 (N × M행). 의도적으로만!</div><pre><code>SELECT s.id AS student_id, c.id AS course_id
+FROM students s CROSS JOIN courses c
+LIMIT 100;   -- 실수 방지: 반드시 LIMIT 또는 의도 확인</code></pre></div>
+<ul class="b">
+<li>앞에서 본 JOIN 정의의 <b>1단계만</b> 하는 것이다. <b>의도적으로 쓰는 경우</b>가 실제로 있다.
+  <ul>
+  <li><b>추천 후보 생성</b> — 모든 (학생, 강좌) 쌍을 만든 뒤 점수를 매겨 추천</li>
+  <li><b>빈 구간 채우기</b> — 날짜 목록 × 상품 목록을 만들어 두고 실제 매출을 LEFT JOIN하면 <b>매출이 0인 날도 0으로 표시</b>된다. 시계열 차트에 구멍이 안 생긴다.</li>
+  </ul>
+</li>
+<li><code>LIMIT</code>을 붙이라는 주석이 중요하다. <b>1만 × 1만이면 1억 행</b>이다.</li>
+</ul>
+
+  <h3>4) Anti-Join / Semi-Join 패턴</h3>
+<ul class="b">
+<li><b>Semi-Join</b>: "짝이 <b>있는</b> 것만" 고른다. 단, <b>오른쪽 테이블의 컬럼은 결과에 포함하지 않는다.</b> ("수강 신청을 한 적 있는 학생 명단")</li>
+<li><b>Anti-Join</b>: "짝이 <b>없는</b> 것만" 고른다. ("한 번도 수강하지 않은 학생 명단")</li>
+<li>일반 JOIN과 다른 점은 <b>오른쪽 테이블을 조건으로만 쓰고 값은 안 가져온다</b>는 것이다. 그래서 <b>짝이 여러 개여도 왼쪽 행이 늘어나지 않는다</b> — 이게 결정적 장점이다.</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">Anti-Join 세 가지 방법 (연습장 실행 가능)</div><pre><code>-- 방법 1: LEFT JOIN + IS NULL (직관적)
+SELECT s.name FROM students s
+LEFT JOIN enrollments e ON e.student_id = s.id
+WHERE e.student_id IS NULL;
+
+-- 방법 2: NOT EXISTS (성능 우수, NULL 안전 - 권장)
+SELECT s.name FROM students s
+WHERE NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.id);
+
+-- 방법 3: NOT IN (NULL 함정 주의!)
+SELECT s.name FROM students s WHERE s.id NOT IN (SELECT student_id FROM enrollments);</code></pre></div>
+<ul class="b">
+<li><b>방법 1 주의</b> — <code>IS NULL</code>을 검사할 컬럼은 <b>오른쪽 테이블의 NOT NULL 컬럼</b>이어야 한다. 원래 NULL일 수 있는 컬럼으로 검사하면 짝이 있는데도 걸러진다. <b>조인 키를 쓰는 것이 안전하다.</b></li>
+<li><b>방법 2</b> — <code>SELECT 1</code>은 무엇을 select하든 상관없다. <code>EXISTS</code>는 <b>행이 있는지만</b> 본다. <b>첫 번째 행을 찾는 즉시 멈추므로</b> 학생 한 명당 수강 기록이 1000건이어도 1건만 확인하면 끝이다.</li>
+</ul>
+<div class="callout myth"><span class="ctitle">⚠️ <code>NOT IN</code>에 NULL이 하나만 있어도 결과가 통째로 빈다</span>
+<div class="sqlbox norun"><div class="sqlhead">3값 논리로 풀어 보면</div><pre><code>s.id = 1 이고 서브쿼리 결과가 (2, 3, NULL) 이라면
+  1 NOT IN (2, 3, NULL)
+= 1&lt;&gt;2 AND 1&lt;&gt;3 AND 1&lt;&gt;NULL
+= TRUE  AND TRUE  AND UNKNOWN
+= UNKNOWN          → WHERE를 통과하지 못함</code></pre></div>
+<p>어떤 값을 넣어도 마지막 항이 UNKNOWN이므로 <b>모든 행이 탈락한다.</b> 에러도 안 나고 결과가 0행이다.</p></div>
+<table class="t"><thead><tr><th style="width:28%">방법</th><th>NULL 안전</th><th>성능</th><th>가독성</th></tr></thead><tbody>
+<tr><td>LEFT JOIN + IS NULL</td><td>안전 (키로 검사 시)</td><td>좋음</td><td>직관적</td></tr>
+<tr><td><b>NOT EXISTS</b></td><td><b>안전</b></td><td><b>좋음</b></td><td>좋음</td></tr>
+<tr><td>NOT IN</td><td><b>위험</b></td><td>보통</td><td>좋음</td></tr>
+</tbody></table>
+<div class="callout deep"><span class="ctitle">🔎 심화 — <code>NOT IN</code>이 안전한 조건, 그럼에도 피하는 이유</span>
+<p>서브쿼리 컬럼에 <code>NOT NULL</code> 제약이 걸려 있으면 안전하고, PostgreSQL 옵티마이저도 그 사실을 알면 Anti-Join으로 최적화한다. 문제는 <b>나중에 누가 제약을 풀거나 컬럼 구조가 바뀌면 조용히 깨진다</b>는 점이다. <b>스키마 변경에 영향받지 않는 <code>NOT EXISTS</code>가 더 안전한 선택</b>이다.</p></div>
+<div class="sqlbox norun"><div class="sqlhead">Semi-Join — 왜 INNER JOIN으로 대체하면 안 되나</div><pre><code>-- 맞음: 중복을 애초에 만들지 않는다
+SELECT s.name FROM students s
+WHERE EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.id);
+
+-- 틀림: 수강 3건인 학생이 3번 나온다
+SELECT s.name FROM students s
+JOIN enrollments e ON e.student_id = s.id;</code></pre></div>
+<p>INNER JOIN은 짝이 여러 개면 왼쪽 행을 여러 번 복제한다. <code>DISTINCT</code>로 지울 수는 있지만 <b>중복을 만들었다가 지우는 것이라 낭비</b>다.</p>
+
+  <h3>5) 실무 집계 JOIN — 고객별 주문 통계</h3>
+<div class="sqlbox"><div class="sqlhead">10장의 집계와 이 장의 JOIN이 합쳐지는 자리 (연습장 실행 가능)</div><pre><code>SELECT
+  c.customer_name,
+  COUNT(o.id)               AS order_count,     -- COUNT(*) 아님에 주의!
+  COALESCE(SUM(o.amount),0) AS total_spent,
+  MAX(o.order_date)         AS last_order_date
+FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.id
+GROUP BY c.id, c.customer_name
+ORDER BY total_spent DESC;</code></pre></div>
+<div class="cp"><div class="cphead">✔ 이 쿼리에는 의도적인 선택이 네 개 들어 있다</div><ul>
+<li><b><code>LEFT JOIN</code>을 쓴 이유</b> — 주문이 한 번도 없는 고객도 목록에 나와야 하기 때문. <code>INNER JOIN</code>이면 그 고객들이 사라져 "전체 고객 명단"이 아니게 된다.</li>
+<li><b><code>COUNT(o.id)</code>이지 <code>COUNT(*)</code>가 아닌 이유 — 이게 핵심 기교다.</b> 주문이 없는 고객은 LEFT JOIN 결과에서 <code>o</code> 쪽이 전부 NULL인 행 <b>하나</b>가 된다. <code>COUNT(*)</code>는 그 행을 세서 <b>1</b>을 반환한다 — 주문이 0건인데 1건으로 보인다. <code>COUNT(o.id)</code>는 NULL을 세지 않으므로 <b>0</b>이 나온다.</li>
+<li><b><code>COALESCE(SUM(o.amount), 0)</code></b> — 주문이 없으면 <code>SUM</code>이 NULL이다(10장). 금액 칸에 빈칸 대신 0을 표시하려면 감싸야 한다.</li>
+<li><b><code>GROUP BY c.id, c.customer_name</code></b> — 이름만으로 묶으면 <b>동명이인이 합쳐진다.</b> PK로 묶어야 정확하다.</li>
+</ul></div>
+<div class="sqlbox norun"><div class="sqlhead">다중 테이블 JOIN — N:M을 조회하는 표준 형태</div><pre><code>SELECT s.name, c.title, p.name AS professor, e.score
+FROM students s
+JOIN enrollments e ON e.student_id = s.id
+JOIN courses     c ON c.id = e.course_id
+JOIN professors  p ON p.id = c.professor_id
+WHERE e.score &gt;= 80
+ORDER BY e.score DESC;</code></pre></div>
+<ul class="b">
+<li>JOIN은 여러 번 이어 붙일 수 있고 <b>왼쪽부터 차례로 붙는다.</b> <code>students</code>와 <code>courses</code>는 직접 연결되어 있지 않고 교차 테이블 <code>enrollments</code>를 거친다(2장).</li>
+<li><code>p.name AS professor</code> — <code>s.name</code>과 이름이 겹치므로 별칭이 필요하다.</li>
+</ul>
+<div class="note">짚어 둘 것 — <b>여러 테이블을 JOIN할 때 하나라도 LEFT여야 하면 그 뒤도 전부 LEFT여야 한다.</b> <code>A LEFT JOIN B INNER JOIN C</code>처럼 쓰면 B가 NULL인 행이 C와 매칭될 수 없어서 결국 사라진다 — <b>LEFT의 의미가 무효화되는 흔한 실수</b>다.</div>
+
+  <h3>6) JOIN 주의사항 — 조용히 틀어지는 여섯 가지</h3>
+<table class="t"><thead><tr>
+<th style="width:22%">항목</th><th style="width:38%">문제</th><th>해결책</th>
+</tr></thead><tbody>
+<tr><td><b>ON 조건 누락</b></td><td>CROSS JOIN 발생 (N×M 행 폭발)</td><td>반드시 ON 조건 명시, EXPLAIN으로 확인</td></tr>
+<tr><td><b>OUTER JOIN 후 WHERE 필터</b></td><td>사실상 INNER JOIN으로 변환됨</td><td>조건을 <code>ON</code>으로 옮긴다</td></tr>
+<tr><td><b>중복 행 폭발</b></td><td>1:N 조인 시 N개만큼 행 증가</td><td>서브쿼리에서 집계 후 조인</td></tr>
+<tr><td><b>NULL과 조인</b></td><td>FK가 NULL이면 INNER JOIN에서 제외</td><td>LEFT JOIN + <code>COALESCE</code></td></tr>
+<tr><td><b>FK 인덱스 미생성</b></td><td>JOIN 시 Full Scan 발생</td><td>FK 컬럼에 반드시 INDEX</td></tr>
+<tr><td><b>대용량 CROSS JOIN</b></td><td>메모리/시간 폭발</td><td><code>LIMIT</code> 또는 <code>LATERAL</code>로 제한</td></tr>
+</tbody></table>
+<h4>① OUTER JOIN 후 WHERE 필터 — LEFT가 INNER로 바뀐다</h4>
+<div class="sqlbox norun"><div class="sqlhead">가장 자주, 가장 조용히 나는 실수</div><pre><code>-- 의도: 전체 학생 + 있으면 90점 이상 수강 정보
+-- 실제: 90점 이상 수강한 학생만 (LEFT의 의미가 사라짐)
+SELECT s.name, e.score
+FROM students s
+LEFT JOIN enrollments e ON e.student_id = s.id
+WHERE e.score &gt;= 90;
+
+-- 왜? 논리적 실행 순서로 설명된다
+JOIN  → LEFT JOIN이 실행되어 수강 없는 학생은 e.score = NULL
+WHERE → NULL &gt;= 90 은 UNKNOWN → 통과하지 못하고 탈락
+
+-- 올바름: 조건을 조인 단계로 옮긴다
+SELECT s.name, e.score
+FROM students s
+LEFT JOIN enrollments e ON e.student_id = s.id AND e.score &gt;= 90;</code></pre></div>
+<div class="cp"><div class="cphead">✔ 규칙 한 줄</div><ul>
+<li><b>OUTER JOIN에서 오른쪽 테이블 조건은 <code>ON</code>에, 왼쪽 테이블 조건은 <code>WHERE</code>에.</b> <code>ON</code>에 있으면 "붙일 대상을 고르는 조건"이 되고, <code>WHERE</code>에 있으면 "붙인 결과를 거르는 조건"이 된다. LEFT JOIN에서는 이 차이가 결과를 완전히 바꾼다.</li>
+<li>이 현상을 <b>일부러 이용하는</b> 유일한 경우가 앞서 본 <b>Anti-Join</b>(<code>WHERE b.col IS NULL</code>)이다.</li>
+</ul></div>
+<h4>② 중복 행 폭발 — 1:N 조인 후 집계</h4>
+<div class="sqlbox norun"><div class="sqlhead">금액이 정확히 2배가 된다 — 에러 없이</div><pre><code>-- 틀림: 고객당 주문 3건 × 포인트 2건 = 6행 → SUM(o.amount)이 2배
+SELECT c.name, SUM(o.amount), SUM(p.point)
+FROM customers c
+JOIN orders o  ON o.customer_id = c.id     -- 고객당 주문 3건
+JOIN points p  ON p.customer_id = c.id     -- 고객당 포인트 2건
+GROUP BY c.id, c.name;
+
+-- 올바름: 미리 집계해서 1:1로 만든 뒤 조인
+SELECT c.name, o.total_amount, p.total_point
+FROM customers c
+LEFT JOIN (SELECT customer_id, SUM(amount) AS total_amount
+             FROM orders GROUP BY customer_id) o ON o.customer_id = c.id
+LEFT JOIN (SELECT customer_id, SUM(point) AS total_point
+             FROM points GROUP BY customer_id) p ON p.customer_id = c.id;</code></pre></div>
+<div class="callout myth"><span class="ctitle">⚠️ <code>DISTINCT</code>로 지우는 방법은 권장하지 않는다</span>
+<p><b>중복 행을 지우는 것과 중복 합산을 되돌리는 것은 다르다.</b> <code>SELECT DISTINCT</code>를 붙여도 <code>SUM(o.amount)</code>이 2배인 것은 그대로다. 게다가 <code>SUM(DISTINCT amount)</code>는 <b>금액이 우연히 같은 주문 두 건을 하나로 합쳐 버려서</b> 또 다른 오류를 만든다.</p></div>
+<h4>③~⑥ 나머지</h4>
+<ul class="b">
+<li><b>ON 조건 누락</b> — <code>ON 1=1</code>이나 조건을 잘못 쓰면 카르테시안 곱이 된다. <b>결과 행 수가 예상보다 훨씬 크면 이걸 의심한다.</b></li>
+<li><b>NULL과 조인</b> — FK가 NULL이면 어느 행과도 매칭되지 않아 INNER JOIN에서 사라진다. 학과 미배정 학생(<code>major_id IS NULL</code>)이 목록에서 빠지는 원인이다 → LEFT JOIN + <code>COALESCE(m.name, '미배정')</code>.</li>
+<li><b>FK 인덱스 미생성</b> — 6장·11장에서 계속 나온 그것.</li>
+<li><b>대용량 CROSS JOIN</b> — <code>LIMIT</code>으로 막거나 <code>LATERAL</code>을 쓴다. <b><code>LATERAL</code>은 오른쪽 서브쿼리가 왼쪽 행을 참조할 수 있게</b> 해서, "각 학생마다 상위 3개 강좌"처럼 조합을 다 만들지 않고도 필요한 것만 뽑을 수 있다.</li>
+</ul>
+
+  <h3>7) 함정 / 감점 포인트</h3>
+<ul class="b">
+<li><b>LEFT JOIN 후 오른쪽 조건을 <code>WHERE</code>에 걸기</b> — 조용히 INNER가 된다. <b>리포트 숫자가 틀리는 1순위 원인.</b></li>
+<li><b>1:N 조인 후 <code>SUM</code></b> · <b><code>NOT IN</code> 서브쿼리</b> · <b>LEFT JOIN에서 <code>COUNT(*)</code></b> · <b><code>SUM</code>에 <code>COALESCE</code> 누락</b></li>
+<li><b>SELF JOIN에 INNER 쓰기</b>(최상위 행이 사라짐) · <b>RIGHT JOIN 남용</b> · <b>다중 JOIN에서 LEFT 뒤에 INNER 섞기</b></li>
+<li><b><code>GROUP BY</code>를 이름으로 하기</b> — 동명이인이 합쳐진다. PK로 묶자.</li>
+</ul>
+
+  <h3>8) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>LEFT JOIN이 INNER JOIN을 포함하는데, 그냥 항상 LEFT JOIN을 쓰면 안 되나요?</summary><div class="fa">권장하지 않습니다. 첫째, <b>의도가 흐려집니다</b> — <code>INNER JOIN</code>은 "양쪽에 다 있어야 한다"는 업무 규칙을 코드에 명시하는 것입니다. 전부 LEFT로 쓰면 읽는 사람이 "여기 NULL이 나올 수 있나?"를 매번 따져야 합니다. 둘째, <b>NULL 처리 부담이 늘어납니다</b> — LEFT JOIN 결과에는 NULL이 섞일 수 있으므로 이후의 모든 집계와 조건에서 NULL을 고려해야 합니다. 위의 <code>COUNT(*)</code> 함정, <code>SUM</code> NULL 함정이 전부 그 결과입니다. <b>없으면 안 되는 관계는 INNER, 없어도 되는 관계는 LEFT</b>로 구분해 쓰는 것이 맞습니다.</div></details>
+<details><summary><code>EXISTS</code>가 <code>IN</code>보다 빠르다던데, 항상 <code>EXISTS</code>를 쓰면 되나요?</summary><div class="fa">항상 그렇지는 않습니다. 현대 옵티마이저는 둘을 대체로 같은 실행계획으로 변환합니다(PostgreSQL은 둘 다 Semi-Join으로 처리). 그래서 성능 차이가 없는 경우가 많습니다. 다만 <b><code>NOT</code> 쪽은 이야기가 다릅니다</b> — <code>NOT IN</code>은 NULL 때문에 옵티마이저가 Anti-Join으로 변환하지 못하고 비효율적인 계획을 고르는 경우가 있고, 무엇보다 <b>결과 자체가 틀릴 수 있습니다.</b> 정리하면 — 긍정형(<code>IN</code>/<code>EXISTS</code>)은 취향껏, <b>부정형은 반드시 <code>NOT EXISTS</code>.</b></div></details>
+<details><summary>LEFT JOIN으로 "학생별 수강 과목 수"를 뽑았는데, 한 과목도 안 들은 학생이 0이 아니라 1로 나옵니다.</summary><div class="fa">조인은 맞고 <b>세는 방법이 틀렸습니다.</b> LEFT JOIN은 짝이 없는 학생도 남기되 <b>오른쪽 컬럼이 전부 NULL인 한 행</b>으로 남깁니다. 그 상태에서 <code>COUNT(*)</code>를 하면 "행을 세라"는 뜻이므로 그 NULL 행도 1로 세어집니다. <code>COUNT(e.student_id)</code>처럼 <b>오른쪽 컬럼</b>을 세면 NULL이 제외되어 0이 됩니다.<br><br>무서운 점은 <b>에러도 안 나고 대부분의 행은 맞다</b>는 것입니다 — 1000명 중 수강 이력이 있는 900명은 두 쿼리의 결과가 같고, 수강이 없는 100명만 0 대신 1이 됩니다. <b>표본을 몇 줄만 훑어보면 정상으로 보이므로 그대로 리포트에 실리기 쉽습니다.</b> 규칙은 하나입니다 — <b>LEFT JOIN 뒤에서 세는 것은 언제나 <code>COUNT(오른쪽 컬럼)</code>.</b></div></details>
+<details><summary>1:N 조인에서 행이 늘어나는 게 문제라면, JOIN 자체가 잘못된 설계 아닌가요?</summary><div class="fa">아닙니다. 1:N 조인에서 행이 늘어나는 것은 <b>정상 동작이고 대개 원하는 것</b>입니다 — "학생별 수강 목록"을 뽑으면 학생 한 명이 3줄로 나오는 게 맞습니다. 문제는 그 결과에 <b>집계를 얹을 때</b>입니다. 목록을 보려는 것이면 늘어나도 되고, 합계를 내려는 것이면 늘어나면 안 됩니다. 그래서 판단 기준은 <b>"이 조인의 결과가 몇 줄이어야 하는가"를 먼저 정하는 것</b>입니다. 고객당 한 줄이 나와야 하는데 주문 테이블을 그냥 조인했다면, 그 순간 집계가 깨질 준비가 된 것입니다.</div></details>
+<details><summary><code>DISTINCT</code>로 중복을 지우면 되는데 왜 서브쿼리로 미리 집계하나요?</summary><div class="fa">두 가지입니다. 첫째, <b><code>DISTINCT</code>는 합산 오류를 못 고칩니다</b> — 주문×포인트 예에서 <code>SELECT DISTINCT</code>를 붙여도 <code>SUM(o.amount)</code>가 2배인 것은 그대로입니다. <code>DISTINCT</code>는 최종 결과의 중복 행을 지울 뿐, <b>집계 과정에서 이미 두 번 더해진 것을 되돌리지 못합니다.</b> 둘째, <b>비용이 큽니다</b> — 중복을 잔뜩 만들었다가 정렬해서 지우는 것이라 애초에 안 만드는 쪽이 훨씬 쌉니다. <code>DISTINCT</code>가 정당한 경우는 "값을 집계하지 않고 목록만 뽑는데 중복이 생기는" 상황이고, 그때도 대개 <code>EXISTS</code>(Semi-Join)로 바꾸는 편이 낫습니다.</div></details>
+<details><summary>MySQL에 FULL OUTER JOIN이 없으면 실무에서 불편하지 않나요?</summary><div class="fa">크게 불편하지 않습니다. <b>FULL OUTER JOIN이 실제로 필요한 상황이 드물기 때문</b>입니다. 대부분의 조회는 "기준이 되는 쪽"이 명확해서 LEFT JOIN으로 표현됩니다. FULL OUTER가 필요한 경우는 주로 <b>두 데이터 소스를 대조하는 검증 작업</b>인데 일회성 분석이라 UNION 우회로 충분합니다. 다만 주의점이 있습니다 — <code>UNION</code>(중복 제거)을 써야 하고 <code>UNION ALL</code>을 쓰면 안 되며, 컬럼 목록이 양쪽에서 정확히 같아야 하고, <code>UNION</code>은 정렬·비교를 하므로 대용량에서는 느립니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>JOIN을 "카르테시안 곱 + 필터"로 설명할 수 있는가? 이 모델로 <code>ON</code> 누락 시 무슨 일이 생기는지 설명되는가?</li>
+<li>LEFT JOIN 후 오른쪽 조건을 <code>WHERE</code>에 걸면 왜 INNER가 되는가? 어디에 써야 하는가?</li>
+<li>LEFT JOIN 결과에서 <code>COUNT(*)</code>와 <code>COUNT(오른쪽컬럼)</code>이 다른 이유는?</li>
+<li>Anti-Join 세 가지 방법 중 권장은 무엇이고 왜인가? <code>NOT IN</code>의 함정을 3값 논리로 설명할 수 있는가?</li>
+<li>1:N 조인 두 개를 걸고 <code>SUM</code>을 하면 왜 값이 뻥튀기되는가? 해결책은?</li>
+<li>SELF JOIN에서 <code>LEFT JOIN</code>을 쓰는 이유는? Semi-Join을 INNER JOIN으로 대체하면 무엇이 문제인가?</li>
+</ul></div>
 </section>
 
 
