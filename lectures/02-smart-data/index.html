@@ -2689,40 +2689,253 @@ psql postgres -U (계정) -W</code></pre></div>
     <span class="day-badge day2">Day 2</span>
     <h2><span class="num">10.</span> SQL 중급 — 집계 &amp; 그룹화</h2>
   </div>
-  <p class="subtitle">집계함수, GROUP BY, HAVING, ROLLUP, CUBE, FILTER</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: GROUP BY는 '학과별로 묶어서 평균 내줘' 같은 명령이에요. 엑셀 피벗테이블이랑 비슷하다고 생각하면 편해요.</div></div>
-  <h4>집계 함수 핵심 5가지</h4>
+  <p class="subtitle">집계 함수 5종과 NULL · GROUP BY / HAVING · ROLLUP · CUBE · GROUPING · 집계 쿼리 성능</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 여러 행을 <b>하나로 뭉쳐서</b> "몇 명? 평균 얼마? 최대는?"에 답하는 도구예요. Python의 <code>df.groupby('region')['amount'].sum()</code>과 같은 개념이고, 차이는 <b>데이터가 있는 곳(DB)에서 계산한다</b>는 점. 함정은 딱 하나 — <b>NULL이 계산에서 조용히 빠진다</b>는 것입니다.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p>7장까지의 SELECT는 <b>행을 골라 그대로 보여 주는</b> 것이었다. 그런데 사람이 알고 싶어 하는 것은 대개 행 자체가 아니라 <b>요약</b>이다 — "학생이 몇 명인가", "학과별 평균 점수는", "매출이 가장 높은 지역은".</p>
+  <ul>
+  <li>집계 함수 다섯 가지를 <b>NULL 처리까지 정확히</b> 쓴다</li>
+  <li><code>GROUP BY</code>·<code>HAVING</code>을 <code>WHERE</code>와 <b>구분해서</b> 쓴다</li>
+  <li><code>ROLLUP</code>/<code>CUBE</code>로 소계를 뽑고, 집계 쿼리가 느려지는 지점과 대책을 안다</li>
+  </ul></div>
+
+  <h3>1) 집계 함수 핵심 5가지</h3>
+<h4>COUNT() — 세 형태의 차이</h4>
 <ul class="b">
-<li>COUNT(*): NULL포함 전체 / COUNT(col): NULL제외 / COUNT(DISTINCT col): 고유값 개수</li>
-<li>SUM/AVG: NULL 자동 제외. <b>AVG(NULL)=NULL</b> (0이 아님에 주의!)</li>
-<li>MIN/MAX: 문자열도 가능(알파벳/유니코드 순)</li>
-<li>FILTER(PostgreSQL 전용): COUNT(*) FILTER (WHERE score>=80) — 다른 DBMS는 SUM(CASE WHEN...THEN 1 ELSE 0 END)</li>
+<li><code>COUNT(*)</code>: NULL 포함한 <b>전체 행</b> / <code>COUNT(col)</code>: 그 컬럼이 <b>NULL이 아닌</b> 행 / <code>COUNT(DISTINCT col)</code>: 고유값 개수(NULL도 안 셈)</li>
 </ul>
-<div class="sqlbox"><div class="sqlhead">GROUP BY / HAVING</div><pre><code>SELECT department_id, COUNT(*) AS emp_count, ROUND(AVG(salary),0) AS avg_salary
+<div class="sqlbox"><div class="sqlhead">따라 치기 — COUNT 세 형태 비교 (연습장 실행 가능)</div><pre><code>SELECT COUNT(*)                AS all_rows,       -- 15  (행 자체를 셈)
+       COUNT(gpa)              AS not_null,       -- gpa가 NULL이 아닌 행
+       COUNT(DISTINCT major_id) AS distinct_major -- 학과 종류 수
+FROM students;</code></pre></div>
+<div class="callout myth"><span class="ctitle">⚠️ <code>COUNT(*)</code>와 <code>COUNT(col)</code>을 헷갈리면</span>
+<p>"회원 수"를 세다가 <b>전화번호 미등록 회원이 통째로 빠지는 사고</b>가 난다. <b>행 개수를 원하면 항상 <code>COUNT(*)</code></b>를 쓰자.</p></div>
+<h4>SUM() / AVG() — NULL이 두 겹으로 얽힌다</h4>
+<div class="callout goal"><span class="ctitle">💡 <code>AVG(NULL) = NULL</code>이지 0이 아니다</span>
+<ul>
+<li><b>첫째, NULL은 계산에서 빠진다.</b> 값이 <code>10, 20, NULL</code>이면 <code>SUM</code>은 30, <code>AVG</code>는 <b>15</b>다. <b><code>AVG</code>의 분모가 3이 아니라 2</b>다. NULL을 0으로 치지 않는다.</li>
+<li><b>둘째, 값이 전부 NULL이거나 행이 하나도 없으면 결과가 NULL이다.</b> 0이 아니다.</li>
+</ul></div>
+<div class="sqlbox norun"><div class="sqlhead">따라 치기 — NULL이 섞인 평균과 빈 결과</div><pre><code>CREATE TABLE score (name TEXT, s INT);
+INSERT INTO score VALUES ('A', 10), ('B', 20), ('C', NULL);
+
+SELECT SUM(s) AS sum_s, AVG(s) AS avg_s, COUNT(s) AS cnt_s, COUNT(*) AS cnt_all FROM score;
+--  sum_s |  avg_s  | cnt_s | cnt_all
+--     30 |      15 |     2 |       3      ← avg가 10(=30/3)이 아니라 15(=30/2)
+
+-- "미응시자를 0점으로 쳐서 평균"이 요구사항이면 명시해야 한다
+SELECT AVG(COALESCE(s, 0)) FROM score;    -- 10
+
+-- 조건에 맞는 행이 하나도 없을 때
+SELECT SUM(s) AS sum_s, COUNT(*) AS cnt FROM score WHERE name = 'Z';
+--  sum_s | cnt
+--        |   0        ← 행이 0개인데도 1행이 나온다. SUM만 NULL!</code></pre></div>
+<ul class="b">
+<li>집계 함수만 있는 SELECT는 <b>항상 한 줄을 반환</b>한다. 그런데 <b><code>SUM</code>만 NULL이라는 점이 함정</b>이다 — 매출 합계를 화면에 뿌릴 때 "0원" 대신 빈칸이 나오는 원인이 이것이고, <code>COALESCE(SUM(amount), 0)</code>으로 감싸야 한다.</li>
+<li><b><code>AVG(s)</code>와 <code>SUM(s)/COUNT(*)</code>는 다르다.</b> 위 예에서 <code>AVG(s)</code>=15지만 <code>SUM(s)/COUNT(*)</code>=30/3=10이다. <b>분모가 다르기 때문</b>이다. "평균을 직접 계산했더니 값이 다르다"면 대개 이 차이다.</li>
+</ul>
+<h4>MIN() / MAX() · FILTER</h4>
+<ul class="b">
+<li><b><code>MIN</code>/<code>MAX</code>는 문자열·날짜에도 쓸 수 있다.</b> <code>MAX(order_date)</code>는 "마지막 주문일"이다. 문자열 비교 기준은 6장에서 본 <b>콜레이션</b>을 따르므로 <b>DB 설정에 따라 결과가 달라질 수 있다.</b></li>
+<li><b><code>FILTER (WHERE ...)</code></b>는 <b>그 집계 함수에만</b> 적용되는 조건이다. <code>WHERE</code> 절과 달리 다른 집계에는 영향을 주지 않아서, <b>조건이 다른 여러 집계를 한 쿼리에서</b> 뽑을 수 있다.</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">조건부 집계 두 방식 — 결과는 같다</div><pre><code>SELECT COUNT(*)                                 AS total,
+       COUNT(*) FILTER (WHERE s &gt;= 15)          AS high_pg,        -- PostgreSQL
+       SUM(CASE WHEN s &gt;= 15 THEN 1 ELSE 0 END) AS high_portable   -- 모든 DBMS
+FROM score;</code></pre></div>
+<div class="callout deep"><span class="ctitle">🔎 <code>FILTER</code>는 사실 표준이다 — 다만 구현한 DBMS가 적다</span>
+<p>"PostgreSQL 전용"으로 소개되곤 하지만 정확히는 <b>SQL:2003 표준 문법</b>이다. 다만 실제로 구현한 DBMS가 <b>PostgreSQL과 SQLite 정도뿐</b>이고 MySQL·Oracle·SQL Server는 지원하지 않는다. 실용적으로는 "PostgreSQL에서만"이라고 기억해도 된다.</p>
+<p>참고로 <code>COUNT(CASE WHEN cond THEN 1 END)</code>를 써도 같다 — <code>ELSE</code>를 생략하면 조건이 거짓일 때 NULL이 되고 <code>COUNT</code>는 NULL을 세지 않기 때문이다.</p></div>
+
+  <h3>2) GROUP BY가 없으면 어떻게 되나 — 먼저 짚을 전제</h3>
+<div class="callout goal"><span class="ctitle">💡 접는 것은 집계 함수가 하고, GROUP BY는 몇 덩어리로 나눌지만 정한다</span>
+<p>집계 함수가 하는 일은 <b>여러 행을 한 행으로 접는 것</b>이다. <code>GROUP BY</code>는 접는 기능을 켜는 스위치가 아니라 <b>몇 덩어리로 나눠서 접을지</b>를 정하는 옵션이다. 안 적으면 나누지 않으므로 전체가 한 덩어리가 되고, 결과는 <b>항상 1행</b>이다.</p></div>
+<div class="sqlbox norun"><div class="sqlhead">GROUP BY 유무의 차이</div><pre><code>GROUP BY 없음   →  전체가 그룹 1개        →  결과 1행
+GROUP BY 있음   →  그룹 키의 값 종류만큼   →  결과 N행
+
+-- 전체가 한 그룹. 결과는 1행이다
+SELECT COUNT(*) AS emp_count, AVG(salary) AS avg_salary FROM employees;
+
+-- 부서별로 나눠서 접는다. 부서 개수만큼 행이 나온다
+SELECT department_id, COUNT(*), AVG(salary) FROM employees GROUP BY department_id;</code></pre></div>
+<h4>여기서 갈리는 것 — 행이 0건일 때의 결과</h4>
+<table class="t"><thead><tr><th style="width:26%"></th><th>대상 행이 있을 때</th><th>대상 행이 0건일 때</th></tr></thead><tbody>
+<tr><td><code>GROUP BY</code> 없음</td><td>1행</td><td><b>1행</b> (<code>COUNT</code>=0, <code>SUM</code>=NULL)</td></tr>
+<tr><td><code>GROUP BY</code> 있음</td><td>그룹 수만큼</td><td><b>0행</b></td></tr>
+</tbody></table>
+<p>이유는 단순하다. <code>GROUP BY</code>가 있으면 <b>그룹은 실제 데이터에서 만들어진다.</b> 데이터가 없으면 만들 그룹도 없다. 반면 <code>GROUP BY</code>가 없을 때의 "전체"라는 그룹은 <b>데이터와 무관하게 항상 하나 존재</b>한다. 화면에 표가 아예 안 뜨는 것과 빈칸이 뜨는 것의 원인이 이것으로 갈린다.</p>
+<div class="callout myth"><span class="ctitle">⚠️ 일반 컬럼은 여전히 못 섞는다</span>
+<p><code>SELECT product_id, count(*) FROM order_items;</code> → <code>ERROR: column "order_items.product_id" must appear in the GROUP BY clause or be used in an aggregate function</code></p>
+<p>행 1만 개를 한 줄로 접었는데 <b>그중 어느 <code>product_id</code>를 보여 줄지 정할 수 없기 때문</b>이다.</p></div>
+
+  <h3>3) GROUP BY / HAVING 기본 패턴</h3>
+<div class="sqlbox norun"><div class="sqlhead">종합 예제</div><pre><code>SELECT department_id,
+       COUNT(*)               AS emp_count,
+       ROUND(AVG(salary), 0)  AS avg_salary,
+       MAX(salary)            AS max_salary,
+       MIN(salary)            AS min_salary
 FROM employees
-WHERE hire_date &gt;= '2020-01-01'   -- 집계 전 행 필터 (WHERE)
+WHERE hire_date &gt;= '2020-01-01'      -- 집계 전 행 필터 (WHERE)
 GROUP BY department_id
-HAVING COUNT(*) &gt;= 3 AND AVG(salary) &gt;= 5000   -- 집계 후 그룹 필터 (HAVING)
-ORDER BY avg_salary DESC;
--- FILTER 절
-SELECT COUNT(*) AS total,
- COUNT(*) FILTER (WHERE true_label = pred_label) AS correct,
- ROUND(COUNT(*) FILTER (WHERE true_label=pred_label)::NUMERIC / COUNT(*), 3) AS accuracy
-FROM prediction_results;</code></pre></div>
-<div class="sqlbox"><div class="sqlhead">ROLLUP / CUBE — 다차원 소계</div><pre><code>-- ROLLUP: 계층적 소계 (지역별 → 전체합), 빠름
-SELECT region, product, SUM(amount) AS total FROM sales_summary GROUP BY ROLLUP(region, product);
--- 결과: (East,A,100),(East,B,150),(East,NULL,250)... ,(NULL,NULL,500)
--- CUBE: 모든 조합 소계 (지역+상품+전체), 느림
-SELECT region, product, SUM(amount) FROM sales_summary GROUP BY CUBE(region, product);
--- GROUPING 함수로 소계행에 라벨 부여
-SELECT CASE WHEN GROUPING(region)=1 THEN '전체' ELSE region END AS region_label,
- SUM(amount) FROM sales_summary GROUP BY ROLLUP(region, product);</code></pre></div>
-<h4>집계 쿼리 성능 최적화 포인트</h4>
+HAVING COUNT(*) &gt;= 3                 -- 집계 후 그룹 필터 (HAVING)
+   AND AVG(salary) &gt;= 5000
+ORDER BY avg_salary DESC;            -- 여기서는 별칭 사용 가능</code></pre></div>
+<div class="sqlbox"><div class="sqlhead">따라 치기 — 부서별 집계 (연습장 실행 가능)</div><pre><code>SELECT d.name AS 부서,
+       COUNT(*)              AS 인원수,
+       ROUND(AVG(e.salary))  AS 평균급여,
+       MAX(e.salary)         AS 최고급여
+FROM employees e
+JOIN departments d ON d.id = e.dept_id
+WHERE e.hire_date &gt;= '2016-01-01'
+GROUP BY d.name
+HAVING COUNT(*) &gt;= 2
+ORDER BY 평균급여 DESC;</code></pre></div>
+<h4>WHERE와 HAVING의 차이</h4>
+<div class="sqlbox norun"><div class="sqlhead"><b>WHERE = 집계 전 행 필터 · HAVING = 집계 후 그룹 필터</b></div><pre><code>FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY
+        ↑                    ↑
+     아직 안 묶임          이미 묶임
+     개별 행이 보임         그룹만 보임
+
+-- 안 됨: WHERE 시점에는 COUNT(*)가 존재하지 않는다
+WHERE COUNT(*) &gt;= 3     -- ERROR: aggregate functions are not allowed in WHERE
+
+-- 반대로, WHERE로 쓸 수 있는 조건을 HAVING에 쓰면 손해다
+GROUP BY department_id HAVING department_id &lt;&gt; 99   -- 비효율: 전부 묶은 다음에 버림
+WHERE department_id &lt;&gt; 99 GROUP BY department_id   -- 효율: 묶기 전에 버림</code></pre></div>
+<div class="cp"><div class="cphead">✔ 규칙 한 줄</div><ul>
+<li><b>집계 함수가 들어가는 조건만 <code>HAVING</code>, 나머지는 전부 <code>WHERE</code>.</b> 결과는 같지만 후자가 빠르다 — <b>집계 대상 행 자체가 줄어들기 때문</b>이다.</li>
+</ul></div>
+<h4>SELECT 절 규칙 — GROUP BY의 가장 중요한 규칙</h4>
+<p><b>"SELECT 절에는 그룹 키 또는 집계함수만 쓸 수 있다."</b> 부서 하나에 직원이 10명이면 그중 어느 <code>name</code>을 보여 줘야 하는가? 답이 없다. 그래서 에러다. 해결은 셋 중 하나 — <b>(1) 그룹 키에 추가</b>(의미가 달라짐) / <b>(2) 집계 함수로 감싸 대표값 하나를 고름</b>(<code>MAX(name)</code>) / <b>(3) 애초에 SELECT에서 뺀다.</b></p>
+<div class="sqlbox norun"><div class="sqlhead">정수 나눗셈 함정 — 비율·정확도 계산에서 자주 터진다</div><pre><code>-- ML 모델의 정확도를 SQL로
+SELECT COUNT(*)                                        AS total,
+       COUNT(*) FILTER (WHERE true_label = pred_label) AS correct,
+       ROUND(COUNT(*) FILTER (WHERE true_label = pred_label)::NUMERIC
+             / COUNT(*), 3)                            AS accuracy
+FROM prediction_results;
+
+-- 왜 ::NUMERIC 이 필요한가
+SELECT 85 / 100          AS int_div,   -- 0    ← 정수끼리 나누면 소수점이 잘린다!
+       85::NUMERIC / 100 AS num_div;   -- 0.85</code></pre></div>
+<div class="note"><b>캐스팅을 빼먹으면 정확도가 항상 0으로 나온다. 에러가 안 나므로 발견이 늦다.</b> 참고로 <code>::</code>는 PostgreSQL 방언이고 표준은 <code>CAST(COUNT(*) AS NUMERIC)</code>이다.</div>
+
+  <h3>4) ROLLUP / CUBE — 다차원 소계 집계</h3>
+<p>보고서에는 대개 조합별 매출뿐 아니라 <b>소계와 총계</b>도 필요하다. 이걸 손으로 하려면 <code>GROUP BY region, product</code>, <code>GROUP BY region</code>, 전체 집계를 각각 돌려 <code>UNION ALL</code>로 붙여야 한다 — <b>테이블을 세 번 읽는다.</b> <code>ROLLUP</code>은 <b>한 번 읽고 전부</b> 만들어 준다.</p>
+<div class="sqlbox norun"><div class="sqlhead">ROLLUP — 계층적 소계 (왼쪽부터 하나씩 벗겨 냄)</div><pre><code>SELECT region, product, SUM(amount) AS total
+FROM sales_summary
+GROUP BY ROLLUP(region, product)
+ORDER BY region NULLS LAST, product NULLS LAST;
+
+ region | product | total
+--------+---------+-------
+ East   | A       |   100
+ East   | B       |   150
+ East   |         |   250     ← region 소계 (product를 벗김)
+ West   | A       |   200
+ West   | B       |    50
+ West   |         |   250     ← region 소계
+        |         |   500     ← 총계 (전부 벗김)</code></pre></div>
 <ul class="b">
-<li>SELECT에 GROUP BY 키 이외 컬럼 포함 금지 (MySQL ONLY_FULL_GROUP_BY 모드에서 에러)</li>
-<li><b>OFFSET 페이지네이션 함정</b>: LIMIT 10 OFFSET 990 → DB가 990개 읽고 버림 = O(N). 해결: Cursor/Keyset 방식 WHERE id > :last_id</li>
-<li>ORDER BY + 인덱스: INDEX(dept_id, salary DESC)면 Sort 노드 제거 가능</li>
-<li>통계 테이블 전략: 자주 쓰는 집계값을 별도 테이블에 미리 계산(트리거 갱신) 또는 Materialized View + 주기적 REFRESH</li>
+<li><code>ROLLUP(region, product)</code>는 <b>왼쪽부터 하나씩 벗겨 내며</b> 집계한다 — <code>(region, product)</code> → <code>(region)</code> → <code>()</code>. 그래서 <b>계층이 있는 차원</b>(연→월→일, 대분류→소분류)에 어울리고 <b>순서가 의미를 갖는다.</b></li>
+<li>소계 행에서 벗겨진 컬럼은 <b>NULL</b>이 된다. "NULL = 해당 차원의 총합"이 이 뜻이다.</li>
+<li><b><code>CUBE</code>는 가능한 모든 부분집합</b>으로 집계한다 — <code>(region,product)</code>, <code>(region)</code>, <code>(product)</code>, <code>()</code>. ROLLUP에 없던 "상품별 소계"(지역 무관)가 추가된다. <b>차원이 n개면 조합이 2ⁿ개</b>라 ROLLUP보다 느리다.</li>
+<li><b><code>GROUPING SETS</code></b>는 더 일반적인 형태로 <b>원하는 조합을 직접 지정</b>한다 — <code>GROUP BY GROUPING SETS ((region, product), (region), ())</code>. 사실 ROLLUP과 CUBE는 GROUPING SETS의 축약 표기다.</li>
 </ul>
+<div class="callout myth"><span class="ctitle">⚠️ <code>ORDER BY</code>가 없으면 행 순서는 보장되지 않는다</span>
+<p>ROLLUP은 내부적으로 여러 그룹화를 한꺼번에 처리하므로 특히 순서가 뒤섞여 보인다. <b>보고서로 쓸 것이라면 반드시 <code>ORDER BY 컬럼 NULLS LAST</code>를 붙이자</b> — 소계·총계 행의 NULL을 각 그룹 끝으로 보낸다.</p></div>
+<h4>GROUPING 함수 — 소계의 NULL과 원본의 NULL 구분하기</h4>
+<div class="sqlbox norun"><div class="sqlhead">벗겨진 자리에 '전체'라는 글자를 넣기</div><pre><code>SELECT CASE WHEN GROUPING(region)=1  THEN '전체' ELSE region  END AS region_label,
+       CASE WHEN GROUPING(product)=1 THEN '소계' ELSE product END AS product_label,
+       SUM(amount) AS total
+FROM sales_summary
+GROUP BY ROLLUP(region, product)
+ORDER BY region NULLS LAST, product NULLS LAST;
+
+ region_label | product_label | total
+--------------+---------------+-------
+ East         | A             |   100
+ East         | 소계          |   250
+ 전체         | 소계          |   500</code></pre></div>
+<ul class="b">
+<li><code>GROUPING(col)</code> — 그 컬럼이 <b>집계 때문에 벗겨졌으면 1, 아니면 0</b>. <b>실제 데이터의 NULL과 구별할 수 있는 유일한 방법</b>이다.</li>
+<li><code>ORDER BY</code>는 <b>라벨이 아니라 원본 컬럼</b>으로 걸어야 한다. 라벨로 정렬하면 '전체'라는 한글이 East·West 사이에 끼어든다.</li>
+</ul>
+<table class="t"><thead><tr><th style="width:22%">DBMS</th><th>ROLLUP</th><th>CUBE</th><th>GROUPING SETS</th><th>특이사항</th></tr></thead><tbody>
+<tr><td><b>PostgreSQL</b></td><td>O</td><td>O</td><td>O</td><td><code>GROUPING()</code> 제공, <b>SQL 표준에 가장 근접</b></td></tr>
+<tr><td><b>MySQL / MariaDB</b></td><td>O (5.7+)</td><td>△</td><td>O (8.0+)</td><td>문법이 다름 — <b><code>GROUP BY a, b WITH ROLLUP</code></b>. 표준 CUBE 미지원</td></tr>
+<tr><td><b>Oracle</b></td><td>O</td><td>O</td><td>O</td><td><code>GROUPING_ID()</code> 추가 제공</td></tr>
+<tr><td><b>SQL Server</b></td><td>O</td><td>O</td><td>O</td><td><code>GROUPING()</code>, <code>GROUPING_ID()</code> 제공</td></tr>
+</tbody></table>
+<div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — 집계는 통계 프로그램 없이 쿼리 하나로</span>
+<p>"요거를 잘만 활용하면 <b>통계 처리 프로그램을 별도로 짜지 않고도 쿼리 하나로만</b> 이 정보들을 확보할 수 있으니까, 이런 것들을 잘 이용해서 활용을 하시면 좋을 것 같습니다."</p>
+<p>지역별 소계와 전체 합계가 필요할 때, 데이터를 애플리케이션으로 끌어와 파이썬이나 자바에서 다시 합산하는 코드를 짜는 대신 <b>SQL 한 문장으로 끝낸다</b>는 것이다. 데이터를 옮기는 비용도 없고, <b>집계 로직이 DB 안에 한 곳에만 있게 된다.</b></p></div>
+
+  <h3>5) 집계 쿼리 성능 최적화 포인트</h3>
+<h4>① SELECT에 GROUP BY 키 이외 컬럼 포함 금지 — "임의값 반환"의 공포</h4>
+<p>MySQL은 옛날부터 이 규칙을 어겨도 에러를 내지 않고 <b>그 그룹의 아무 행에서나 값을 하나 집어서</b> 돌려줬다. <b>어느 행인지는 보장되지 않고, 실행 계획이 바뀌면 결과도 바뀐다.</b> <code>ONLY_FULL_GROUP_BY</code>는 이 동작을 막는 설정이고 5.7부터 기본으로 켜져 있다. PostgreSQL은 애초에 관용이 없어서 항상 에러다 — 즉 <b>PostgreSQL에서 통과한 쿼리는 안전하다.</b></p>
+<div class="callout deep"><span class="ctitle">🔎 심화 — GROUP BY에 PK가 있으면 예외</span>
+<p>PostgreSQL에서 <code>GROUP BY</code>에 <b>PK가 포함되어 있으면</b> 같은 테이블의 다른 컬럼을 SELECT에 쓸 수 있다. PK가 정해지면 나머지 컬럼도 하나로 정해지기 때문(<b>함수 종속</b>, 2장의 그 개념)이다.</p></div>
+<h4>② OFFSET 기반 페이지네이션의 함정</h4>
+<div class="sqlbox norun"><div class="sqlhead">O(N) → 인덱스 점프</div><pre><code>-- 느림: 100페이지로 가면 앞의 990행을 읽고 버린다 → O(N)
+SELECT * FROM posts ORDER BY id LIMIT 10 OFFSET 990;
+
+-- 빠름 (Keyset/Cursor 방식): 마지막으로 본 id 다음부터 10개
+SELECT * FROM posts WHERE id &gt; 990 ORDER BY id LIMIT 10;</code></pre></div>
+<ul class="b">
+<li>Keyset 방식은 인덱스로 바로 점프하므로 <b>몇 페이지든 속도가 같다.</b> 대가가 있다 — <b>"5페이지로 바로 가기"가 안 된다.</b> 이전 페이지의 마지막 id를 알아야 하기 때문. 그래서 무한 스크롤·"더 보기" UI에는 잘 맞고, 페이지 번호를 나열하는 UI에는 안 맞는다.</li>
+<li><b>"커서 방식"이라는 이름에 주의</b> — 이 Keyset 방식은 SQL의 <code>DECLARE CURSOR</code>와 <b>다른 것</b>이다. 앞은 <b>클라이언트가 키를 들고 있는</b> 방식이고(요청 사이에 DB가 아무것도 기억하지 않음), 뒤는 <b>서버가 트랜잭션 안에서 위치를 들고 있는 객체</b>다. (24장)</li>
+</ul>
+<h4>③ ORDER BY + 인덱스 활용</h4>
+<p>인덱스는 <b>이미 정렬된 상태로 저장</b>되어 있다. 그래서 <code>ORDER BY</code>가 인덱스 순서와 같으면 DB는 정렬 작업을 아예 건너뛴다 — 실행계획에서 <code>Sort</code> 단계가 사라지는데 이것이 <b>"Sort 노드 제거"</b>다. 정렬은 비싼 작업이라 메모리에 다 안 들어가면 디스크에 임시 파일을 쓰면서 정렬하므로(<b>external sort</b>), 큰 결과에서는 인덱스 하나가 극적인 차이를 만든다. <code>INDEX(dept_id, salary DESC)</code> → <code>GROUP BY dept_id ORDER BY salary DESC</code>에 최적.</p>
+<h4>④ 정렬에서 NULL이 어디로 가는지는 DBMS마다 다르다</h4>
+<table class="t"><thead><tr><th style="width:24%">DBMS</th><th>NULL 취급</th><th><code>ORDER BY col ASC</code>에서 위치</th><th><code>NULLS FIRST/LAST</code></th></tr></thead><tbody>
+<tr><td><b>PostgreSQL / Oracle</b></td><td>가장 큰 값</td><td>맨 뒤</td><td>지원</td></tr>
+<tr><td><b>MySQL / SQL Server</b></td><td>가장 작은 값</td><td>맨 앞</td><td>미지원</td></tr>
+</tbody></table>
+<div class="sqlbox norun"><div class="sqlhead">같은 쿼리를 옮기면 에러 없이 순서만 뒤집힌다</div><pre><code>-- PostgreSQL / Oracle: 표준 문법이 그대로 통한다
+SELECT name, graduated_at FROM student ORDER BY graduated_at DESC NULLS LAST;
+
+-- MySQL / SQL Server: 정렬 키를 하나 더 만들어 흉내 낸다
+SELECT name, graduated_at FROM student
+ORDER BY (graduated_at IS NULL), graduated_at DESC;
+-- (graduated_at IS NULL)이 참이면 1, 거짓이면 0 → NULL 아닌 행(0)이 먼저 온다</code></pre></div>
+<h4>⑤ 통계 테이블 전략 (대용량 집계)</h4>
+<ul class="b">
+<li><b>"매번 계산하지 말고 미리 계산해 두자"</b>는 발상. 주문이 1억 건인데 대시보드에서 매번 <code>COUNT(*)</code>를 돌리면 감당이 안 된다.</li>
+<li><b>트리거로 갱신</b> — 주문이 INSERT될 때마다 <code>user_stats.total_orders</code>를 +1. 항상 최신이지만 <b>쓰기가 느려지고</b> 트리거에 버그가 있으면 값이 어긋난다. (25장)</li>
+<li><b>Materialized View + 주기적 REFRESH</b> — 집계 결과를 통째로 저장해 두고 주기적으로 다시 계산. 쓰기에 영향이 없지만 <b>REFRESH 시점까지의 데이터만</b> 반영된다. (14장)</li>
+<li>3장에서 "유도 속성은 저장하지 않는다"고 배웠는데 이건 그 반대다. 4장에서 말한 <b>반정규화</b>의 한 형태이고 조건도 같다 — <b>성능 문제가 실제로 측정된 다음에</b> 도입한다.</li>
+</ul>
+
+  <h3>6) 함정 / 감점 포인트</h3>
+<ul class="b">
+<li><b><code>COUNT(col)</code>로 행 수 세기</b> · <b><code>SUM</code> 결과를 <code>COALESCE</code>로 감싸지 않기</b>(대상 행이 없으면 0이 아니라 NULL) · <b><code>AVG</code>가 NULL을 0으로 칠 거라고 가정하기</b></li>
+<li><b>집계 조건을 <code>WHERE</code>에 쓰기</b>(에러) · <b>일반 조건을 <code>HAVING</code>에 쓰기</b>(동작하지만 느림)</li>
+<li><b><code>GROUP BY</code>에 없는 컬럼을 <code>SELECT</code>에 넣기</b> — PostgreSQL은 에러, MySQL 구버전은 조용히 임의값</li>
+<li><b>정수 나눗셈 캐스팅 누락</b> — 비율·정확도가 항상 0. <b>에러가 안 나므로 결과를 꼭 눈으로 확인하자.</b></li>
+<li><b><code>CUBE</code>를 습관적으로 쓰기</b>(차원이 늘면 2ⁿ으로 폭증) · <b>ROLLUP/CUBE 결과에 <code>ORDER BY</code>를 안 붙이기</b> · <b>MySQL에서 PostgreSQL의 ROLLUP 문법 쓰기</b></li>
+</ul>
+
+  <h3>7) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary><code>GROUP BY</code>를 안 썼는데 결과가 왜 한 줄로 나오나요?</summary><div class="fa">순서가 반대로 이해된 것입니다. <b>접는 것은 집계 함수가 하고, <code>GROUP BY</code>는 몇 덩어리로 나눌지만 정합니다.</b> <code>SUM</code>을 쓴 순간 이미 "여러 행을 한 행으로 만들겠다"는 뜻이고, <code>GROUP BY</code>가 없으면 나눌 기준이 없으니 전체가 한 덩어리가 되어 1행이 나옵니다. <b>"그룹이 0개"가 아니라 "그룹이 1개"</b>라고 읽으면 맞습니다. 실무에서 이 차이가 사고로 이어지는 지점은 <b>대상 행이 0건일 때</b>입니다 — <code>GROUP BY</code>가 없으면 0건이어도 1행(<code>COUNT</code>=0, <code>SUM</code>=NULL), 있으면 0행입니다.</div></details>
+<details><summary><code>COUNT(*)</code>가 <code>COUNT(1)</code>이나 <code>COUNT(id)</code>보다 느리지 않나요? <code>*</code>니까 모든 컬럼을 읽을 것 같은데요.</summary><div class="fa">아닙니다. 오래된 오해입니다. <code>COUNT(*)</code>의 <code>*</code>는 "모든 컬럼을 읽어라"가 아니라 <b>"행 자체를 세라"</b>는 문법적 표기입니다. 옵티마이저는 어떤 컬럼도 읽지 않고 행만 셉니다. <code>COUNT(1)</code>과 성능이 완전히 같습니다. 오히려 <code>COUNT(id)</code>는 그 컬럼의 NULL 여부를 확인해야 하므로 이론적으로 조금 더 일이 많습니다. "<code>COUNT(PK)</code>로 쓰면 인덱스를 타서 더 빠르다"도 아닙니다 — <code>COUNT(*)</code>도 인덱스를 씁니다(실행계획에 <code>Index Only Scan</code>). 이 오해가 끈질긴 이유는 <b><code>SELECT *</code>와 혼동</b>하는 것과, 총 행 수를 따로 들고 있던 <b>MySQL MyISAM의 잔상</b>입니다. 정리하면 <b>행 수를 원하면 <code>COUNT(*)</code></b>이고, <code>COUNT(컬럼)</code>은 성능이 아니라 <b>"그 컬럼이 NULL이 아닌 행만 센다"는 다른 의미</b>를 원할 때 씁니다.</div></details>
+<details><summary><code>GROUP BY</code>로 묶으면 원래 행 정보가 사라지는데, 집계값과 개별 행을 같이 보고 싶으면?</summary><div class="fa"><code>GROUP BY</code>로는 안 됩니다. 그게 <b>15장 Window Function이 존재하는 이유</b>입니다. 윈도우 함수는 <b>집계하면서도 원래 행을 유지</b>합니다. <code>SELECT dept_id, AVG(salary) FROM employees GROUP BY dept_id</code>는 부서당 한 줄이지만, <code>SELECT name, salary, AVG(salary) OVER (PARTITION BY dept_id) FROM employees</code>는 직원 한 명당 한 줄 + 그 부서의 평균이 옆에 붙습니다. 지금 단계에서 같은 것을 하려면 CTE나 서브쿼리로 평균을 따로 구해 JOIN해야 합니다.</div></details>
+<details><summary><code>HAVING</code>이 <code>WHERE</code>보다 느리다면, <code>HAVING</code>은 왜 있나요?</summary><div class="fa"><code>HAVING</code>이 느린 게 아니라 <b><code>WHERE</code>로 할 수 있는 일을 <code>HAVING</code>으로 하면</b> 느린 것입니다. 두 절은 하는 일이 다릅니다 — <code>WHERE</code>는 개별 행을 거르고 <code>HAVING</code>은 만들어진 그룹을 거릅니다. "인원이 3명 이상인 부서"는 그룹이 만들어져야만 판단할 수 있으므로 <code>WHERE</code>로는 원천적으로 불가능합니다. 즉 둘은 경쟁 관계가 아니라 <b>적용 시점이 다른 별개의 필터</b>입니다.</div></details>
+<details><summary><code>ROLLUP</code> 대신 <code>UNION ALL</code>로 소계를 붙이면 안 되나요?</summary><div class="fa">동작은 합니다. 다만 셋이 나빠집니다. 첫째, <b>테이블을 여러 번 읽습니다</b> — 스캔이 3회입니다. <code>ROLLUP</code>은 1회로 전부 만듭니다. 둘째, <b>쿼리가 길고 중복됩니다</b> — 같은 WHERE 조건을 세 번 반복해서 쓰게 되고, 조건이 바뀌면 세 곳을 다 고쳐야 합니다. 셋째, <b>정렬이 보장되지 않습니다.</b> 소계가 필요하면 <code>ROLLUP</code>이 정답입니다.</div></details>
+<details><summary><code>GROUPING()</code> 함수는 실제로 쓸 일이 있나요? 그냥 NULL을 '전체'로 바꾸면 되잖아요.</summary><div class="fa">원본 데이터에 NULL이 없다고 확신할 수 있으면 <code>COALESCE(region, '전체')</code>로 충분합니다. 문제는 <b>원본에 NULL이 있을 때</b>입니다. 미분류 지역의 매출이 <code>region = NULL</code>로 들어 있다면, 그 행의 결과와 총계 행이 화면에서 <b>똑같이 '전체'로 보입니다.</b> 합계 수치가 두 번 나타나는 것처럼 보여 보고서를 읽는 사람이 혼란스러워집니다. <code>GROUPING()</code>은 집계 때문에 생긴 NULL인지 원래 NULL인지 구분하는 유일한 방법이라 이럴 때 필요합니다.</div></details>
+<details><summary>통계 테이블을 미리 만들어 두면 항상 좋은 것 아닌가요?</summary><div class="fa">권장하지 않습니다. 3장에서 유도 속성을 저장하지 말라고 한 것과 같은 이유입니다 — 미리 계산해 둔 값은 <b>원본과 어긋날 수 있습니다.</b> 트리거가 한 번 실패하거나, 누군가 배치 스크립트로 원본을 직접 수정하거나, 트리거 로직에 버그가 있으면 <b>통계 테이블의 숫자가 조용히 틀려집니다.</b> 그리고 이런 오류는 발견이 늦습니다. 그래서 순서가 중요합니다 — <b>먼저 그냥 집계로 만들고, 실제로 느린 것이 측정되면 그때 도입합니다.</b> 도입할 때도 원본에서 다시 계산해 대조하는 검증 배치를 같이 두는 것이 안전합니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>값이 <code>10, 20, NULL</code>일 때 <code>AVG</code>는 얼마인가? 왜 10이 아닌가?</li>
+<li>조건에 맞는 행이 0개일 때 <code>SUM</code>과 <code>COUNT</code>는 각각 무엇을 반환하는가?</li>
+<li><code>GROUP BY</code> 없이 <code>SUM(...)</code>만 쓰면 결과가 몇 행인가? 대상 행이 0건이면?</li>
+<li><code>WHERE</code>와 <code>HAVING</code>을 구분하는 규칙 한 줄은?</li>
+<li><code>ROLLUP(a, b)</code>와 <code>CUBE(a, b)</code>의 결과 개수 차이는? 왜 CUBE가 느린가?</li>
+<li><code>GROUPING()</code> 함수가 필요한 상황은?</li>
+<li>OFFSET 페이지네이션이 느린 이유와 Keyset 방식의 대가는?</li>
+</ul></div>
 </section>
 
 
