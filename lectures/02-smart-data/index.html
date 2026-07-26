@@ -4132,54 +4132,198 @@ SELECT emp_name, salary, dept_id, dept_avg FROM (
     <span class="day-badge day3">Day 3</span>
     <h2><span class="num">17.</span> 인덱스 설계 및 최적화</h2>
   </div>
-  <p class="subtitle">B-Tree · Hash · GIN · GiST · BRIN · 복합 인덱스 · 커버링 인덱스</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 책의 '찾아보기(색인)'와 완전히 같은 개념이에요. 인덱스가 없으면 처음부터 끝까지 다 뒤지고(Full Scan), 있으면 바로 찾아갑니다.</div></div>
-  <h4>인덱스 개념 및 트레이드오프</h4>
-<ul class="b">
-<li>인덱스 없음: Table Full Scan = O(N) / 인덱스: B-Tree 탐색 O(log N) — 수백만 행에서 수십ms 차이</li>
-<li>트레이드오프: 읽기 성능↑ vs 쓰기 비용↑(INSERT/UPDATE/DELETE시 재정렬) vs 저장공간 증가</li>
-<li>설계원칙: WHERE 자주 등장 컬럼 우선, 선택도(Selectivity) 높은 컬럼, FK 컬럼 필수, 미사용 인덱스 제거</li>
-</ul>
-<div class="sqlbox"><div class="sqlhead">B-Tree 인덱스 성능 비교 실습</div><pre><code>-- Before: 인덱스 없이 (100만건)
-EXPLAIN ANALYZE SELECT * FROM query_logs WHERE user_id='u123';
--- Seq Scan (actual time=120..1850)  ← 1850ms
-CREATE INDEX idx_query_logs_user ON query_logs(user_id);
--- After: 인덱스 적용 후
--- Index Scan (actual time=0.05..0.8) ← 0.8ms (약 2,300배 향상)</code></pre></div>
-<div class="sqlbox"><div class="sqlhead">인덱스 생성 명령어 모음</div><pre><code>-- 복합 인덱스: 선두 컬럼 원칙(leftmost prefix rule)
-CREATE INDEX idx_orders_cust_date ON orders (customer_id, order_date DESC);
--- 커버링 인덱스: SELECT 컬럼이 모두 인덱스에 있으면 테이블접근 불필요 → Index Only Scan
-CREATE INDEX idx_customer_cover ON customers (customer_id) INCLUDE (name, email);
--- 부분 인덱스(Partial Index): 특정 조건 행만 인덱싱 → 크기↓속도↑
-CREATE INDEX idx_orders_pending ON orders (created_at) WHERE status='PENDING';
--- 함수 기반 인덱스
-CREATE INDEX idx_users_email_lower ON users (LOWER(email));
--- CONCURRENTLY: 운영 중 잠금 없이 생성
-CREATE INDEX CONCURRENTLY idx_products_category ON products (category_id);</code></pre></div>
-<div class="cp"><div class="cphead">✔ Checkpoint</div><ul><li>복합 인덱스 설계: 등호(=) 조건 컬럼 먼저 → 범위(<,>) 조건 나중, 선택도 높은 컬럼 우선</li>
-<li>선두 컬럼 포함 시 사용 가능 (customer_id=5 / customer_id=5 AND order_date>.. / customer_id=5 ORDER BY order_date)</li>
-<li>선두 컬럼 없이 order_date만 조건이면 사용 불가</li></ul></div>
-<h4>인덱스 DBMS별 상세 차이</h4>
-<table class="t"><thead><tr>
-<th>DBMS</th>
-<th>특징</th>
-</tr></thead><tbody>
-<tr><td>MySQL/MariaDB</td><td>InnoDB 클러스터형 인덱스 기본(PK기준 물리정렬), GIN/GiST 미지원→FULLTEXT로 대체</td></tr>
-<tr><td>PostgreSQL</td><td>비클러스터형 기본. GIN(JSONB/배열/FTS), GiST(GIS/범위/벡터), BRIN(타임시리즈 대용량), Hash(등호만)</td></tr>
-<tr><td>Oracle</td><td>B-Tree(기본)+Bitmap(저선택도 DW용)+Cluster 인덱스</td></tr>
-<tr><td>SQL Server</td><td>클러스터형(테이블당 1개)+비클러스터형 여러개+Columnstore(OLAP)</td></tr>
+  <p class="subtitle">트레이드오프 · 인덱스 7종 · 복합 인덱스와 선두 컬럼 원칙 · 부분/함수 기반/커버링 인덱스 · 선택도 · 사용률 모니터링</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">16장까지는 전부 <b>"무엇을 가져올까"</b>였어요. 17장부터는 <b>"같은 답을 얼마나 빨리 가져올까"</b>입니다. 인덱스는 행 수에 정비례하던 비용(<b>O(N)</b>)을 <b>O(log N)</b>으로 바꾸는 장치예요. 나머지는 전부 <b>"그 대신 무엇을 내주는가"</b>에 관한 이야기 — <b>쓰기가 느려지고 디스크를 더 씁니다.</b></div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표 — 왜 지금 필요한가</span>
+  <p>데이터가 작을 때는 안 보인다. 5행짜리 테이블에서는 무슨 짓을 해도 1ms 안에 끝난다. 그런데 실무 테이블은 100만 행, 1억 행이고, <b>15장까지 배운 문법 그대로 쓴 쿼리가 갑자기 30초씩 걸리기 시작한다.</b></p>
+  <div class="sqlbox norun"><div class="sqlhead">100만 행에서 1000건을 찾는 쿼리의 실행계획</div><pre><code>Parallel Seq Scan on query_logs (actual time=0.010..11.132 rows=333 loops=3)
+      Filter: (user_id = 'u123'::text)
+      Rows Removed by Filter: 333000        ← 워커 하나가 33만 행을 읽어서 버렸다</code></pre></div>
+  <p>1000건을 얻으려고 <b>100만 건을 읽었다.</b> 이게 <b>Table Full Scan</b>(PostgreSQL 표현으로 Seq Scan)이고, <b>행이 10배가 되면 시간도 10배</b>가 된다.</p></div>
+
+  <h3>1) 인덱스 개념과 트레이드오프</h3>
+<p><b>인덱스(Index)</b>는 테이블의 특정 컬럼 값을 <b>정렬된 별도의 자료구조</b>에 복사해 두고, 각 값 옆에 <b>그 행이 테이블 어디에 있는지의 물리적 위치</b>를 함께 저장한 객체다(PostgreSQL은 <code>ctid</code>, Oracle은 <code>ROWID</code>). 정렬돼 있으므로 <b>이진 탐색</b>이 가능하다 — 100만 행을 뒤지는 대신 약 20번의 비교로 도달한다. 실제로는 B-Tree라 밑이 수백이어서 <b>3~4번의 페이지 읽기</b>로 끝난다.</p>
+<table class="t"><thead><tr><th style="width:24%">항목</th><th>내용</th></tr></thead><tbody>
+<tr><td><b>읽기 성능 향상</b></td><td><code>WHERE</code>/<code>JOIN</code>/<code>ORDER BY</code>에 자주 등장하는 컬럼에서 극적으로 빨라진다</td></tr>
+<tr><td><b>쓰기 비용 증가</b></td><td><code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code>마다 인덱스도 같이 고쳐야 한다</td></tr>
+<tr><td><b>저장 공간 증가</b></td><td>인덱스 자체가 디스크를 먹는다</td></tr>
 </tbody></table>
-<div class="sqlbox"><div class="sqlhead">인덱스 관리 — 사용률 모니터링 및 제거</div><pre><code>-- 인덱스 사용률 확인 &amp; 미사용 인덱스 탐지
-SELECT indexrelname, relname, idx_scan, pg_size_pretty(pg_relation_size(indexrelid))
-FROM pg_stat_user_indexes WHERE idx_scan = 0 ORDER BY pg_relation_size(indexrelid) DESC;
--- 인덱스 재구성 (블로트 제거, 운영 중 잠금없이)
-REINDEX INDEX CONCURRENTLY idx_orders_cust_date;</code></pre></div>
-<h4>인덱스 심화 — B-Tree 내부구조 &amp; 커버링 인덱스</h4>
+<div class="callout myth"><span class="ctitle">⚠️ 대가를 숫자로 보면</span>
+<ul>
+<li><b>쓰기</b>: 인덱스가 5개면 <code>INSERT</code> 한 번에 실제 쓰기는 <b>6번</b>(테이블 1 + 인덱스 5). 게다가 정렬된 구조라 값이 중간에 끼어들면 <b>페이지 분할(page split)</b>이 일어나 단순히 6배보다 더 나빠질 수 있다.</li>
+<li><b>공간</b>: 실측에서 100만 행 테이블(65MB)에 인덱스 3개가 34MB였다. <b>"테이블보다 인덱스가 큰" 상황이 실제로 벌어진다.</b></li>
+</ul></div>
+<h4>인덱스 설계 원칙 다섯</h4>
 <ul class="b">
-<li>B-Tree = Balanced Tree: 모든 리프노드가 같은 깊이 → O(log N) 탐색 보장</li>
-<li>키가 작을수록 노드당 항목 많음 → 트리 깊이 감소 → 빠름 (UUID 16바이트 vs BIGINT 8바이트 → UUID가 더 큰 트리)</li>
-<li>Fill Factor(기본 90%): UPDATE 많은 테이블은 낮추면(예:70%) 페이지 분할(Split) 감소</li>
-<li><b>Index Only Scan</b>: 커버링 인덱스로 Heap Fetches=0 달성 → 테이블 접근 없이 인덱스만으로 응답 (가장 빠름)</li>
+<li><b>① <code>WHERE</code> 조건에 자주 등장하는 컬럼 우선</b> — "자주"의 판단 기준은 <b>쿼리 빈도 × 그 쿼리가 읽는 행 수</b>다. 하루 한 번 도는 배치보다 <b>초당 100번 호출되는 API</b>가 먼저다.</li>
+<li><b>② 선택도가 높은 컬럼</b> — <code>gender</code>(M/F)에 인덱스를 걸면 전체의 절반을 가져온다. 절반을 가져올 거면 <b>그냥 전부 읽는 게 빠르다.</b></li>
+<li><b>③ FK 컬럼에는 반드시 인덱스</b> — JOIN 성능도 있지만 더 중요한 건 <b>부모를 <code>DELETE</code>할 때</b> "이 부모를 참조하는 자식이 있나?"를 확인하는데, 인덱스가 없으면 그 확인이 <b>매번 자식 테이블 Full Scan</b>이 된다.</li>
+<li><b>④ OLTP vs OLAP 전략이 다르다</b> — OLTP(짧은 INSERT/UPDATE 다수)는 <b>꼭 필요한 것만 최소한</b>, OLAP(대량 스캔 + 집계)은 <b>넉넉히, 커버링 적극</b>. 이유는 OLTP에서 인덱스가 쓰기를 직접 느리게 하기 때문.</li>
+<li><b>⑤ 미사용 인덱스는 제거</b> — 조회 이득이 0인데 쓰기 비용과 디스크는 그대로 먹는다. <b>순손해</b>다.</li>
 </ul>
+<div class="callout myth"><span class="ctitle">⚠️ "FK를 걸면 인덱스도 자동으로 생기는 것 아닌가?"</span>
+<p><b>PostgreSQL·Oracle은 자동으로 만들지 않는다.</b> PK와 UNIQUE 제약은 인덱스를 자동 생성하지만 FK는 아니다. MySQL/InnoDB만 예외적으로 자동 생성한다. <b>"FK 만들었으면 인덱스도 직접 만든다"를 습관으로 두자.</b></p></div>
+
+  <h3>2) 인덱스 종류 비교</h3>
+<table class="t"><thead><tr>
+<th style="width:14%">인덱스</th><th style="width:22%">구조</th><th>최적 용도</th><th>지원</th>
+</tr></thead><tbody>
+<tr><td><b>B-Tree</b></td><td>다분기 균형 트리</td><td><code>=</code>, <code>BETWEEN</code>, <code>LIKE 'prefix%'</code>, <code>ORDER BY</code>, 범위</td><td>기본 (모든 DBMS)</td></tr>
+<tr><td><b>Hash</b></td><td>해시 테이블</td><td>등호(<code>=</code>)만 — <b>범위 불가</b></td><td>PostgreSQL, MySQL(제한적)</td></tr>
+<tr><td><b>GIN</b></td><td>역인덱스</td><td>JSONB, 배열, 전문검색 — <b>한 행에 값이 여러 개</b></td><td>PostgreSQL</td></tr>
+<tr><td><b>GiST</b></td><td>일반화 검색 트리</td><td>지리정보(PostGIS), 범위 타입, 겹침/포함 검색</td><td>PostgreSQL(확장)</td></tr>
+<tr><td><b>BRIN</b></td><td>블록 범위 min/max</td><td>타임시리즈, 물리적 연속 저장 대용량</td><td>PostgreSQL</td></tr>
+<tr><td><b>Bitmap</b></td><td>비트 배열</td><td>저선택도 컬럼 조합 (AND/OR)</td><td>Oracle (DW용)</td></tr>
+<tr><td><b>Clustered</b></td><td>데이터 물리 정렬</td><td>범위 스캔, PK 기반 접근</td><td>SQL Server / MySQL InnoDB</td></tr>
+</tbody></table>
+<div class="callout myth"><span class="ctitle">⚠️ B-Tree는 "이진 트리"가 아니다</span>
+<p>이진 트리는 노드마다 자식이 최대 2개지만, <b>B-Tree는 노드(= 디스크 페이지) 하나에 수백 개의 키와 자식 포인터를 담는다.</b> 그래서 100만 행에서도 깊이가 3~4에 그친다. 진짜 이진 트리였다면 깊이가 20이 되어 디스크 읽기가 20번 필요했을 것이다. <b>"디스크는 페이지 단위로 읽으니 노드를 페이지만큼 크게 만들자"가 B-Tree의 발상</b>이다.</p></div>
+<div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — 특별한 이유가 없으면 B-Tree</span>
+<p>"PostgreSQL, MySQL 같은 경우에 인덱스는 보통 B-Tree 방식으로 씁니다. <b>그냥 인덱스는 대부분 B-Tree다라고 보시면 됩니다.</b>" — 아래의 Hash·GIN·BRIN은 <b>"B-Tree로 안 되는 특정 상황"의 도구</b>로 이해하면 된다.</p>
+<p>클러스터형/비클러스터형은 서점으로 비유하셨다 — "<b>클러스터 인덱스는 새 책이 들어오면 정위치를 찾아 하나씩 꽂는 방식</b>이고, <b>넌클러스터 인덱스는 책은 자유롭게 두되 어디 있는지 별도로 찾아 주는 시스템</b>을 두는 방식이에요. 그래서 데이터가 이미 많이 쌓인 상태에서 인덱스를 걸 때는 넌클러스터가 성능이 더 좋습니다."</p></div>
+<ul class="b">
+<li><b>Hash</b> — 실측에서 <b>B-Tree의 6배 크기</b>(44MB vs 7MB)였고, 범위 조건에서는 인덱스가 있는데도 Seq Scan이 나왔다. <b>정렬 정보가 없어서 범위 조건을 처리할 방법이 없기 때문</b>이다. "긴 텍스트를 등호로만 조회하고 인덱스 크기가 문제되는" 아주 좁은 상황에서만 고려한다.</li>
+<li><b>GIN</b> — B-Tree는 "행 하나 = 키 하나"를 가정하는데, JSONB·배열·전문검색은 <b>행 하나 안에 값이 여러 개</b> 있다. 그래서 <b>값 → 그 값을 포함한 행 목록</b> 형태로 뒤집어(inverted) 저장한다. 대가는 <b>쓰기 비용</b>(행 하나를 넣을 때 그 안의 모든 요소를 등록).</li>
+<li><b>BRIN</b> — 행 하나하나가 아니라 <b>연속된 블록 묶음마다 min·max만</b> 저장한다. 실측에서 <b>24KB 대 43MB, 1800배 차이</b>였다. 대신 조건이 붙는다 — <b>append-only + 시간 순 적재.</b> 값이 뒤섞여 저장돼 있으면 모든 블록의 범위가 넓어져 하나도 건너뛰지 못한다.</li>
+<li><b>Clustered</b> — 테이블 데이터 자체를 인덱스 키 순서로 물리 정렬한다. <b>테이블당 한 개만</b> 가능하고, <b>PostgreSQL에는 이 개념이 없다.</b></li>
+</ul>
+<div class="callout myth"><span class="ctitle">⚠️ PostgreSQL 실행계획의 <code>Bitmap Index Scan</code>은 Bitmap 인덱스가 아니다</span>
+<p>PostgreSQL에는 Bitmap <b>인덱스</b>라는 종류가 없다. 저건 <b>B-Tree 인덱스를 읽는 방식</b>의 이름으로, 결과 행이 여러 개일 때 ① 인덱스에서 위치를 모아 메모리에 비트맵을 만들고 ② 그걸 <b>테이블 물리 순서로 정렬</b>해 ③ 테이블을 앞에서 뒤로 한 번에 훑는다. <b>디스크 헤드가 왔다 갔다 하는 걸 막으려는 것</b>이다.</p>
+<table class="t"><thead><tr><th style="width:26%">방식</th><th style="width:30%">언제</th><th>하는 일</th></tr></thead><tbody>
+<tr><td><b>Index Scan</b></td><td>결과가 few (수~수십 행)</td><td>인덱스 → 테이블을 한 행씩 왕복</td></tr>
+<tr><td><b>Bitmap Index Scan</b></td><td>결과가 중간 규모</td><td>위치를 모아 비트맵 → 테이블을 물리 순서로 한 번에</td></tr>
+<tr><td><b>Index Only Scan</b></td><td>필요한 컬럼이 인덱스에 다 있음</td><td><b>테이블을 아예 안 읽음</b> (가장 빠름)</td></tr>
+</tbody></table></div>
+
+  <h3>3) 인덱스 생성 — 다섯 가지 형태</h3>
+<h4>① 복합 인덱스와 선두 컬럼 원칙 (leftmost prefix rule)</h4>
+<div class="callout goal"><span class="ctitle">💡 복합 인덱스는 앞 컬럼부터 순서대로 조건이 있어야 사용할 수 있다</span>
+<p><code>(customer_id, order_date)</code> 인덱스는 <b>전화번호부와 같은 구조</b>다. 성으로 먼저 정렬하고, 성이 같은 사람들끼리 이름으로 정렬한다. 그래서 "김씨"는 바로 찾지만 <b>"이름이 철수인 사람"은 전화번호부 전체를 훑어야 한다</b> — 성을 모르면 정렬이 아무 도움이 안 되기 때문이다.</p>
+<p>정확히는 "절대 못 쓴다"가 아니라 <b>"탐색 시작점을 못 잡으니 사실상 효율이 없다"</b>이다. PostgreSQL은 인덱스 전체를 훑으며 조건을 확인할 수도 있고, 인덱스가 테이블보다 작으면 그게 이득일 때도 있다. MySQL은 이 경우가 더 엄격하다.</p></div>
+<h4>② ORDER BY의 정렬을 건너뛰기</h4>
+<div class="sqlbox norun"><div class="sqlhead">"최신 N건" 페이지가 극적으로 빨라지는 이유</div><pre><code>EXPLAIN ANALYZE
+SELECT * FROM orders WHERE customer_id = 5 ORDER BY order_date DESC LIMIT 10;
+
+ Limit (actual rows=10 loops=1)
+   -&gt;  Index Scan using idx_orders_cust_date on orders (actual rows=10 loops=1)
+         Index Cond: (customer_id = 5)        ← Sort 노드가 아예 없다!</code></pre></div>
+<p><b><code>actual rows=10</code> — 10건만 읽고 멈췄다.</b> 정렬을 했다면 100건을 다 읽어 정렬한 뒤 10건을 잘라야 했을 것이다. 인덱스가 이미 <code>customer_id</code>별로 <code>order_date DESC</code> 정렬을 갖고 있으니 <b>그 순서대로 읽기만 하면 정렬이 끝나 있다.</b></p>
+<div class="note">주의 — <b>Bitmap Scan은 순서를 잃어버린다.</b> 비트맵 방식은 위치를 모아 <b>테이블 물리 순서로</b> 읽으므로 인덱스가 갖고 있던 정렬이 그 과정에서 사라지고 <code>Sort</code> 노드가 다시 붙는다. 그리고 이것이 15장에서 예고한 연결이다 — <b>윈도우 함수의 <code>OVER (PARTITION BY a ORDER BY b)</code>도 <code>(a, b)</code> 복합 인덱스가 있으면 <code>Sort</code> 노드가 통째로 사라진다.</b></div>
+<h4>③ 부분 인덱스 (Partial Index)</h4>
+<div class="sqlbox norun"><div class="sqlhead">조건을 만족하는 행만 색인 — 실측 3232kB → 176kB (18분의 1)</div><pre><code>CREATE INDEX idx_orders_pending ON orders (created_at)
+WHERE status = 'PENDING';</code></pre></div>
+<ul class="b">
+<li>크기만 주는 게 아니다. <code>PENDING</code>이 아닌 행을 INSERT할 때는 <b>이 인덱스를 아예 건드리지 않으므로 쓰기 비용도 같이 준다.</b></li>
+<li><b>함정</b>: 부분 인덱스는 <b>쿼리의 <code>WHERE</code> 절이 인덱스의 <code>WHERE</code> 조건을 포함할 때만</b> 쓰인다. <code>WHERE status='PENDING'</code>을 빼먹으면 후보에서 제외된다. 조건이 <b>상수</b>여야 하고 <code>WHERE status = $1</code>처럼 파라미터면 판정할 수 없어 못 쓴다.</li>
+<li>PostgreSQL·SQLite·SQL Server(필터링된 인덱스)에 있고 <b>MySQL에는 없다.</b></li>
+</ul>
+<h4>④ 함수 기반 인덱스 — 실무에서 가장 흔한 성능 사고</h4>
+<div class="callout myth"><span class="ctitle">⚠️ 컬럼에 함수를 씌워 비교하면 그 컬럼의 인덱스는 무력화된다</span>
+<p>인덱스에는 <code>'User42@Example.com'</code>이 들어 있는데 쿼리가 찾는 값은 <code>lower(email)</code>의 결과라 <b>정렬 순서를 이용할 수가 없기 때문</b>이다. 실측에서 <code>email</code> 인덱스가 <b>버젓이 있는데도 Seq Scan</b>이 나왔다. 해결은 <code>CREATE INDEX idx_users_email_lower ON users (LOWER(email));</code>처럼 <b>함수 자체를 색인</b>하는 것.</p>
+<table class="t"><thead><tr><th style="width:48%">인덱스를 못 쓰는 쿼리</th><th>고친 형태</th></tr></thead><tbody>
+<tr><td><code>WHERE DATE(created_at) = '2024-01-01'</code></td><td><code>WHERE created_at &gt;= '2024-01-01' AND created_at &lt; '2024-01-02'</code></td></tr>
+<tr><td><code>WHERE SUBSTRING(code,1,3) = 'ABC'</code></td><td><code>WHERE code LIKE 'ABC%'</code></td></tr>
+<tr><td><code>WHERE amount * 1.1 &gt; 1000</code></td><td><code>WHERE amount &gt; 1000 / 1.1</code></td></tr>
+<tr><td><code>WHERE LOWER(email) = ...</code></td><td>함수 기반 인덱스를 만들거나, 저장할 때부터 소문자로</td></tr>
+</tbody></table>
+<p><b>원칙은 하나다 — 인덱스 컬럼은 왼쪽에 홀로 두고, 가공은 오른쪽(상수 쪽)에서 한다.</b> (함수 기반 인덱스에 쓰는 함수는 <b>IMMUTABLE</b>이어야 한다. <code>NOW()</code>처럼 부를 때마다 결과가 달라지는 함수는 쓸 수 없다.)</p></div>
+<h4>⑤ CONCURRENTLY — 운영 중 인덱스 만들기</h4>
+<ul class="b">
+<li>일반 <code>CREATE INDEX</code>는 테이블에 <code>SHARE</code> 락을 건다. 조회는 되지만 그동안 <b><code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code>가 전부 대기</b>한다. 1억 행에서 10분 걸리면 <b>서비스 쓰기가 10분간 멈춘다 — 운영 장애다.</b></li>
+<li><code>CONCURRENTLY</code>는 테이블을 두 번 훑어 락을 피한다. 대가: <b>시간이 대략 2배</b>, <b>트랜잭션 블록 안에서 쓸 수 없음</b>, <b>실패하면 <code>INVALID</code> 인덱스가 남음</b>(쿼리에 쓰이지도 않으면서 쓰기 비용만 먹으므로 반드시 찾아서 지우고 다시 만들어야 한다 — <code>SELECT indexrelid::regclass FROM pg_index WHERE NOT indisvalid;</code>).</li>
+</ul>
+<div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — OpenAI는 5초 넘는 스키마 변경을 자동 실패시킨다</span>
+<p>"인덱스를 재정렬시켜 버리면 전체 테이블을 다시 읽었다가 정렬하는 데 시간이 오래 걸립니다. 그래서 <b>OpenAI에서는 가벼운 변경(컬럼 추가·삭제)만 허용하고, 타입 변경이나 인덱스 관련 작업은 5초 이상 걸리면 그냥 자동 실패로 처리</b>해 버립니다. 그래야 프로덕션 운영 환경에 영향이 없어지니까요."</p>
+<div class="sqlbox norun"><div class="sqlhead">실무 표준 패턴 — DDL 앞에 짧은 statement_timeout</div><pre><code>SET statement_timeout = '5s';   -- 5초 안에 락을 못 잡으면 스스로 실패
+ALTER TABLE orders ADD COLUMN memo TEXT;
+RESET statement_timeout;</code></pre></div>
+<p>락을 오래 잡을 작업은 <b>서비스를 멈추기 전에 스스로 죽는다.</b> 그리고 진짜 인덱스 생성은 <code>CONCURRENTLY</code>로 락 없이 돌린다.</p></div>
+
+  <h3>4) 선택도와 복합 인덱스 컬럼 순서</h3>
+<div class="callout myth"><span class="ctitle">⚠️ "선택도"의 두 정의가 섞여 있다</span>
+<p>흔히 "선택도 = 고유값 수 / 전체 행 수(1에 가까울수록 좋음)"라고 하면서 동시에 "gender는 선택도 0.5라 나쁘다"고 한다. <b>두 문장은 서로 안 맞는다</b> — 공식에 100만 행의 gender를 넣으면 2/1,000,000 = 0.000002이지 0.5가 아니다. 0.5는 <b>"한 값을 조회했을 때 걸리는 행의 비율"</b>이다.</p>
+<ul>
+<li><b>고유값 수 / 전체 행 수</b> → 1에 가까울수록 <b>좋다</b> (email ≈ 1)</li>
+<li><b>한 값이 차지하는 행 비율</b> → 0에 가까울수록 <b>좋다</b> (gender = 0.5는 나쁘다)</li>
+</ul>
+<p>방향은 어느 정의로 봐도 같으니 결론은 그대로 받되, <b>"선택도가 뭐냐"를 답할 때는 어느 쪽 정의를 쓰는지 밝히고 말하는 게 안전하다.</b></p></div>
+<div class="sqlbox norun"><div class="sqlhead">저선택도 컬럼에 인덱스를 걸면 실제로 손해인가 — 실측</div><pre><code>-- response_quality는 고유값 4개 → 한 값당 25%(25만 행)
+
+[인덱스 사용]  Bitmap Heap Scan ... Execution Time: 239.176 ms
+[Seq Scan 강제] Seq Scan       ... Execution Time:  31.313 ms
+
+→ 인덱스를 쓴 쪽이 7.6배 느리다</code></pre></div>
+<ul class="b">
+<li>인덱스 읽기(6ms)는 금방 끝나지만 <b>그 25만 행을 테이블에서 하나씩 꺼내오는 데 230ms</b>가 걸린다. 어차피 전체의 25%를 가져올 거면 <b>처음부터 순서대로 쭉 읽는 게 압도적으로 싸다.</b></li>
+<li><b>일반적인 기준선: 조회 대상이 전체의 5~10%를 넘으면</b> 인덱스보다 Full Scan이 유리해지기 시작한다(절대치는 아니다).</li>
+<li><b>다만 저선택도라도 인덱스가 이기는 경우가 있다.</b> 같은 쿼리를 <code>count(*)</code>로 바꾸면 <code>Index Only Scan</code>이 나온다 — 세는 것만 하면 테이블에 갈 이유가 없다. <b>"그래서 그 행으로 무엇을 하느냐"까지 봐야 한다.</b></li>
+<li>참고로 위 실측에서는 <b>옵티마이저가 잘못 골랐다.</b> 테이블이 전부 메모리에 있는데 기본 <code>random_page_cost = 4</code>가 회전 디스크를 가정한 값이라 오판한 것이다. <b>SSD·완전 캐시 환경에서 <code>random_page_cost</code>를 1.1 정도로 낮추는 튜닝</b>이 표준처럼 쓰이는 이유다. (19장)</li>
+</ul>
+<div class="cp"><div class="cphead">✔ 복합 인덱스 컬럼 순서의 세 기준</div><ul>
+<li><b>① 등호(<code>=</code>) 조건 컬럼을 앞에, 범위(<code>&lt;</code>, <code>&gt;</code>, <code>BETWEEN</code>) 조건 컬럼을 뒤에.</b> 인덱스 스캔은 <b>연속된 구간 하나</b>만 읽을 수 있는데, <code>INDEX(status, created_at)</code>은 status로 구간을 딱 좁히고 그 안이 이미 날짜 순이라 범위도 연속 구간이다. 반대로 <code>INDEX(created_at, status)</code>는 날짜로 넓은 구간을 열고 그 안에서 하나씩 걸러야 한다 — <b>실측에서 인덱스 페이지 17개 대 225개, 13배 차이</b>였다.</li>
+<li><b>② 등호끼리라면 선택도 높은 컬럼(고유값이 많은 쪽)을 앞에</b></li>
+<li><b>③ <code>ORDER BY</code>에 쓰는 컬럼은 범위 조건 컬럼 뒤로 갈 수 없다</b>는 점을 감안</li>
+<li>덧붙여 — 성능 비교는 시간보다 <b><code>BUFFERS</code>(읽은 페이지 수)</b>로 보자. 시간은 캐시 상태에 따라 출렁이지만 <b>페이지 수는 계획의 효율을 그대로 반영하는 안정적 지표</b>다.</li>
+</ul></div>
+
+  <h3>5) 커버링 인덱스 — Index Only Scan 달성</h3>
+<p>앞의 실행계획들에 계속 <code>Heap Blocks</code>가 나왔다. 인덱스로 위치는 알았지만 <b><code>SELECT</code>에 필요한 나머지 컬럼을 가져오려면 결국 테이블(heap)을 읽어야 한다</b>(Heap Fetch). 그런데 <b><code>SELECT</code>에 필요한 모든 컬럼이 인덱스 안에 다 있다면 테이블을 읽을 이유가 없다</b> — 이것이 <b>커버링 인덱스</b>이고 그때의 실행 방식이 <b>Index Only Scan</b>이다.</p>
+<div class="sqlbox norun"><div class="sqlhead">INCLUDE로 payload만 실어 두기</div><pre><code>CREATE INDEX idx_email_cover ON users (email) INCLUDE (id, name);
+
+ Index Only Scan using idx_email_cover on users
+   Index Cond: (email = 'User42@Example.com'::text)
+   Heap Fetches: 1          ← 어? 테이블을 한 번 읽었다
+
+VACUUM users;   -- Visibility Map 갱신
+
+   Heap Fetches: 0          ← 테이블 접근이 완전히 사라졌다</code></pre></div>
+<div class="callout deep"><span class="ctitle">🔎 Visibility Map과 VACUUM — PostgreSQL 특유의 지점</span>
+<p>인덱스에는 <b>"이 행이 지금 이 트랜잭션에게 보이는 행인가"</b>라는 정보가 없다(DELETE됐거나 다른 트랜잭션이 방금 고쳤을 수 있다). 그래서 PostgreSQL은 <b>Visibility Map(VM)</b>이라는 보조 구조를 두고, "이 페이지의 모든 행은 모두에게 보인다"고 표시된 페이지는 확인을 건너뛴다. <b>그 표시를 갱신하는 것이 <code>VACUUM</code></b>이다.</p>
+<p><b>실무 함의</b> — 커버링 인덱스를 만들어 놓고 <code>Heap Fetches</code>가 계속 0이 아니면 <b>인덱스 문제가 아니라 VACUUM 문제</b>다. 갱신이 잦은 테이블은 autovacuum이 못 따라가서 VM이 늘 낡아 있을 수 있다.</p></div>
+<table class="t"><thead><tr><th style="width:30%"></th><th><code>INDEX (email, name)</code></th><th><code>INDEX (email) INCLUDE (name)</code></th></tr></thead><tbody>
+<tr><td><code>WHERE name = ?</code></td><td>사용 불가(선두 아님)</td><td><b>사용 불가</b> (INCLUDE는 정렬에 참여 안 함)</td></tr>
+<tr><td><code>WHERE email = ? AND name = ?</code></td><td>둘 다 인덱스가 처리</td><td><code>email</code>만 처리, <code>name</code>은 걸러 냄</td></tr>
+<tr><td>UNIQUE 제약과 함께</td><td><code>(email, name)</code> 조합이 유니크</td><td><b><code>email</code>만 유니크</b></td></tr>
+<tr><td>인덱스 구조</td><td><code>name</code>도 정렬 대상</td><td><code>name</code>은 리프에만 — 트리 상단이 가볍다</td></tr>
+</tbody></table>
+<div class="note">마지막 두 줄이 <code>INCLUDE</code>의 존재 이유다 — <b>"email은 유일해야 하는데 name도 같이 갖고 다니고 싶다"</b>를 <code>UNIQUE INDEX (email) INCLUDE (name)</code> 하나로 해결할 수 있고, 복합 인덱스로는 불가능하다. 다만 <b>남용하지 말 것</b> — 컬럼을 넣을수록 인덱스가 커지고 쓰기가 무거워진다. <b>호출 빈도가 아주 높은 특정 쿼리 하나를 겨냥할 때</b> 쓰는 도구지 기본 전략이 아니다. (MySQL에는 <code>INCLUDE</code>가 없지만 InnoDB 보조 인덱스는 <b>PK를 암묵적으로 포함</b>한다.)</div>
+
+  <h3>6) 인덱스 관리 — 사용률 모니터링</h3>
+<div class="sqlbox norun"><div class="sqlhead">미사용 인덱스 찾기 (PostgreSQL)</div><pre><code>SELECT indexrelname AS index_name, relname AS table_name,
+       idx_scan      AS scan_count,      -- 이 인덱스로 스캔이 시작된 횟수
+       idx_tup_read, idx_tup_fetch,
+       pg_size_pretty(pg_relation_size(indexrelid)) AS index_size
+FROM pg_stat_user_indexes
+ORDER BY idx_scan ASC        -- 사용 횟수가 적은 것 = 제거 후보
+LIMIT 20;</code></pre></div>
+<ul class="b">
+<li><code>pg_stat_user_indexes</code> — 인덱스별 접근 통계를 담은 시스템 뷰. PostgreSQL이 계속 <b>누적</b>해서 기록한다.</li>
+<li><code>idx_tup_fetch</code>가 <code>idx_tup_read</code>보다 한참 작으면 <b>인덱스로 많이 읽고 대부분 버렸다</b>는 뜻이라 설계가 나쁘다는 신호일 수 있다.</li>
+<li><b>운영 DB에서 몇 주간 <code>idx_scan = 0</code>이면 진짜 제거 후보</b>다.</li>
+<li>주의 — 미사용 인덱스를 뽑을 때 <code>indexrelname NOT LIKE 'pk_%'</code>로 PK를 거르는 코드를 자주 보는데, <b>PostgreSQL의 기본 PK 이름은 <code>users_pkey</code>처럼 <code>pk_</code>로 시작하지 않는다</b> — 이 조건으로는 PK가 안 걸러진다. <b>명명 규칙에 의존하는 필터는 위험하다.</b></li>
+</ul>
+
+  <h3>7) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>조회가 느리면 일단 인덱스를 걸면 되는 것 아닌가요?</summary><div class="fa">아닙니다. 두 가지가 어긋납니다. 첫째, <b>인덱스가 항상 이기지 않습니다</b> — 위 실측에서 전체의 25%를 가져오는 쿼리는 인덱스를 쓴 쪽이 <b>7.6배 느렸습니다.</b> 조회 대상이 전체의 5~10%를 넘어가면 Full Scan이 유리해집니다. 둘째, <b>인덱스는 쓰기를 직접 느리게 합니다</b> — 인덱스 5개면 INSERT 한 번에 쓰기가 6번 일어나고 페이지 분할까지 겹칩니다. 순서는 <b>(1) 실행계획을 먼저 본다 → (2) 왜 느린지(Full Scan인지, 정렬인지, 조인 방식인지) 확인한다 → (3) 그에 맞는 대응을 한다</b>입니다. 인덱스는 그중 하나의 답일 뿐입니다.</div></details>
+<details><summary>"인덱스를 걸면 2,300배 빨라진다"는 수치는 믿어도 되나요?</summary><div class="fa">조건 없이는 성립하지 않습니다. 같은 실험의 실측이 <b>17.9ms → 0.43ms, 약 41배</b>였습니다 — 방향은 같지만 배수가 두 자릿수 다릅니다. 이유는 셋입니다. ① <b>캐시 상태</b> — 인덱스의 이득은 대부분 "디스크 I/O를 줄이는" 데서 나오므로 데이터가 메모리에 다 들어가면 이득이 줍니다. ② <b>병렬 처리</b> — Parallel Seq Scan이 워커를 붙이면 그것만으로 Seq Scan이 몇 배 유리해집니다. ③ <b>하드웨어</b> — NVMe SSD와 회전 디스크는 랜덤 읽기가 100배 넘게 차이 납니다. <b>벤치마크 수치를 외우지 마세요.</b> 과제나 면접에서 쓸 표현은 배수가 아니라 <b>"조회 대상 행 수에 비례하던 비용이 로그로 바뀐다"</b>는 성질 쪽이고, 실제 판단은 항상 자기 데이터로 <code>EXPLAIN ANALYZE</code>를 돌려서 합니다.</div></details>
+<details><summary>복합 인덱스 <code>(a, b)</code>가 있으면 <code>(a)</code> 단일 인덱스는 필요 없나요?</summary><div class="fa">필요 없습니다 — 오히려 지워야 합니다. 선두 컬럼 원칙에 따라 <b><code>(a, b)</code> 인덱스는 <code>WHERE a = ?</code>에도 그대로 쓰입니다.</b> 그런데 <code>(a)</code>를 따로 두면 같은 일을 하는 인덱스가 둘이 되어 <b>쓰기 비용과 디스크만 두 배</b>로 듭니다. 반대로 <code>(b)</code> 단일 인덱스는 <code>(a, b)</code>로 대체할 수 없으므로 <code>WHERE b = ?</code> 조회가 잦다면 따로 만들어야 합니다. 실무에서 인덱스를 정리할 때 가장 먼저 찾는 것이 <b>"다른 인덱스의 접두사(prefix)와 겹치는 인덱스"</b>입니다.</div></details>
+<details><summary>인덱스는 몇 개까지 만들어도 되나요?</summary><div class="fa">숫자로 정해진 상한은 없지만 실무 감각으로는 <b>테이블당 5개 안팎</b>을 넘어가면 한 번 점검합니다. 판단은 개수가 아니라 <b>워크로드</b>로 합니다 — 읽기가 압도적이고 쓰기가 배치로 몰리는 분석용 테이블이면 10개도 정당하고, 초당 수천 건 INSERT가 들어오는 로그 테이블이면 2개도 많습니다. 그리고 <b>안 쓰이는 인덱스는 개수와 무관하게 순손해</b>이므로 <code>pg_stat_user_indexes</code>로 주기적으로 솎아 내는 것이 개수를 세는 것보다 실질적입니다.</div></details>
+<details><summary><code>LIKE '%키워드%'</code>는 정말 인덱스를 못 쓰나요? 방법이 없나요?</summary><div class="fa">일반 B-Tree로는 못 씁니다 — 인덱스는 <b>앞에서부터 비교해 내려가는 구조</b>라 시작점을 잡을 수 없기 때문입니다. 다만 방법이 없는 건 아닙니다. PostgreSQL의 <b><code>pg_trgm</code> 확장</b>을 설치하고 GIN 인덱스를 걸면 문자열을 3글자씩 쪼개(trigram) 색인하므로 <b><code>%포함%</code> 검색도 인덱스를 탑니다.</b> 본격적인 검색(형태소 분석, 랭킹)이 필요하면 <code>tsvector</code> 전문검색이나 Elasticsearch로 넘어갑니다. 그리고 7장에서 본 대로 <b>양쪽 와일드카드로만 조회되는 컬럼에는 아예 B-Tree 인덱스를 만들지 않는 편이 낫습니다</b> — 쓰이지도 않으면서 쓰기 비용만 먹습니다.</div></details>
+<details><summary><code>Bitmap Heap Scan</code>이 나오면 인덱스를 제대로 못 쓰고 있는 건가요?</summary><div class="fa">아닙니다. <b>결과 행이 여러 개일 때 PostgreSQL이 고르는 정상적이고 효율적인 방식</b>입니다. 인덱스에서 위치를 모아 비트맵으로 만든 뒤 <b>테이블을 물리 순서로 한 번에</b> 훑기 때문에, 한 행씩 왔다 갔다 하는 Index Scan보다 오히려 빠릅니다. 다만 두 가지는 알아 두세요. ① <b>정렬이 사라집니다</b> — <code>ORDER BY</code>가 있으면 <code>Sort</code> 노드가 다시 붙습니다. ② <code>Recheck Cond</code>가 나오고 <code>Heap Blocks: lossy=...</code>가 크면 <b>비트맵이 메모리에 안 들어가 페이지 단위로 축약된 것</b>이라 재확인 비용이 붙습니다 — 이때는 <code>work_mem</code>을 보거나 조건을 더 좁혀야 합니다.</div></details>
+<details><summary>인덱스를 만들었는데 옵티마이저가 안 씁니다. 왜죠?</summary><div class="fa">흔한 원인이 다섯입니다. ① <b>통계가 낡았다</b> — <code>ANALYZE 테이블명;</code>을 돌려 봅니다(인덱스를 만든 직후 특히). ② <b>컬럼에 함수가 씌워져 있다</b> — <code>WHERE DATE(created_at) = ...</code> 형태. ③ <b>선두 컬럼 조건이 없다</b> — 복합 인덱스의 leftmost prefix rule. ④ <b>조회 대상이 너무 많다</b> — 전체의 25%를 가져오면 Full Scan이 정답이고, 옵티마이저가 옳습니다. ⑤ <b>타입이 안 맞는다</b> — <code>varchar</code> 컬럼에 정수를 비교하는 식으로 암묵적 형변환이 일어나면 인덱스를 못 탑니다. 확인 순서는 <b><code>EXPLAIN</code>으로 <code>Filter</code>인지 <code>Index Cond</code>인지 보는 것</b>부터입니다 — <code>Filter</code>는 "행을 다 읽고 나서 버렸다", <code>Index Cond</code>는 "애초에 해당 행만 찾아갔다"입니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>인덱스의 대가 세 가지는? 인덱스 5개짜리 테이블의 INSERT는 실제로 몇 번의 쓰기인가?</li>
+<li>B-Tree가 이진 트리가 아닌 이유는? 100만 행에서 깊이가 3~4인 까닭은?</li>
+<li>복합 인덱스 <code>(a, b)</code>에서 <code>WHERE b = ?</code>가 왜 효율이 없는가? 전화번호부 비유로 설명할 수 있는가?</li>
+<li>복합 인덱스 컬럼 순서의 세 기준은?</li>
+<li>조회 대상이 전체의 몇 %를 넘으면 Full Scan이 유리해지는가?</li>
+<li><code>INCLUDE</code> 컬럼과 복합 인덱스 키 컬럼의 차이 두 가지는?</li>
+<li><code>Heap Fetches</code>가 0이 아니면 무엇을 의심하는가?</li>
+<li><code>CONCURRENTLY</code>의 대가 세 가지는?</li>
+</ul></div>
 </section>
 
 
