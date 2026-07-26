@@ -5492,43 +5492,152 @@ GRANT EXECUTE ON FUNCTION fn_avg_salary() TO app_user;
     <span class="day-badge day4">Day 4</span>
     <h2><span class="num">25.</span> Trigger &amp; 이벤트 처리</h2>
   </div>
-  <p class="subtitle">감사 로그 · CDC · 배치 · DBMS별 비교 · 실행 순서 제어</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 특정 이벤트(예: INSERT)가 일어나면 자동으로 실행되는 코드예요. 일종의 'DB 자동 알림/자동 처리기'.</div></div>
-  <h4>Trigger 잘 맞는/피해야 할 경우 (BEFORE/AFTER, 행단위/문장단위)</h4>
+  <p class="subtitle">타이밍(BEFORE/AFTER/INSTEAD OF) · 범위(ROW/STATEMENT) · OLD/NEW · 반환값의 의미 · 감사 로그 · 피해야 할 세 가지</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">24장의 함수·프로시저는 <b>내가 불러야</b> 실행됐죠. 트리거는 <b>부르는 사람이 없습니다</b> — 이벤트가 그 자리를 대신해요. "누가 언제 무엇을 바꿨는지 자동 기록", "저장 직전에 값 보정" 같은 일에 씁니다. 대신 <b>숨어서 돌기 때문에</b> 사고도 조용히 납니다 — 이 장의 절반이 <b>"안 쓰는 법"</b>인 이유예요.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p><b>트리거는 DML/DDL 이벤트 발생 시 DB가 자동 실행하는 코드</b>다. 핵심 셋 — ① <b>언제</b> 끼어들지(타이밍), ② <b>몇 번</b> 돌지(범위), ③ <b>무엇을 반환</b>하는지(그 의미가 종류마다 다르다). 그리고 마지막 절의 <b>피해야 할 세 가지</b>가 실무에서는 가장 중요하다.</p></div>
+
+  <h3>1) 타이밍과 범위</h3>
 <table class="t"><thead><tr>
-<th>잘 맞는 경우</th>
-<th>피해야 할 경우</th>
+<th style="width:16%">타이밍</th><th style="width:26%">언제 실행되나</th><th style="width:34%">주 용도</th><th>대상</th>
 </tr></thead><tbody>
-<tr><td>감사로그(누가언제 뭘 바꿨는지 자동기록)</td><td>외부연동(API호출, 장시간작업) → TX연장/장애전파</td></tr>
-<tr><td>기본값/유효성 보강(created_at 자동세팅)</td><td>순서의존/상호참조 트리거 → 유지보수 지옥</td></tr>
-<tr><td>비즈니스 규칙(재고 음수 방지)</td><td>대량DML에 row트리거 남발 → statement트리거나 배치로 전환</td></tr>
-<tr><td>소프트삭제/버전관리</td><td>-</td></tr>
+<tr><td><code>BEFORE</code></td><td>행이 저장되기 <b>직전</b></td><td>값 보정(기본값 세팅), 검증, <b>행 자체를 취소</b></td><td>테이블</td></tr>
+<tr><td><code>AFTER</code></td><td>행이 저장된 <b>직후</b></td><td>감사 로그, 다른 테이블 갱신, 알림</td><td>테이블</td></tr>
+<tr><td><code>INSTEAD OF</code></td><td>원래 동작 <b>대신</b></td><td>갱신 불가능한 뷰에 쓰기를 가능하게</td><td><b>뷰 전용</b></td></tr>
 </tbody></table>
-<div class="sqlbox"><div class="sqlhead">PostgreSQL 감사 로그 트리거 (row-level / statement-level)</div><pre><code>CREATE TABLE audit_log(id BIGSERIAL PRIMARY KEY, table_name TEXT, op TEXT, row_json JSONB, at TIMESTAMPTZ DEFAULT now());
--- Row-level Trigger
-CREATE OR REPLACE FUNCTION trg_sales_ai() RETURNS trigger AS $$
-BEGIN INSERT INTO audit_log(table_name,op,row_json) VALUES ('sales', TG_OP, to_jsonb(NEW)); RETURN NEW; END$$ LANGUAGE plpgsql;
-CREATE TRIGGER sales_ai AFTER INSERT ON sales FOR EACH ROW EXECUTE FUNCTION trg_sales_ai();
--- Statement-level + Transition table (대량 DML에 효율적)
-CREATE TRIGGER sales_stmt_ai AFTER INSERT ON sales REFERENCING NEW TABLE AS new_table
-FOR EACH STATEMENT EXECUTE FUNCTION trg_sales_stmt_ai();</code></pre></div>
-<div class="note">MySQL은 row 트리거만 지원, SQL Server는 statement 트리거 중심 — 설계에 큰 영향을 줌</div>
-<h4>이벤트 처리 아키텍처 — 배치·알림·CDC</h4>
 <ul class="b">
-<li>원칙: 트리거에서 외부 API 호출 금지 → 트리거→로그테이블/토픽 적재 → 비동기 소비자 패턴</li>
-<li>배치: MySQL EVENT Scheduler / PostgreSQL은 내장 스케줄러 없음→pg_cron 필요 / Oracle DBMS_SCHEDULER</li>
-<li>실시간 알림: PostgreSQL LISTEN/NOTIFY(pg_notify) / SQL Server Service Broker / Oracle AQ</li>
-<li>CDC: MySQL Binlog+Debezium / PostgreSQL Logical Decoding(wal2json)+Debezium / SQL Server 내장 CDC / Oracle GoldenGate</li>
+<li><b><code>BEFORE</code>와 <code>AFTER</code>의 실질적 차이는 "NEW를 고칠 수 있느냐"</b>다. <code>BEFORE</code>에서는 <code>NEW.created_at := now()</code>처럼 <b>저장될 값을 바꿀 수 있고</b>, <code>AFTER</code>에서는 이미 저장이 끝났으므로 고쳐도 소용이 없다.</li>
+<li><b>범위</b>: <code>FOR EACH ROW</code>(영향받은 행 하나마다) vs <code>FOR EACH STATEMENT</code>(SQL 문장 하나에 한 번). <b>10만 행을 고치면 행 트리거는 10만 번, 문장 트리거는 한 번</b> 돈다 — 이 차이가 뒤의 성능 문제 전부다. 그리고 <b>문장 트리거는 한 행도 영향받지 않아도 실행된다.</b></li>
 </ul>
-<div class="sqlbox"><div class="sqlhead">PostgreSQL Event Trigger &amp; pg_notify 실시간 알림</div><pre><code>-- DDL 변경이력 자동기록 (Event Trigger)
-CREATE OR REPLACE FUNCTION fn_ddl_logger() RETURNS event_trigger AS $$
-DECLARE r RECORD; BEGIN FOR r IN SELECT * FROM pg_event_trigger_ddl_commands() LOOP
-  INSERT INTO ddl_history(event_tag, object) VALUES (r.command_tag, r.object_identity); END LOOP; END$$ LANGUAGE plpgsql;
-CREATE EVENT TRIGGER ddl_logger ON ddl_command_end EXECUTE FUNCTION fn_ddl_logger();
--- 실시간 알림 (NOTIFY/LISTEN)
-CREATE OR REPLACE FUNCTION fn_notify_order() RETURNS trigger AS $$
-BEGIN PERFORM pg_notify('order_channel', row_to_json(NEW)::TEXT); RETURN NEW; END$$ LANGUAGE plpgsql;
-CREATE TRIGGER trg_order_notify AFTER INSERT ON orders FOR EACH ROW EXECUTE FUNCTION fn_notify_order();
--- 앱: cur.execute("LISTEN order_channel")</code></pre></div>
+<div class="callout deep"><span class="ctitle">🔎 PostgreSQL의 트리거는 두 단계다 — 다른 DBMS를 먼저 본 사람이 반드시 헷갈리는 곳</span>
+<p>MySQL·Oracle·SQL Server는 <code>CREATE TRIGGER ... BEGIN ... END</code> 안에 코드가 그대로 들어가지만, <b>PostgreSQL에는 그 문법이 없다.</b></p>
+<div class="sqlbox norun"><div class="sqlhead">1단계 함수 만들기 → 2단계 이벤트에 붙이기</div><pre><code>CREATE FUNCTION trg_xxx() RETURNS trigger AS $$ ... $$ LANGUAGE plpgsql;
+CREATE TRIGGER xxx_ai AFTER INSERT ON t FOR EACH ROW EXECUTE FUNCTION trg_xxx();</code></pre></div>
+<p><b>왜 나눴는가 — 함수 하나를 여러 테이블·여러 이벤트에 재사용하기 위해서</b>다. 감사 로그 함수 하나를 만들어 20개 테이블에 붙일 수 있다(MySQL 방식이라면 20번 복사해야 한다). 트리거 함수의 규칙 셋 — <b>반환 타입이 반드시 <code>trigger</code></b>, <b>인자를 선언하지 않는다</b>(필요하면 <code>TG_ARGV[0]</code>로 받는다), <b>직접 호출할 수 없다</b>(<code>trigger functions can only be called as triggers</code>).</p></div>
+
+  <h3>2) OLD / NEW — 지금 바뀌고 있는 그 행</h3>
+<table class="t"><thead><tr><th style="width:24%">연산</th><th><code>OLD</code></th><th><code>NEW</code></th></tr></thead><tbody>
+<tr><td><code>INSERT</code></td><td>없음</td><td>새로 들어갈 행</td></tr>
+<tr><td><code>UPDATE</code></td><td>바뀌기 전 행</td><td>바뀐 뒤 행</td></tr>
+<tr><td><code>DELETE</code></td><td>지워질 행</td><td>없음</td></tr>
+</tbody></table>
+<div class="callout myth"><span class="ctitle">⚠️ "없음"은 에러가 아니라 <b>NULL</b>이다</span>
+<p><code>INSERT</code> 트리거에서 <code>OLD.id</code>를 읽어도 PostgreSQL은 에러를 내지 않고 <b>조용히 NULL을 준다.</b> 그래서 <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code>를 한 함수로 처리할 때 <code>OLD</code>를 무심코 쓰면 <b>에러 없이 NULL이 흘러들어 조용히 틀린 데이터가 쌓인다.</b> → <b><code>TG_OP</code>로 분기하는 습관</b>이 필요하다.</p>
+<p>(SQL Server는 이름이 다르다 — <code>inserted</code>/<code>deleted</code>.)</p></div>
+<h4>트리거 함수의 특수 변수 (TG_*)</h4>
+<table class="t"><thead><tr><th style="width:26%">변수</th><th>내용</th></tr></thead><tbody>
+<tr><td><code>TG_OP</code></td><td><code>'INSERT'</code>/<code>'UPDATE'</code>/<code>'DELETE'</code>/<code>'TRUNCATE'</code> — <b>분기의 기준</b></td></tr>
+<tr><td><code>TG_TABLE_NAME</code> / <code>TG_TABLE_SCHEMA</code></td><td>트리거가 걸린 테이블명 / 스키마명</td></tr>
+<tr><td><code>TG_WHEN</code> / <code>TG_LEVEL</code> / <code>TG_NAME</code></td><td><code>BEFORE</code>·<code>AFTER</code> / <code>ROW</code>·<code>STATEMENT</code> / 트리거 이름</td></tr>
+<tr><td><code>TG_ARGV[]</code></td><td><code>CREATE TRIGGER</code>에서 넘긴 인자 (<b>0부터 시작, 항상 문자열</b>)</td></tr>
+</tbody></table>
+<p><b><code>TG_TABLE_NAME</code>과 <code>TG_ARGV</code> 조합이 특히 강력하다</b> — 테이블마다 함수를 따로 만들지 않고 <b>감사 로그 함수 하나로 끝낼 수 있다.</b></p>
+<div class="sqlbox norun"><div class="sqlhead">실전 감사 로그 — 함수 하나를 여러 테이블에 붙인다</div><pre><code>CREATE TABLE audit_log(
+  id BIGSERIAL PRIMARY KEY, table_name TEXT, op TEXT,
+  row_json JSONB, at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE OR REPLACE FUNCTION trg_audit() RETURNS trigger AS $$
+BEGIN
+  INSERT INTO audit_log(table_name, op, row_json)
+  VALUES (TG_TABLE_NAME, TG_OP,
+          CASE WHEN TG_OP = 'DELETE' THEN to_jsonb(OLD) ELSE to_jsonb(NEW) END);
+  RETURN NULL;                         -- AFTER 트리거이므로 반환값은 무시된다
+END$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER sales_audit AFTER INSERT OR UPDATE OR DELETE ON sales
+FOR EACH ROW EXECUTE FUNCTION trg_audit();</code></pre></div>
+
+  <h3>3) 반환값의 의미 — 초보자가 가장 많이 사고를 내는 지점</h3>
+<table class="t"><thead><tr><th style="width:34%">트리거 종류</th><th>반환값의 의미</th></tr></thead><tbody>
+<tr><td><code>BEFORE</code> + <code>FOR EACH ROW</code></td><td><b>반환한 레코드가 실제로 저장된다.</b> <code>NULL</code>이면 <b>그 행의 작업이 조용히 취소된다</b></td></tr>
+<tr><td><code>AFTER</code> + <code>FOR EACH ROW</code></td><td><b>무시된다.</b> 관례적으로 <code>NULL</code></td></tr>
+<tr><td><code>FOR EACH STATEMENT</code></td><td><b>무시된다.</b> <code>NULL</code></td></tr>
+<tr><td><code>INSTEAD OF</code> + <code>FOR EACH ROW</code></td><td><code>NULL</code>이 아니면 "처리했다", <code>NULL</code>이면 건너뛴 것</td></tr>
+</tbody></table>
+<div class="callout myth"><span class="ctitle">⚠️ 가장 흔한 버그 — 공용 함수에서 무심코 <code>OLD</code>를 반환</span>
+<div class="sqlbox norun"><div class="sqlhead">에러 한 줄 없이 데이터가 사라진다</div><pre><code>CREATE FUNCTION trg_wrong() RETURNS trigger AS $$
+BEGIN RETURN OLD; END$$ LANGUAGE plpgsql;    -- DELETE만 생각하고 짬
+CREATE TRIGGER wrongret_bi BEFORE INSERT ON wrongret FOR EACH ROW ...;
+
+INSERT INTO wrongret VALUES (1);
+INSERT 0 0          ← 0행! INSERT에서 OLD는 NULL이고,
+                       BEFORE ROW가 NULL을 반환하면 그 행이 취소된다
+
+-- 공용 트리거 함수는 반드시 이렇게
+IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;</code></pre></div>
+<p>같은 원리로 <b>"조용한 취소"를 의도적으로 쓸 수도 있다</b>(스팸 필터처럼 <code>RETURN NULL</code>). 세 행을 넣었는데 <code>INSERT 0 2</code>가 나오고 <b>id가 1, 3으로 건너뛴다</b>(시퀀스는 이미 소비됐고 롤백돼도 되돌아가지 않는다). <b>다만 운영에서는 대개 재앙이다</b> — 애플리케이션은 성공했다고 믿고 다음 단계로 넘어가는데 데이터가 없다. <b>정말 거부해야 한다면 <code>RAISE EXCEPTION</code>으로 드러내는 편이 낫다.</b></p></div>
+
+  <h3>4) Trigger가 잘 맞는 경우</h3>
+<ul class="b">
+<li><b>감사 로그</b> — "누가 언제 무엇을 바꿨는지". 애플리케이션이 여러 개여도 <b>빠뜨릴 수 없다</b>는 것이 트리거의 강점이다.</li>
+<li><b>파생·집계 컬럼 동기화</b> — 22장 「반정규화」의 이어지는 이야기. <code>comment_count</code> 같은 값을 자동 유지한다.</li>
+<li><b>SCD Type 2 이력 자동화</b> — 22장의 그 패턴. 값이 바뀌면 기존 행을 닫고 새 행을 여는 일을 트리거가 대신한다.</li>
+<li><b>소프트 삭제 / 아카이브</b> — <code>DELETE</code> 대신 <code>deleted_at</code>을 채우거나 아카이브 테이블로 옮긴다.</li>
+<li><b><code>INSTEAD OF</code></b> — 14장에서 "조인·집계가 있는 View는 갱신할 수 없다"고 했는데, <b><code>INSTEAD OF</code> 트리거로 갱신 동작을 직접 정의</b>하면 가능해진다.</li>
+</ul>
+<div class="callout myth"><span class="ctitle">⚠️ 감사 로그의 결정적 한계 — 롤백하면 같이 사라진다</span>
+<p>트리거가 남긴 로그도 <b>같은 트랜잭션 안에 있다.</b> 그 트랜잭션이 롤백되면 <b>"시도했다는 사실"까지 통째로 사라진다.</b> "누가 뭘 하려다 실패했는지"를 남겨야 하는 보안 감사라면 트리거만으로는 부족하고, <b>별도 세션/로그 파일/외부 수집기</b>가 필요하다.</p></div>
+
+  <h3>5) 피해야 할 세 가지 — 이 장에서 가장 중요한 절</h3>
+<h4>① 외부 연동 금지 — 트랜잭션 연장과 장애 전파</h4>
+<div class="sqlbox norun"><div class="sqlhead">트리거가 외부 API를 부르면 세 가지가 동시에 무너진다</div><pre><code>[앱]      BEGIN;
+[앱]        INSERT INTO orders ...
+[트리거]      → 결제사 API 호출 (평소 200ms, 장애 시 30초 타임아웃)
+[앱]      COMMIT;</code></pre></div>
+<ul class="b">
+<li><b>트랜잭션이 API 응답만큼 길어진다</b> — 20장의 장수 트랜잭션이 VACUUM을 막아 테이블을 부풀리고, 21장대로 <b>잡고 있는 락도 그만큼 오래 유지</b>되어 다른 세션이 줄줄이 대기한다.</li>
+<li><b>외부 시스템의 장애가 DB 장애로 전파된다</b> — 결제사가 느려지면 <b>우리 DB의 커넥션이 전부 트랜잭션 상태로 묶여 서비스 전체가 멈춘다.</b></li>
+<li><b>롤백해도 API 호출은 되돌릴 수 없다</b> — 주문은 사라지는데 결제는 이미 됐다. 반대로 재시도가 걸리면 <b>결제가 두 번</b> 된다.</li>
+</ul>
+<div class="cp"><div class="cphead">✔ 처방</div><ul>
+<li><b>트리거에서 외부 API 호출 금지 → 트리거는 로그 테이블/토픽에 적재만 → 비동기 소비자가 외부로 보낸다.</b> 22장의 <b>Outbox 패턴</b>이 이 구조의 표준형이다.</li>
+</ul></div>
+<h4>② 순서 의존 / 상호참조 — 재귀 폭발</h4>
+<div class="sqlbox norun"><div class="sqlhead">PostgreSQL은 재귀를 막아 주지 않는다</div><pre><code>-- AFTER UPDATE 트리거가 같은 테이블을 또 UPDATE하면
+UPDATE node SET cnt = 1 WHERE id = 1;
+ERROR:  stack depth limit exceeded
+CONTEXT:  SQL statement "UPDATE node SET cnt = cnt + 1 WHERE id = NEW.id"
+          (CONTEXT가 수백~수천 줄 쏟아지는 것이 재귀 트리거의 특징적 증상)</code></pre></div>
+<table class="t"><thead><tr><th style="width:36%">재귀를 끊는 방법</th><th>설명</th></tr></thead><tbody>
+<tr><td><b><code>BEFORE</code>에서 <code>NEW</code>를 직접 고친다</b></td><td><b>가장 좋다.</b> 같은 테이블을 <code>UPDATE</code>할 일 자체가 없어진다</td></tr>
+<tr><td>종료 조건을 명시</td><td>"이미 처리된 상태면 반환"</td></tr>
+<tr><td><code>WHEN</code> / <code>UPDATE OF</code>로 범위를 좁힌다</td><td>트리거가 자기 변경에 반응하지 않도록</td></tr>
+</tbody></table>
+<div class="note">첫 번째가 최선인 이유 — <code>AFTER</code>에서 같은 테이블을 다시 <code>UPDATE</code>하면 <b><code>INSERT</code> 한 번에 행 버전이 두 개</b> 생긴다(20장 MVCC). dead tuple이 두 배로 쌓이고 VACUUM 부담도 두 배다. <b>파생 컬럼 계산은 무조건 <code>BEFORE</code>다.</b><br><br>참고로 <b>자기 테이블 수정은 DBMS마다 허용 여부가 다르다</b> — PostgreSQL은 허용(<b>"안전하다"가 아니라 "네가 알아서 해라"</b>), MySQL은 아예 금지(오류 1442), Oracle은 "Mutating Table" 제약이 있어 <b>Compound Trigger</b>로 회피한다.</div>
+<h4>③ 대량 DML에 row 트리거 남발 — 실측</h4>
+<table class="t"><thead><tr><th style="width:40%">20만 행 INSERT</th><th>시간</th><th>트리거 없음 대비</th></tr></thead><tbody>
+<tr><td>없음</td><td>55~65 ms</td><td>1.0배</td></tr>
+<tr><td><b>row-level</b> (<code>FOR EACH ROW</code>)</td><td>464~498 ms</td><td><b>약 8배</b></td></tr>
+<tr><td><b>statement-level</b> + 전이 테이블</td><td>264~276 ms</td><td><b>약 4.7배</b></td></tr>
+</tbody></table>
+<p><b>두 트리거가 하는 일은 완전히 같다</b>(20만 건을 감사 테이블에 넣는다). 차이는 <b>PL/pgSQL 함수를 20만 번 부르느냐 한 번 부르느냐</b>뿐이고, 그것만으로 <b>약 1.8배</b>가 갈렸다. (문장 트리거에서 영향받은 행 전체를 보려면 <b>전이 테이블</b> — <code>REFERENCING NEW TABLE AS new_table</code>을 쓴다.)</p>
+<div class="sqlbox norun"><div class="sqlhead">트리거 비용은 추측할 필요가 없다 — EXPLAIN ANALYZE가 따로 찍어 준다</div><pre><code>EXPLAIN (ANALYZE, COSTS OFF) INSERT INTO bulk SELECT ...;
+
+ Insert on bulk (actual time=11.084..11.084 rows=0 loops=1)
+ Planning Time: 0.014 ms
+ Trigger bulk_row: time=121.738 calls=50000     ← 전체 133ms 중 121ms가 트리거!
+ Execution Time: 133.845 ms</code></pre></div>
+<p><b>"INSERT가 왜 느리지"를 조사할 때 가장 먼저 볼 곳</b>이다. 그리고 대량 이관 시에는 <code>ALTER TABLE sales DISABLE TRIGGER ALL;</code>로 잠시 끌 수 있다(<b>끄는 동안 들어온 데이터는 트리거가 처리하지 못했다는 점을 반드시 기억할 것</b>).</p>
+
+  <h3>6) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>같은 일을 애플리케이션 코드로 하면 안 되나요?</summary><div class="fa">되고, 대부분은 그쪽이 낫습니다. 트리거가 이기는 지점은 딱 하나 — <b>"빠뜨릴 수 없다"</b>입니다. 애플리케이션이 여러 개(웹서버·배치·관리도구·psql)면 그중 하나만 규칙을 안 지켜도 데이터가 어긋나는데, 트리거는 <b>어느 경로로 들어와도 반드시 돕니다.</b> 그래서 <b>감사 로그·무결성 보장</b>처럼 "절대 빠지면 안 되는 것"에 씁니다. 반대로 <b>비즈니스 로직은 애플리케이션에</b> 두는 편이 낫습니다 — 트리거는 <b>숨어서 돌기 때문에</b> 새로 온 사람이 "왜 이 값이 저절로 바뀌지?"에서 한참 헤맵니다.</div></details>
+<details><summary>트리거가 있는지 어떻게 확인하나요?</summary><div class="fa">psql에서 <code>\d 테이블명</code>을 치면 맨 아래 <b>Triggers:</b> 절에 나옵니다. 쿼리로는 <code>SELECT tgname, tgrelid::regclass FROM pg_trigger WHERE NOT tgisinternal;</code>입니다(<code>tgisinternal</code>을 걸러야 FK 제약이 만든 내부 트리거가 안 섞입니다). <b>운영 DB를 처음 인수받았을 때 반드시 확인해야 할 목록</b>이기도 합니다 — 트리거를 모르고 데이터를 만지면 예상 못 한 부작용이 납니다.</div></details>
+<details><summary><code>BEFORE</code>와 <code>AFTER</code> 중 뭘 써야 하나요?</summary><div class="fa">기준이 명확합니다. <b>저장될 값을 바꾸거나 그 행을 거부할 거면 <code>BEFORE</code></b>(파생 컬럼 계산, 기본값 세팅, 검증), <b>이미 저장된 사실을 근거로 다른 일을 할 거면 <code>AFTER</code></b>(감사 로그, 다른 테이블 갱신). 특히 <b>파생 컬럼은 무조건 <code>BEFORE</code></b>입니다 — <code>AFTER</code>에서 같은 테이블을 다시 <code>UPDATE</code>하면 행 버전이 두 개 생기고 재귀 위험까지 생깁니다.</div></details>
+<details><summary>트리거 때문에 <code>INSERT</code>가 느려졌습니다. 어떻게 확인하나요?</summary><div class="fa"><code>EXPLAIN ANALYZE</code>를 붙이면 <b>실행계획 아래에 <code>Trigger 이름: time=... calls=...</code> 줄이 트리거별로 따로 찍힙니다.</b> 전체 시간에서 그 값이 차지하는 비중을 보면 바로 압니다. 개선은 순서대로 — ① <b><code>WHEN</code> 조건이나 <code>UPDATE OF 컬럼</code>으로 안 돌게</b> 만들 수 있는지, ② <b>row-level을 statement-level + 전이 테이블로</b> 바꿀 수 있는지, ③ 그래도 안 되면 <b>트리거를 빼고 애플리케이션/배치로</b> 옮깁니다.</div></details>
+<details><summary>대량 적재 때 트리거를 꺼도 되나요?</summary><div class="fa">됩니다(<code>ALTER TABLE ... DISABLE TRIGGER ALL</code>). 다만 <b>끄는 동안 들어온 데이터는 트리거가 하던 일(감사 로그, 파생 컬럼 계산)이 빠져 있습니다.</b> 그래서 반드시 짝이 되는 작업이 필요합니다 — <b>적재 후 그 구간에 대해 같은 계산을 배치로 한 번 돌리는 것</b>입니다. 그냥 켜기만 하고 끝내면 <b>그 구간만 조용히 데이터가 비어 있게</b> 됩니다. 그리고 <code>DISABLE TRIGGER</code>는 <b>ACCESS EXCLUSIVE 락</b>을 잡으므로(21장) 운영 중에는 조심해야 합니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li><code>BEFORE</code>와 <code>AFTER</code>의 실질적 차이 한 가지는? <code>INSTEAD OF</code>는 어디에만 걸 수 있는가?</li>
+<li>행 트리거와 문장 트리거는 10만 행 UPDATE에서 각각 몇 번 도는가?</li>
+<li><code>INSERT</code> 트리거에서 <code>OLD.id</code>를 읽으면 어떻게 되는가?</li>
+<li><code>BEFORE ROW</code> 트리거가 <code>NULL</code>을 반환하면? 공용 함수의 올바른 반환 패턴은?</li>
+<li>트리거에서 외부 API를 부르면 무너지는 세 가지는? 대안 구조는?</li>
+<li>재귀 트리거를 끊는 가장 좋은 방법은? 왜 그것이 최선인가?</li>
+<li>트리거가 얼마나 먹는지 어디서 확인하는가?</li>
+</ul></div>
 </section>
 
 
