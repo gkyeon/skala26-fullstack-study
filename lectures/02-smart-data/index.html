@@ -1285,48 +1285,276 @@ ALTER TABLE "students" ADD FOREIGN KEY ("major_id") REFERENCES "majors" ("id");<
     <span class="day-badge day1">Day 1</span>
     <h2><span class="num">4.</span> 개념적→논리적→물리적 모델 설계</h2>
   </div>
-  <p class="subtitle">3단계 설계 흐름 · 약한 엔터티 · N:M 관계 설계</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 설계는 3단계예요. ① 개념적(말/그림으로 뭐가 필요한지 정리) → ② 논리적(테이블·컬럼 구체화) → ③ 물리적(실제 DB에 맞춰 타입·인덱스까지 결정).</div></div>
-  <h4>3단계 설계 흐름</h4>
-<table class="t"><thead><tr>
-<th>구분</th>
-<th>개념적 모델링</th>
-<th>논리적 모델링</th>
-<th>물리적 모델링</th>
-</tr></thead><tbody>
-<tr><td>독립성</td><td>DBMS 독립적</td><td>DBMS 독립적</td><td>특정 DBMS에 최적화</td></tr>
-<tr><td>활동</td><td>엔터티 식별, 관계 정의, ERD 작성</td><td>엔터티→테이블 매핑, PK/FK, 정규화</td><td>데이터타입/인덱스/파티셔닝/Lock전략 결정</td></tr>
-<tr><td>산출물</td><td>ERD 다이어그램</td><td>논리 ERD, 데이터 사전</td><td>물리 스키마, DDL</td></tr>
-</tbody></table>
-<h4>물리적 모델링 핵심 항목</h4>
+  <p class="subtitle">3단계 설계와 산출물 · 물리 설계 7항목(타입·인덱스·파티셔닝) · 낙관적/비관적 Lock · 약한 엔티티와 N:M 교차 테이블 DDL</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 설계는 3단계예요. ① <b>개념적</b>(현업과 "뭘 관리할지" 합의) → ② <b>논리적</b>(테이블·PK/FK·정규화 확정) → ③ <b>물리적</b>(실제 DB에 맞춰 타입·인덱스·Lock 전략까지 결정). 앞의 두 단계는 어떤 DBMS를 쓰든 똑같고, <b>마지막만 제품에 따라 달라져요.</b></div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p>설계를 세 단계로 나눠 진행하는 이유와 각 단계의 산출물을 안다. 그리고 물리 설계에서 실제로 결정해야 할 것들을 손에 익힌다.</p>
+  <ul>
+  <li><b>데이터 타입</b> — 금액·시간·문자열에 무엇을 쓰고 왜 그런지</li>
+  <li><b>Lock 전략</b> — Lost Update를 낙관적/비관적 중 무엇으로 막을지</li>
+  <li><b>DDL</b> — 약한 엔티티와 N:M 교차 테이블을 직접 쓸 수 있게 된다</li>
+  </ul></div>
+
+  <h3>1) 왜 이게 필요한가 — 대화 상대가 다르다</h3>
+<p>3장에서 ERD를 그렸다. 그럼 이제 바로 <code>CREATE TABLE</code>을 치면 될까? 여기에 문제가 하나 있다. ERD를 그릴 때 우리가 대화하는 상대와, DDL을 쓸 때 우리가 대화하는 상대가 <b>완전히 다른 사람</b>이라는 것이다.</p>
 <ul class="b">
-<li>금액: NUMERIC(10,2) — 부동소수점 오류 방지 / 시간: TIMESTAMPTZ(타임존 포함) — 글로벌 서비스 필수</li>
-<li>문자열: VARCHAR(n) vs TEXT — PostgreSQL은 TEXT 길이 제한 없음</li>
-<li>인덱스: WHERE/JOIN/ORDER BY 컬럼에 추가 — B-Tree(기본), Hash(등호만), GIN(JSONB/배열), GiST(GIS)</li>
-<li>파티셔닝: 연도/지역별 분할 저장 / 클러스터형 vs 비클러스터형 인덱스 / 저장공간 압축·아카이빙</li>
-<li>트랜잭션 로드 테스트: 낙관적/비관적 Lock 전략</li>
+<li><b>ERD를 검토하는 사람</b>: 현업 담당자, 기획자, 팀원. "학생이 강의를 여러 개 듣는 게 맞나요?"에 답해 줄 수 있지만 <code>VARCHAR(200)</code>과 <code>TEXT</code> 중 뭐가 나은지는 모른다.</li>
+<li><b>DDL을 쓰는 사람</b>: 개발자. 타입과 인덱스를 정할 수 있지만 "학생이 강의를 여러 개 듣는지"는 현업에 물어봐야 안다.</li>
 </ul>
+<p>한 번에 다 하려고 하면 두 대화가 섞여서 둘 다 흐려진다. 그래서 설계를 <b>세 단계로 쪼개고, 각 단계에서 딱 그 단계의 결정만 한다.</b></p>
 <table class="t"><thead><tr>
-<th>구분</th>
-<th>낙관적 Lock (Optimistic)</th>
-<th>비관적 Lock (Pessimistic)</th>
+<th style="width:16%">단계</th><th style="width:30%">답하는 질문</th><th style="width:20%">누구와</th><th>DBMS 의존</th>
 </tr></thead><tbody>
-<tr><td>가정</td><td>충돌이 드물다</td><td>충돌이 빈번하다</td></tr>
-<tr><td>구현</td><td>version/updated_at 컬럼으로 충돌 감지</td><td>SELECT ... FOR UPDATE [NOWAIT]</td></tr>
-<tr><td>적합</td><td>읽기 위주, 긴 트랜잭션(사용자 세션)</td><td>고충돌 환경, 은행 이체, 좌석 예매, 짧은 트랜잭션</td></tr>
+<tr><td><b>개념적</b></td><td>무엇을 관리하는가?</td><td>현업·기획</td><td>무관</td></tr>
+<tr><td><b>논리적</b></td><td>어떤 테이블·키로 나누는가?</td><td>개발팀</td><td>무관</td></tr>
+<tr><td><b>물리적</b></td><td>어느 DBMS에 어떤 타입·인덱스로 만드는가?</td><td>개발자·DBA</td><td><b>의존</b></td></tr>
 </tbody></table>
-<div class="sqlbox"><div class="sqlhead">약한 엔티티 &amp; N:M 교차 테이블 DDL</div><pre><code>-- 약한 엔티티: OrderItem (Order 없이 존재 불가)
-CREATE TABLE order_items (
-  order_id INT REFERENCES orders(id) ON DELETE CASCADE,
-  item_no SMALLINT NOT NULL,           -- 부분키
-  quantity INT NOT NULL CHECK (quantity &gt; 0),
-  PRIMARY KEY (order_id, item_no) );   -- 복합 PK
--- N:M 교차 테이블: 학생-강좌 수강신청
-CREATE TABLE enrollments (
-  student_id BIGINT REFERENCES students(id) ON DELETE CASCADE,
-  course_id INT REFERENCES courses(id) ON DELETE CASCADE,
-  PRIMARY KEY (student_id, course_id) );
--- 양방향 조회 최적화 인덱스
+<div class="cp"><div class="cphead">✔ 세 번째 줄이 핵심 분기점</div><ul>
+<li>앞의 두 단계는 PostgreSQL을 쓰든 Oracle을 쓰든 결과가 같고, <b>마지막 단계만 제품에 따라 달라진다.</b> 그래서 DBMS를 나중에 바꿔도 앞의 두 단계 산출물은 그대로 쓸 수 있다. 단계를 나누는 실용적 이득이 여기 있다.</li>
+</ul></div>
+
+  <h3>2) 개념적 · 논리적 데이터 모델링</h3>
+<table class="t"><thead><tr>
+<th style="width:16%">구분</th><th>개념적 모델링</th><th>논리적 모델링</th><th>물리적 모델링</th>
+</tr></thead><tbody>
+<tr><td><b>독립성</b></td><td>DBMS 독립적</td><td>DBMS 독립적</td><td>특정 DBMS에 최적화</td></tr>
+<tr><td><b>활동</b></td><td>엔터티 식별(명사 추출), 관계 정의(1:N/N:M), ERD 작성, 복합 속성 처리, 약/강 엔터티 구분</td><td>엔터티→테이블 매핑, PK/FK 설정, 정규화(1NF~BCNF), 반정규화 검토, 상속 관계 모델링</td><td>데이터타입/인덱스/파티셔닝/저장공간/Lock 전략 결정</td></tr>
+<tr><td><b>산출물</b></td><td>ERD 다이어그램</td><td>논리 ERD, <b>데이터 사전</b></td><td>물리 스키마, DDL</td></tr>
+</tbody></table>
+<p>3장에서 한 작업이 대부분 개념적 모델링에 해당한다. "이해관계자와 소통"이라는 목적이 명시된 것에 주목하자. <b>개념 모델의 용도는 합의다.</b> 여기서 놓친 요구사항은 뒤에서 아무리 잘 설계해도 못 채운다.</p>
+<div class="callout prof"><span class="ctitle">🎓 실무 이야기 — 고객은 요구사항을 다 말해 주지 않는다</span>
+<p>RFP(제안 요청서)에 적힌 것 외에 말로 표현되지 않은 요구가 항상 남아 있고, 그것을 끄집어내 시스템에 반영하는 것까지가 PM의 역량이다. "알아서 잘해 주세요" 수준의 요구를 그대로 받으면 개발 단계에서 더 어려워지므로, 초기에 고객과 붙어 다니며 최대한 구체화해야 한다.</p>
+<p>그리고 <b>각 단계의 산출물은 고객 확인을 받고 넘어가야 한다.</b> 확인 없이 진행하면 나중에 고객이 다른 요구를 꺼냈을 때 근거가 없어 그대로 떠안게 된다. 반대로 확인받은 문서가 있으면 "합의한 범위를 벗어나므로 비용·기간·인력을 조정해 달라"고 협상할 수 있다.</p>
+<p><b>ERD는 철수 후에 더 중요해진다.</b> 구축을 마치고 철수할 때 계정과 접속 정보를 모두 넘기고 나오기 때문에, 나중에 그 DB를 다시 들여다볼 방법이 없다. 시간이 지나 "그 DB가 어떻게 생겼더라"를 확인할 근거는 ERD 한 장뿐이다.</p></div>
+<h4>데이터 사전 (Data Dictionary)</h4>
+<p>테이블·컬럼의 목록과 그 의미를 정리한 문서다. ERD가 그림이라면 데이터 사전은 그 그림의 <b>설명서</b>다. <b>과제 리포트에 넣으면 좋은 산출물</b>이다 — 채점자가 "이 컬럼이 뭐지?"를 묻지 않게 만들어 준다.</p>
+<table class="t"><thead><tr>
+<th>컬럼명</th><th>타입</th><th>NULL</th><th>기본값</th><th>설명</th>
+</tr></thead><tbody>
+<tr><td>id</td><td>BIGINT</td><td>N</td><td>IDENTITY</td><td>학생 대체키(PK)</td></tr>
+<tr><td>student_no</td><td>VARCHAR(20)</td><td>N</td><td>—</td><td>학번(자연키, UNIQUE)</td></tr>
+<tr><td>major_id</td><td>INT</td><td>Y</td><td>—</td><td>학과 FK. 미배정 시 NULL</td></tr>
+</tbody></table>
+<div class="note">데이터 사전은 <b>고객이 쓰는 업무 용어를 개발팀이 이해할 수 있게 정리한 문서</b>이기도 하다. 반도체 프로젝트라면 웨이퍼, 전공정, 후공정 같은 용어가 여기 들어간다. 전자결제처럼 누구나 아는 일반 시스템에서는 생략되기도 하지만, 반도체·2차전지·에너지·화학처럼 도메인이 특수한 시스템에서는 반드시 만들고 고객에게 납품하기도 한다.</div>
+<h4>상속 관계 모델링 — Single Table vs Class Table</h4>
+<p>객체지향에서 "직원 ← 정규직/계약직"처럼 상속 구조를 테이블로 어떻게 옮길지의 전략이다.</p>
+<ul class="b">
+<li><b>Single Table</b>: 테이블 하나에 다 넣고 <code>type</code> 컬럼으로 구분. 정규직에만 있는 컬럼은 계약직 행에서 NULL. 조회가 단순하고 빠르지만 NULL이 많아진다.</li>
+<li><b>Class Table (Joined)</b>: 공통 컬럼은 <code>employees</code>, 개별 컬럼은 <code>full_timers</code>/<code>contractors</code>로 나눠 두고 JOIN. 정규화되어 있지만 조회할 때마다 JOIN이 필요하다.</li>
+<li><b>Concrete Table</b>: 상위 테이블 없이 각각 완전한 테이블로. 공통 컬럼이 중복된다.</li>
+</ul>
+<div class="callout deep"><span class="ctitle">🔎 심화 — 이 이름들은 ORM에서 그대로 다시 나온다</span>
+<p>JPA/Hibernate 같은 ORM에서 <code>@Inheritance(strategy = SINGLE_TABLE)</code> 등으로 그대로 쓰인다. 지금은 "상속을 테이블로 옮기는 방법이 여러 개이고, <b>논리 설계 단계에서</b> 골라야 한다"만 알아 두면 된다.</p></div>
+
+  <h3>3) 물리적 데이터 모델링 — 정할 것 일곱 가지</h3>
+<p>논리 모델까지는 제품 무관이었지만 여기서부터는 "PostgreSQL 17에 만든다"가 전제가 된다.</p>
+<h4>① 데이터 타입 결정 — 각각 유명한 사고를 막는 규칙</h4>
+<ul class="b">
+<li><b>금액: <code>NUMERIC(10,2)</code></b> — 부동소수점 오류 방지</li>
+<li><b>시간: <code>TIMESTAMPTZ</code></b> (타임존 포함) — 글로벌 서비스 필수</li>
+<li><b>문자열: <code>VARCHAR(n)</code> vs <code>TEXT</code></b> — PostgreSQL은 TEXT 제한 없음</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">따라 치기 — 부동소수점 오차 직접 보기 (Python)</div><pre><code>print(0.1 + 0.2)
+print(0.1 + 0.2 == 0.3)
+
+-- 실행 결과
+-- 0.30000000000000004
+-- False</code></pre></div>
+<ul class="b">
+<li>이 오차가 DB에 그대로 있다. 금액 컬럼이 <code>DOUBLE</code>이면 <b>1원짜리 차이가 누적되어 정산이 안 맞는다.</b></li>
+<li><code>NUMERIC(10,2)</code>는 10진수를 그대로 저장하므로 이런 오차가 없다. 대신 연산이 느리다. <b>금액은 정확성이 속도보다 중요하므로 NUMERIC이 맞다.</b></li>
+<li><code>NUMERIC(10,2)</code>의 의미: 전체 유효숫자 10자리, 그중 소수점 아래 2자리. 즉 <code>99,999,999.99</code>까지.</li>
+<li><b>타임존</b>: <code>TIMESTAMP</code>는 "2026-07-22 14:00"만 저장한다. 이게 한국 시간인지 UTC인지는 저장되지 않아서, 서버가 미국으로 이전되거나 클라이언트가 해외에 있으면 9시간이 어긋난다. <code>TIMESTAMPTZ</code>는 내부적으로 UTC로 저장하고 조회 시 세션 타임존으로 변환해 준다.</li>
+<li><b>VARCHAR vs TEXT</b>: 다른 DBMS와 달리 PostgreSQL에서는 이 둘의 <b>성능 차이가 없다.</b> 내부 저장 방식이 동일하고 <code>VARCHAR(n)</code>은 그 위에 길이 검사만 얹은 것이다. 그래서 길이 제한이 <b>업무 규칙일 때만</b> <code>VARCHAR(n)</code>을 쓰고, 아니면 <code>TEXT</code>를 쓴다. (다만 한 필드 상한은 1GB다.)</li>
+</ul>
+<div class="callout prof"><span class="ctitle">🎓 실무 이야기 — 데이터 타입 선택이 곧 저장 공간 관리</span>
+<p>문자열을 습관적으로 <code>VARCHAR(255)</code>로 잡아 두고 실제로는 두 글자만 들어가면 나머지 자리를 낭비하게 되므로, 들어갈 값의 크기를 어림해 길이를 줄이거나 아예 <code>TEXT</code>로 바꾸는 편이 낫다. 시간 컬럼도 마찬가지로 타임존까지 포함해 설계해야 한다. 요즘 만드는 시스템은 글로벌하게 쓰이므로 <b>기준 시간대를 무엇으로 둘지 처음부터 정해야 한다.</b></p></div>
+<h4>② 인덱스 설계 — WHERE / JOIN / ORDER BY 컬럼</h4>
+<p>인덱스는 책 뒤의 색인과 같다. 전체를 훑지 않고 원하는 값의 위치로 바로 갈 수 있게 해 준다. 지금 단계에서 알 것은 <b>어디에 거는가</b>다. 답은 "<b>WHERE / JOIN / ORDER BY에 등장하는 컬럼</b>" — 그 세 곳이 DB가 값을 찾거나 정렬해야 하는 지점이기 때문이다.</p>
+<table class="t"><thead><tr>
+<th style="width:14%">종류</th><th style="width:36%">자료구조</th><th>쓰이는 곳</th>
+</tr></thead><tbody>
+<tr><td><b>B-Tree</b></td><td>정렬된 트리 (기본값)</td><td>등호(<code>=</code>)뿐 아니라 범위(<code>&gt;</code>, <code>BETWEEN</code>)와 정렬(<code>ORDER BY</code>)까지</td></tr>
+<tr><td><b>Hash</b></td><td>해시 테이블</td><td>등호만. 범위·정렬 불가 → B-Tree로 충분해서 잘 안 씀</td></tr>
+<tr><td><b>GIN</b></td><td>역색인 (Generalized Inverted Index)</td><td>한 행이 여러 값을 갖는 경우 — JSONB의 키들, 배열 원소, 문서의 단어들</td></tr>
+<tr><td><b>GiST</b></td><td>Generalized Search Tree</td><td>공간 데이터(GIS) 같은 "겹친다/포함한다" 류의 검색</td></tr>
+</tbody></table>
+<div class="callout myth"><span class="ctitle">⚠️ 인덱스는 공짜가 아니다</span>
+<p><b>읽기를 빠르게 하는 대신 쓰기를 느리게 하고 디스크를 더 쓴다.</b> 행을 INSERT할 때마다 모든 인덱스도 같이 갱신해야 하기 때문이다. 그래서 "일단 다 걸어 두자"가 안 된다. (자세한 것은 17장)</p></div>
+<h4>③ 파티셔닝 · ④ 클러스터형 인덱스 · ⑤ 저장 공간 최적화</h4>
+<ul class="b">
+<li><b>파티셔닝</b> — 한 테이블이 수억 행이 되면 하나로 다루기 어려워진다. 논리적으로는 한 테이블인 채로 물리적으로는 여러 조각에 나눠 저장하는 것. "2024년 주문"만 조회하면 2024년 파티션만 읽으므로 훨씬 빠르고(<b>파티션 프루닝</b>), 오래된 파티션은 통째로 잘라내서 아카이빙할 수 있다.</li>
+<li><b>클러스터형 vs 비클러스터형</b> — 클러스터형은 인덱스 순서대로 <b>데이터 자체가</b> 디스크에 배치된다(테이블당 하나만 가능). 비클러스터형은 인덱스가 따로 있고 실제 행의 위치를 가리키는 포인터를 담는다(여러 개 가능).</li>
+<li><b>저장 공간 최적화</b> — 압축, <b>컬럼 기반 저장(Columnstore)</b>, 아카이빙 전략. 행 단위 대신 컬럼 단위로 저장하면 "매출 합계"처럼 한두 컬럼만 훑는 분석 쿼리에서 필요한 컬럼만 읽으면 되므로 훨씬 빠르고 압축도 잘 된다(같은 타입의 값이 모여 있으므로). Polars와 DuckDB가 이 방식이고, 28장에서 다시 나온다.</li>
+</ul>
+<div class="callout prof"><span class="ctitle">🎓 실무 이야기 — 파티셔닝이 가장 빛나는 곳은 로그 테이블</span>
+<p>로그는 손대지 않으면 몇 년치가 그대로 쌓이는데, 오늘 날짜 로그 하나를 보려 해도 처음부터 훑게 된다. 연 또는 연·월 단위로 쪼개 두면 그 구간만 읽으므로 조회 속도가 달라진다.</p></div>
+<div class="callout myth"><span class="ctitle">⚠️ PostgreSQL에는 클러스터형 인덱스가 없다</span>
+<p>클러스터형/비클러스터형 구분은 <b>SQL Server와 MySQL InnoDB의 개념</b>이다. InnoDB는 PK가 곧 클러스터형 인덱스라서 PK 순서대로 데이터가 배치된다. 반면 PostgreSQL의 모든 인덱스는 비클러스터형(힙 테이블 + 별도 인덱스)이고, <code>CLUSTER</code> 명령으로 한 번 물리 정렬을 할 수는 있지만 이후 갱신되면 순서가 다시 흐트러진다.</p></div>
+<div class="note">실무 주의 — <b>애플리케이션에 관리자 계정을 주지 마라.</b> 파이썬 코드는 메모장으로도 열리는데 거기에 관리자 계정과 접속 정보가 함께 적혀 있으면 그 서버의 모든 데이터베이스가 통째로 노출된다. DB 하나당 전용 계정을 두고, 그 계정이 자기 DB 밖으로 나가지 못하도록 권한을 세분화한다. 그리고 <b>ERD를 고칠 수 있는 것은 늦어도 개발 초기까지</b>다 — 개발 중반에 테이블을 손대면 그 위에 작성된 코드까지 전부 되돌아간다.</div>
+
+  <h3>4) 낙관적 Lock vs 비관적 Lock — 무엇을 막으려는 것인가</h3>
+<p>1장에서 세 가지 이상 현상(Dirty / Non-Repeatable / Phantom Read)을 봤다. 그런데 실무에서 가장 자주 터지는 것은 그 셋이 아니라 <b>Lost Update(갱신 손실)</b>다.</p>
+<div class="sqlbox norun"><div class="sqlhead">Lost Update — 두 명이 샀는데 재고가 하나만 줄어든다</div><pre><code>시각   세션 A                          세션 B
+ 1     재고 수량 읽음 → 10
+ 2                                     재고 수량 읽음 → 10
+ 3     10 - 1 = 9 로 UPDATE
+ 4                                     10 - 1 = 9 로 UPDATE
+ 결과  두 명이 샀는데 재고는 9 (8이어야 함)</code></pre></div>
+<p>두 트랜잭션 모두 정상적으로 커밋됐고 격리 수준도 위반하지 않았다. 그런데 결과가 틀렸다. <b>읽은 값을 근거로 쓰는 순간 격리 수준만으로는 부족하기 때문</b>이다. 이걸 막는 두 가지 전략이 낙관적/비관적 Lock이다.</p>
+<h4>낙관적 Lock (Optimistic) — 미리 막지 않고, 나중에 확인한다</h4>
+<ul class="b">
+<li>데이터 저장 시 <b>충돌이 드물다고 가정</b> → 트랜잭션 종료 시 <b>버전 비교로 충돌 감지</b></li>
+<li><b>적합 상황</b>: 읽기 위주 작업 · 갱신 빈도 낮음 · 긴 트랜잭션(사용자 세션) — 예: 블로그 댓글 수정</li>
+<li><b>구현</b>: <code>version</code> 또는 <code>updated_at</code> 컬럼으로 충돌 감지</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">따라 치기 — version 컬럼으로 낙관적 Lock 구현하기</div><pre><code>CREATE TABLE posts (
+  id      BIGINT PRIMARY KEY,
+  content TEXT,
+  version INT NOT NULL DEFAULT 0
+);
+
+-- 1) 읽을 때 version도 같이 읽어 둔다 (예: version = 3)
+SELECT id, content, version FROM posts WHERE id = 10;
+
+-- 2) 저장할 때 그 version이 그대로인지 조건에 넣는다
+UPDATE posts
+   SET content = '수정된 내용',
+       version = version + 1
+ WHERE id = 10
+   AND version = 3;        -- 내가 읽었을 때의 값</code></pre></div>
+<ul class="b">
+<li><code>AND version = 3</code>이 <b>낙관적 Lock의 전부</b>다. 내가 읽은 뒤에 누군가 먼저 저장했다면 <code>version</code>이 이미 4가 되어 있으므로 <b>이 UPDATE는 0행을 갱신한다.</b></li>
+<li>갱신된 행 수가 0이면 애플리케이션이 "다른 사용자가 먼저 수정했습니다"를 알리고 재시도하게 한다. <b>이 확인 코드를 애플리케이션이 반드시 작성해야 한다.</b> 안 하면 조용히 아무 일도 안 일어난 채 성공한 것처럼 보인다.</li>
+<li><code>version = version + 1</code>로 자기 자신을 증가시키는 것이 핵심이다. 이래야 다음 사람이 충돌을 감지할 수 있다.</li>
+</ul>
+<h4>비관적 Lock (Pessimistic) — 충돌이 날 거라고 보고 미리 잠근다</h4>
+<ul class="b">
+<li><b>트랜잭션 시작 시 Lock 획득</b> → 다른 트랜잭션의 접근 차단</li>
+<li><b>적합 상황</b>: 고충돌 환경 · 은행 이체, 좌석 예매 · 쓰기 집약적 시스템 · <b>짧은 트랜잭션(ms 단위)</b></li>
+<li><b>구현</b>: <code>SELECT ... FOR UPDATE</code>, <code>SELECT ... FOR UPDATE NOWAIT</code></li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">따라 치기 — FOR UPDATE로 비관적 Lock 걸기</div><pre><code>BEGIN;
+SELECT stock FROM products WHERE id = 10 FOR UPDATE;   -- 이 행을 잠근다
+-- 이 시점에 다른 세션이 같은 행에 FOR UPDATE 하면 대기 상태가 된다
+UPDATE products SET stock = stock - 1 WHERE id = 10;
+COMMIT;                                                 -- 여기서 잠금 해제</code></pre></div>
+<ul class="b">
+<li><code>FOR UPDATE</code> — 읽으면서 그 행에 쓰기 잠금을 건다. 다른 트랜잭션은 같은 행을 <code>FOR UPDATE</code>로 읽거나 UPDATE/DELETE하려 할 때 <b>내 COMMIT까지 기다린다.</b> (일반 SELECT는 MVCC 덕분에 기다리지 않고 옛 버전을 읽는다.)</li>
+<li><code>NOWAIT</code> — 기다리는 대신 <b>즉시 에러</b>. "지금 다른 사람이 처리 중입니다"를 바로 띄울 수 있다.</li>
+<li><code>SKIP LOCKED</code> — 잠긴 행을 기다리지도 에러 내지도 않고 <b>건너뛴다.</b> 여러 워커가 작업 큐 테이블에서 각자 다른 행을 집어 가게 할 때 쓰는 전형적인 패턴이다.</li>
+</ul>
+<h4>고르는 기준</h4>
+<table class="t"><thead><tr>
+<th style="width:20%"></th><th>낙관적 Lock</th><th>비관적 Lock</th>
+</tr></thead><tbody>
+<tr><td>가정</td><td>충돌은 드물다</td><td>충돌이 잦다</td></tr>
+<tr><td>시점</td><td>저장할 때 <b>사후 확인</b></td><td>읽을 때 <b>사전 차단</b></td></tr>
+<tr><td>실패 방식</td><td>저장 실패 → 재시도</td><td>대기 (또는 NOWAIT 에러)</td></tr>
+<tr><td>대기</td><td>없음</td><td>있음</td></tr>
+<tr><td>데드락 위험</td><td>없음</td><td><b>있음</b></td></tr>
+<tr><td>트랜잭션 길이</td><td>길어도 됨</td><td>짧아야 함</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ 핵심 판단 — "기다리게 할 것인가, 다시 하게 할 것인가"</div><ul>
+<li><b>블로그 글 수정</b>처럼 사용자가 편집창을 10분 동안 열어 두는 상황에서 비관적 Lock을 쓰면, 그 10분 내내 남이 잠금 앞에서 대기한다. 말이 안 된다 → <b>낙관적</b></li>
+<li><b>콘서트 좌석 예매</b>처럼 수천 명이 같은 좌석에 몰리는 상황에서 낙관적 Lock을 쓰면, 대부분이 저장 단계에서 실패하고 재시도하다가 또 실패한다 → <b>비관적</b></li>
+<li>비관적 Lock의 적합 상황에 "짧은 트랜잭션(ms 단위)"이 들어가는 이유가 여기 있다. <b>비관적 Lock은 남을 기다리게 하므로 잠근 시간이 짧아야만 쓸 수 있다.</b></li>
+</ul></div>
+<div class="callout deep"><span class="ctitle">🔎 심화 — 두 가지 주의</span>
+<ul>
+<li><b>버전 컬럼 대신 <code>updated_at</code>을 쓰면 위험하다.</b> 타임스탬프는 정밀도 문제로 같은 밀리초에 두 번 갱신되면 값이 같아져 충돌을 놓칠 수 있다. 정수 <code>version</code>은 반드시 달라진다.</li>
+<li><b>비관적 Lock에는 데드락이 따라온다.</b> A가 1번 행을 잠그고 2번을 기다리는데 B가 2번을 잠그고 1번을 기다리면 둘 다 영원히 멈춘다. 줄이는 기본 요령은 <b>모든 트랜잭션이 같은 순서로 행을 잠그는 것</b>이다. (21장)</li>
+</ul></div>
+
+  <h3>5) 약한 엔티티와 N:M 관계 설계 패턴</h3>
+<h4>약한 엔티티 설계 원칙</h4>
+<ul class="b">
+<li>독자적 PK 없음 → <b>강한 엔티티의 PK + 자신의 부분키로 복합 PK 구성</b></li>
+<li><b><code>ON DELETE CASCADE</code> 필수</b> — 부모 삭제 시 자식도 삭제. 부모 없이 존재할 수 없다고 선언해 놓고 부모가 사라졌는데 자식이 남아 있으면 모순이다. <code>SET NULL</code>은 <b>아예 불가능한데</b>, FK가 PK의 일부이고 PK는 NULL일 수 없기 때문이다.</li>
+<li>예: <code>OrderItem(OrderID, ItemNo)</code>, <code>Dependent(EmployeeID, DependentName)</code></li>
+</ul>
+<h4>N:M 관계 — 복합 PK냐 대체 PK냐</h4>
+<ul class="b">
+<li>교차(중간) 테이블 필수 · 복합 PK(FK1+FK2) 또는 대체 PK(surrogate key) 선택 · 교차 테이블에 <b>추가 속성 가능</b></li>
+<li>고르는 기준은 <b>같은 조합이 두 번 나올 수 있는가</b>다.
+  <ul>
+  <li><b>수강신청</b>: 같은 학생이 같은 강좌를 한 학기에 두 번 신청할 수 없다 → <b>복합 PK</b> <code>(student_id, course_id)</code>. 중복이 자동으로 막힌다.</li>
+  <li><b>장바구니 담기 이력</b>: 같은 사람이 같은 상품을 여러 번 담을 수 있다 → <b>대체 PK</b>. 복합 PK를 쓰면 두 번째 담기가 막혀 버린다.</li>
+  </ul>
+</li>
+</ul>
+<h4>인덱스 전략 — "양방향"의 뜻</h4>
+<p><b>복합 인덱스는 컬럼 순서가 중요하다.</b> <code>INDEX(student_id, course_id)</code>는 학생 이름순으로 정렬된 명부와 같아서</p>
+<ul class="b">
+<li>"홍길동이 듣는 과목"(<code>WHERE student_id = ?</code>) → <b>빠르다.</b> 앞 컬럼으로 바로 찾아간다.</li>
+<li>"DB 과목을 듣는 학생"(<code>WHERE course_id = ?</code>) → <b>효율적으로 못 쓴다.</b> 뒤 컬럼만으로는 찾아갈 수 없다.</li>
+<li>전화번호부에서 이름으로는 찾을 수 있지만 전화번호로는 못 찾는 것과 같다. 그래서 두 방향 조회가 다 잦으면 <b>순서를 뒤집은 인덱스를 하나 더</b> 만든다. 복합 PK가 앞 방향 인덱스를 자동으로 만들어 주므로, 실제로 추가할 것은 반대 방향 하나다.</li>
+</ul>
+
+  <h3>6) 약한 엔티티 및 N:M 교차 테이블 DDL</h3>
+<div class="sqlbox norun"><div class="sqlhead">약한 엔티티 예시 — OrderItem (Order 없이 존재 불가)</div><pre><code>CREATE TABLE order_items (
+  order_id   INT REFERENCES orders(id) ON DELETE CASCADE,
+  item_no    SMALLINT NOT NULL,                 -- 부분키 (약한 엔티티)
+  product_id INT REFERENCES products(id),
+  quantity   INT NOT NULL CHECK (quantity &gt; 0),
+  unit_price NUMERIC(10,2) NOT NULL,
+  PRIMARY KEY (order_id, item_no)               -- 복합 PK
+);</code></pre></div>
+<ul class="b">
+<li><code>REFERENCES orders(id) ON DELETE CASCADE</code> — 주문이 지워지면 그 주문의 항목도 전부 지워진다. 약한 엔티티의 필수 조건.</li>
+<li><code>item_no SMALLINT</code> — 부분키. 한 주문 안에서 1, 2, 3… 이다. <code>SMALLINT</code>(약 ±3만)로 충분한 이유는 주문 하나에 항목이 수만 개가 될 리 없기 때문이다. <b>타입을 작게 잡으면 저장 공간과 인덱스 크기가 줄어든다.</b></li>
+<li><code>CHECK (quantity &gt; 0)</code> — 수량이 0이거나 음수인 행을 DB가 거부한다. 애플리케이션 검증에만 의존하지 않고 DB에도 규칙을 심는 것. <b>1장의 C(Consistency)가 실제로 이렇게 구현된다.</b></li>
+<li><code>PRIMARY KEY (order_id, item_no)</code> — 이 한 줄이 "이 테이블은 약한 엔티티"라는 선언이다. FK인 <code>order_id</code>가 PK에 포함되어 있으므로 3장의 <b>식별 관계(실선)</b>다.</li>
+<li><code>product_id</code>에는 <code>ON DELETE</code>가 없다 → 기본값인 <code>NO ACTION</code>. 즉 <b>어떤 주문항목이 참조하는 상품은 삭제할 수 없다.</b> 팔린 적 있는 상품을 지우지 못하게 막는 것이므로 의도적으로 맞는 설계다.</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">N:M 교차 테이블 — 학생·강좌 수강신청</div><pre><code>CREATE TABLE enrollments (
+  student_id  BIGINT REFERENCES students(id) ON DELETE CASCADE,
+  course_id   INT    REFERENCES courses(id)  ON DELETE CASCADE,
+  enrolled_at DATE   NOT NULL DEFAULT CURRENT_DATE,
+  score       NUMERIC(5,2) CONSTRAINT chk_score CHECK (score BETWEEN 0 AND 100),
+  PRIMARY KEY (student_id, course_id)          -- 복합 PK로 중복 방지
+);
+
+-- 양방향 조회 최적화 인덱스 (복합 PK의 반대 방향)
 CREATE INDEX idx_enroll_course ON enrollments (course_id, student_id);</code></pre></div>
+<ul class="b">
+<li><code>DEFAULT CURRENT_DATE</code> — INSERT할 때 <code>enrolled_at</code>을 안 주면 오늘 날짜가 들어간다. 서버 시계가 여럿이어도 <b>DB 기준으로 통일</b>된다.</li>
+<li><code>CHECK (score BETWEEN 0 AND 100)</code> — <code>BETWEEN</code>은 <b>양끝 포함</b>이다. 0점과 100점이 허용된다.</li>
+<li><code>PRIMARY KEY (student_id, course_id)</code> — 같은 학생이 같은 강좌를 두 번 신청하는 것이 자동으로 막힌다. 연결 테이블에서 "중복 방지"라고 부르는 것이 이 뜻이다.</li>
+</ul>
+<div class="callout deep"><span class="ctitle">🔎 짚어 둘 것 — CHECK 제약과 NULL</span>
+<p>원본 슬라이드에는 <code>score</code>에 인라인 <code>CHECK (score BETWEEN 0 AND 100)</code>과 <code>CONSTRAINT chk_score CHECK (score IS NULL OR ...)</code>이 <b>둘 다</b> 붙어 있어 같은 검사가 두 번 걸린다. 그런데 둘 중 하나만 있어도 결과가 같다 — <b>SQL의 CHECK 제약은 결과가 UNKNOWN(NULL)일 때 통과시키기 때문</b>이다. <code>score</code>가 NULL이면 <code>NULL BETWEEN 0 AND 100</code>은 TRUE도 FALSE도 아닌 UNKNOWN이 되고, CHECK는 이를 위반으로 보지 않는다. 즉 <code>score IS NULL OR</code>은 없어도 NULL이 허용된다. 위 DDL처럼 <b>하나만 남기자.</b></p></div>
+<div class="note">실무 주의 — <code>ON DELETE CASCADE</code>는 설정만 해 두고 끝내지 말고, <b>트랜잭션을 열어 실제로 의도한 행만 지워지는지 확인한 뒤 COMMIT</b>하고 아니면 ROLLBACK하는 절차를 밟자. 연쇄 삭제는 한 번 커밋하면 되돌릴 방법이 없다.</div>
+
+  <h3>7) 함정 / 감점 포인트</h3>
+<ul class="b">
+<li><b>세 단계를 뭉개서 진행하기</b> — 리포트에 ERD만 있고 "왜 이 타입을 골랐는지"가 없으면 물리 설계를 안 한 것으로 읽힌다. 세 단계를 각각 한 절씩 쓰면 설계 과정이 그대로 드러난다.</li>
+<li><b>금액에 <code>FLOAT</code>/<code>DOUBLE</code> 쓰기</b> — 가장 흔하고 가장 확실한 감점 포인트.</li>
+<li><b>시간에 <code>TIMESTAMP</code>(타임존 없음) 쓰기</b> — PostgreSQL 실습이라면 <code>TIMESTAMPTZ</code>가 기본 선택이다.</li>
+<li><b>약한 엔티티에 <code>ON DELETE CASCADE</code>를 안 걸기</b> · <b>N:M 교차 테이블에 PK를 안 주기</b> — PK 없는 테이블은 중복 행을 막지 못하고 특정 행을 갱신·삭제할 방법도 없다.</li>
+<li><b>인덱스를 이유 없이 잔뜩 걸기</b> — "성능을 위해 모든 컬럼에 인덱스를 걸었다"는 오히려 이해 부족으로 읽힌다. 인덱스가 쓰기를 느리게 한다는 사실을 한 줄이라도 적자.</li>
+<li><b>Lock 전략을 안 쓰고 넘어가기</b> — 동시성 이야기가 한 줄도 없으면 "혼자 쓰는 DB"를 설계한 것처럼 보인다.</li>
+</ul>
+
+  <h3>8) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>개념적·논리적·물리적을 굳이 나눠야 하나요? ERD 그리고 바로 CREATE TABLE 하면 되잖아요.</summary><div class="fa">작은 프로젝트라면 실제로 그렇게 합니다. 나누는 이유는 <b>결정의 성격이 다르고, 되돌리는 비용이 다르기 때문</b>입니다. "학생이 강의를 여러 개 듣는가"는 현업에 물어야 알 수 있고 틀리면 설계 전체를 다시 해야 합니다. "<code>VARCHAR(200)</code>이냐 <code>TEXT</code>냐"는 개발자가 판단할 수 있고 나중에 <code>ALTER TABLE</code>로 바꿀 수 있습니다. 성격이 다른 두 결정을 섞어서 하면, 비싼 결정(요구사항)을 싼 결정(타입)에 신경 쓰느라 대충 하게 됩니다. 단계를 나누는 건 문서를 많이 만들자는 게 아니라 <b>한 번에 한 종류의 결정만 하자</b>는 뜻입니다.</div></details>
+<details><summary>낙관적 Lock은 잠그지도 않는데 어떻게 Lock인가요?</summary><div class="fa">이름이 오해를 부르는 게 맞습니다. 낙관적 Lock은 DB 수준의 잠금을 전혀 걸지 않습니다. 실제로 하는 일은 "내가 읽은 뒤에 값이 바뀌었으면 저장을 실패시킨다"는 <b>조건부 UPDATE</b>입니다. 그런데도 Lock이라 부르는 이유는 해결하려는 문제(동시 갱신으로 인한 데이터 손실)가 같고 비관적 Lock의 대안으로 나란히 놓이기 때문입니다. 정확히 하려면 <b>낙관적 동시성 제어(Optimistic Concurrency Control)</b>가 더 맞는 이름이고, 실제로 그렇게 부르는 문헌도 많습니다.</div></details>
+<details><summary>낙관적 Lock을 쓰면 UPDATE가 실패할 수 있다는데, 그러면 데이터를 잃는 것 아닌가요?</summary><div class="fa">아닙니다. 실패는 <b>아무것도 안 바뀐 상태</b>로 끝납니다. 잃는 게 아니라 <b>거부되는</b> 것이고, 이건 오히려 원하는 동작입니다. 낙관적 Lock이 없었다면 그 UPDATE가 성공해서 앞사람의 수정을 소리 없이 덮어썼을 것이고, 그게 진짜 데이터 손실입니다. 다만 조건이 하나 있습니다 — <b>애플리케이션이 "0행 갱신됨"을 확인하고 사용자에게 알려야 합니다.</b> 이 확인을 빼먹으면 사용자는 저장 버튼을 눌렀고 에러도 안 났으니 저장된 줄 알게 되는데, 이게 낙관적 Lock을 잘못 쓰는 가장 흔한 방식입니다.</div></details>
+<details><summary>비관적 Lock이 확실히 막아 주니까 그냥 다 비관적으로 하면 안 되나요?</summary><div class="fa">권장하지 않습니다. 세 가지 대가가 있습니다. 첫째, <b>처리량이 떨어집니다</b> — 같은 행을 건드리는 요청이 줄을 서므로 동시 처리가 안 됩니다. 둘째, <b>데드락이 생깁니다</b> — 여러 행을 잠그는 트랜잭션들이 서로 다른 순서로 잠그면 교착이 나고 DBMS가 한쪽을 강제 종료합니다. 셋째, <b>사용자를 기다리게 하는 구간에 쓸 수 없습니다</b> — 편집 화면을 열어 두는 동안 잠금을 유지하면 그 시간만큼 다른 사람이 묶입니다. 그래서 "경합이 실제로 심한 짧은 구간"에만 비관적을 쓰고 나머지는 낙관적으로 가는 것이 일반적입니다.</div></details>
+<details><summary><code>NUMERIC</code>이 느리다면서 왜 금액에는 쓰나요? 정수로 원 단위 저장하면 안 되나요?</summary><div class="fa">좋은 대안이고 실제로 그렇게 하는 시스템이 많습니다. 금액을 <b>최소 단위 정수</b>로 저장하는 방식입니다(원 단위, 또는 센트 단위). 정수 연산이라 빠르고 오차도 없습니다. 다만 두 가지 주의가 있습니다. 첫째, <b>소수점 위치를 애플리케이션이 기억해야 합니다</b> — DB만 봐서는 <code>1500</code>이 1500원인지 15.00달러인지 알 수 없습니다. 둘째, <b>나눗셈이 필요한 계산(부가세, 할인율)에서 반올림 정책을 직접 관리해야 합니다.</b> <code>NUMERIC</code>은 이런 것들을 타입 자체에 담아 주고 DB가 자릿수를 강제해 줍니다. "실수 타입만 쓰지 마라"는 뜻으로 받아들이면 되고, 정수 방식도 그 조건은 만족합니다.</div></details>
+<details><summary>인덱스를 <code>(student_id, course_id)</code>로 걸면 <code>course_id</code> 조회는 정말 하나도 못 쓰나요?</summary><div class="fa">"하나도 못 쓴다"는 정확하지 않고 <b>효율적으로 못 쓴다</b>가 맞습니다. PostgreSQL은 이럴 때 인덱스 전체를 훑는 <code>Index Scan</code>(또는 <code>Bitmap Index Scan</code>)을 선택할 수 있습니다. 인덱스가 테이블보다 작으므로 테이블 전체를 읽는 것보다는 빠를 수 있습니다. 하지만 "앞 컬럼으로 위치를 좁혀 들어간다"는 인덱스의 본래 이점은 못 씁니다. 전화번호부 비유로 하면, 번호로 사람을 찾을 때 처음부터 끝까지 훑기는 하되 전화번호부가 주민등록부보다는 얇은 셈입니다. 그래서 조회가 잦다면 반대 방향 인덱스를 따로 만드는 게 맞습니다. (17장)</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>개념적·논리적·물리적 모델링의 산출물을 각각 말할 수 있는가? 어느 단계부터 DBMS에 의존하는가?</li>
+<li>금액에 <code>FLOAT</code>을 쓰면 안 되는 이유를 구체적인 예로 설명할 수 있는가?</li>
+<li>Lost Update가 무엇이고, 격리 수준만으로 왜 막히지 않는가?</li>
+<li>낙관적 Lock을 <code>version</code> 컬럼으로 구현하는 SQL을 직접 쓸 수 있는가? 실패를 어떻게 감지하는가?</li>
+<li>좌석 예매와 블로그 글 수정 중 어느 쪽이 비관적 Lock이고 왜인가?</li>
+<li><code>INDEX(a, b)</code>가 있는데 <code>WHERE b = ?</code>가 느린 이유는?</li>
+<li>약한 엔티티 DDL에 반드시 들어가야 하는 두 가지는?</li>
+</ul></div>
 </section>
 
 
