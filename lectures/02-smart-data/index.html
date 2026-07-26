@@ -3350,29 +3350,191 @@ LEFT JOIN (SELECT customer_id, SUM(point) AS total_point
     <span class="day-badge day2">Day 2</span>
     <h2><span class="num">13.</span> 서브쿼리 &amp; 집합 연산자</h2>
   </div>
-  <p class="subtitle">스칼라·인라인뷰·상관 서브쿼리 · EXISTS·IN·ANY·ALL · UNION·INTERSECT·EXCEPT</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 쿼리 안에 또 쿼리(서브쿼리)를 넣거나, 두 쿼리 결과를 더하고·빼고·겹치는 부분만 찾는(집합연산) 방법이에요.</div></div>
-  <table class="t"><thead><tr>
-<th>유형</th>
-<th>위치</th>
-<th>특징</th>
+  <p class="subtitle">스칼라·인라인 뷰·WHERE·상관 서브쿼리 · EXISTS / IN / ANY / ALL · UNION · INTERSECT · EXCEPT</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>조회 안에 조회</b>를 넣는 문법이에요. "평균보다 많이 받는 직원"처럼 <b>조건 자체를 다른 조회 결과로 줘야 할 때</b> 씁니다. 성능의 갈림길은 딱 두 질문 — <b>① 이 서브쿼리가 바깥을 참조하는가(상관)</b>, <b>② 그 안에 집계가 있는가.</b> 둘 다 예면 행마다 전체 스캔이 돌아서 100배 느려질 수 있어요.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <ul>
+  <li>서브쿼리를 <b>놓이는 위치</b>(SELECT·FROM·WHERE)와 <b>성격</b>(독립·상관)으로 구분한다</li>
+  <li><code>EXISTS</code>/<code>IN</code>/<code>ANY</code>/<code>ALL</code>을 상황에 맞게 고른다</li>
+  <li><code>UNION</code>/<code>INTERSECT</code>/<code>EXCEPT</code>로 결과 집합을 합치고 뺀다</li>
+  </ul></div>
+  <div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — 문법은 찾고, 용어 개념은 이해하라</span>
+  <p>"오늘 강의는 생각하기 좀 어려운 게 많이 나와요. 어차피 AI 의존도가 크기 때문에 여러분이 직접 SQL 구문을 문법에 맞춰 만드는 건 아니잖아요. 근데 <b>그 용어가 뭘 의미하고 있는지, 용어적 개념은 알고 있어야</b> 돼요. 낯설거나 새롭게 들리는 용어는 반드시 찾아봐라. 그것도 어렵다 그러면 AI한테 '초등학생이 이해하기 쉬운 용어로 풀어서 설명해 달라'고 해라."</p>
+  <p><b>문법 암기와 개념 이해를 분리해서 뒤쪽에 힘을 실으라</b>는 뜻이다. <code>NOT EXISTS</code>의 철자는 필요할 때 찾으면 되지만, <b>"상관 서브쿼리가 왜 행마다 실행되는가"는 찾아서 되는 것이 아니라 이해하고 있어야 다음 판단이 나온다.</b></p></div>
+
+  <h3>1) 서브쿼리 유형 — 어디에 놓이는가</h3>
+<h4>① 스칼라 서브쿼리 (SELECT 절) — 단일 값 하나만</h4>
+<div class="sqlbox norun"><div class="sqlhead">행마다 실행 → 성능 주의 → JOIN으로 대체 검토</div><pre><code>SELECT name,
+       (SELECT COUNT(*) FROM orders o WHERE o.cust_id = c.id) AS order_count
+FROM customers c;
+-- customers가 10만 행이면 서브쿼리가 10만 번 실행된다!
+
+-- 같은 결과, 훨씬 빠름 (한 번의 조인으로 끝)
+SELECT c.name, COALESCE(o.cnt, 0) AS order_count
+FROM customers c
+LEFT JOIN (SELECT cust_id, COUNT(*) AS cnt FROM orders GROUP BY cust_id) o
+       ON o.cust_id = c.id;</code></pre></div>
+<ul class="b">
+<li><b>스칼라(scalar)</b>는 "값 하나"라는 뜻이다. SELECT 절에 놓이므로 컬럼 하나 자리를 차지하고, <b>딱 하나의 행, 하나의 컬럼</b>을 반환해야 한다. 두 행이 나오면 <code>ERROR: more than one row returned by a subquery used as an expression</code>.</li>
+<li>최신 옵티마이저는 단순한 스칼라 서브쿼리를 자동으로 조인으로 바꾸기도 한다(<b>서브쿼리 언네스팅</b>). 하지만 변환이 안 되는 경우가 많고 예측하기 어려우므로, <b>집계가 들어간 스칼라 서브쿼리는 처음부터 JOIN으로 쓰는 편이 안전하다.</b></li>
+</ul>
+<h4>② 인라인 뷰 (FROM 절) — 임시 테이블처럼</h4>
+<div class="sqlbox norun"><div class="sqlhead">페이지네이션·윈도우 함수 필터링에 자주 쓴다</div><pre><code>SELECT *
+FROM (
+  SELECT *,
+         ROW_NUMBER() OVER (ORDER BY amount DESC) AS rn
+  FROM orders
+) sub                       -- ← 별칭
+WHERE rn &lt;= 5;</code></pre></div>
+<ul class="b">
+<li>FROM 절에 놓이므로 <b>테이블처럼 여러 행·여러 컬럼</b>을 반환한다. "인라인 뷰"라는 이름은 14장에서 배울 View를 쿼리 안에 인라인으로 써 넣은 것 같다는 뜻이다.</li>
+<li><b>별칭이 필수인지는 DBMS와 버전에 따라 다르다.</b> 오랫동안 PostgreSQL은 <code>ERROR: subquery in FROM must have an alias</code>를 냈지만 <b>16부터는 생략 가능</b>해졌다. MySQL은 여전히 필수, Oracle은 원래 선택. <b>항상 붙이는 습관</b>이 안전하다.</li>
+<li><b>왜 감싸야 하는가</b> — 윈도우 함수는 <code>WHERE</code>에서 쓸 수 없기 때문이다. 7장의 논리적 실행 순서를 떠올리면 보인다 — 윈도우 함수는 <code>SELECT</code> 단계에서 계산되는데 <code>WHERE</code>는 그보다 먼저다. 그래서 <b>순번을 매긴 결과를 한 겹 감싸서 바깥에서 걸러야</b> 한다.</li>
+</ul>
+<h4>③ WHERE 절 서브쿼리 (독립) vs ④ 상관 서브쿼리</h4>
+<div class="sqlbox norun"><div class="sqlhead">두 형태를 나란히 놓으면 차이가 분명해진다</div><pre><code>-- 독립(비상관): 회사 전체 평균보다 많이 받는 직원 → 서브쿼리 1회 실행
+WHERE salary &gt; (SELECT AVG(salary) FROM employees)
+
+-- 상관: 자기 부서 평균보다 많이 받는 직원 → 서브쿼리 N회 실행
+WHERE salary &gt; (SELECT AVG(salary) FROM employees WHERE dept_id = e.dept_id)
+                                                             ↑ 바깥 쿼리 참조!</code></pre></div>
+<ul class="b">
+<li><b>독립 서브쿼리</b>는 바깥 쿼리와 무관하게 혼자서도 실행된다. 그래서 DB는 <b>딱 한 번만 계산하고 그 값을 재사용</b>한다. 10만 행을 비교해도 평균은 한 번만 구한다.</li>
+<li><b>상관 서브쿼리</b>는 바깥 별칭을 참조하므로 혼자 실행될 수 없다. 바깥 행이 정해져야 계산할 수 있어서 <b>바깥 행마다 한 번씩 실행된다.</b> 직원이 10만 명이면 10만 번이다.</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">상관 서브쿼리를 CTE + JOIN으로 다시 쓰기 — 10만 번의 반복이 사라진다</div><pre><code>WITH dept_avg AS (
+  SELECT dept_id, AVG(salary) AS avg_sal FROM employees GROUP BY dept_id
+)
+SELECT e.name, e.salary
+FROM employees e
+JOIN dept_avg d ON d.dept_id = e.dept_id
+WHERE e.salary &gt; d.avg_sal;</code></pre></div>
+<div class="callout deep"><span class="ctitle">🔎 상관 서브쿼리가 항상 나쁜 것은 아니다</span>
+<p>12장에서 권장한 <code>NOT EXISTS</code>도 상관 서브쿼리다. 차이는 <b>집계가 있는가</b>다. <code>EXISTS</code>는 행 하나만 찾으면 즉시 멈추므로 반복이 싸지만, <code>AVG</code>나 <code>COUNT</code>가 들어가면 매번 전체를 훑어야 해서 비싸다. <b>집계가 들어간 상관 서브쿼리를 조심하자.</b></p></div>
+<table class="t"><thead><tr>
+<th style="width:16%">위치</th><th style="width:22%">이름</th><th>반환 모양</th><th>실행 횟수</th><th>주의</th>
 </tr></thead><tbody>
-<tr><td>스칼라 서브쿼리</td><td>SELECT 절</td><td>단일값 하나 반환, 행마다 실행 → 성능주의, JOIN 대체 검토</td></tr>
-<tr><td>인라인 뷰</td><td>FROM 절</td><td>임시테이블처럼 사용, 페이지네이션에 자주 사용</td></tr>
-<tr><td>WHERE절 서브쿼리</td><td>WHERE</td><td>비교조건, 단일값(=)/다중행(IN/ANY/ALL/EXISTS)</td></tr>
-<tr><td>상관 서브쿼리</td><td>WHERE 등</td><td>바깥쿼리 컬럼 참조 → 행마다 독립실행, JOIN/CTE로 대체 권장</td></tr>
+<tr><td>SELECT</td><td>스칼라 서브쿼리</td><td>값 1개</td><td>행마다</td><td>JOIN 대체 검토</td></tr>
+<tr><td>FROM</td><td>인라인 뷰</td><td>테이블</td><td>1회</td><td><b>별칭 붙이기</b></td></tr>
+<tr><td>WHERE (독립)</td><td>—</td><td>값 또는 목록</td><td><b>1회</b></td><td>안전</td></tr>
+<tr><td>WHERE (상관)</td><td>상관 서브쿼리</td><td>값 또는 목록</td><td>행마다</td><td><b>집계 있으면 위험</b></td></tr>
 </tbody></table>
-<div class="sqlbox"><div class="sqlhead">EXISTS / IN / ANY / ALL</div><pre><code>-- EXISTS(효율적, 존재만 확인) vs IN vs NOT EXISTS(권장)
-SELECT name FROM students s WHERE EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id=s.id);
-SELECT name FROM students s WHERE NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id=s.id);
--- NOT IN의 NULL 함정: 서브쿼리에 NULL 하나라도 있으면 전체 결과가 빈 집합!
--- ANY: 하나이상 만족(=,&gt;MIN과 동일) / ALL: 모두 만족(=,&gt;MAX와 동일)
-WHERE salary &gt; ANY (SELECT salary FROM employees WHERE dept='HR')
-WHERE salary &gt; ALL (SELECT salary FROM employees WHERE dept='HR')</code></pre></div>
-<div class="sqlbox"><div class="sqlhead">집합 연산자 — UNION / INTERSECT / EXCEPT</div><pre><code>SELECT name FROM students_2024 UNION SELECT name FROM students_2025; -- 합집합(중복제거)
-SELECT ... UNION ALL SELECT ...; -- 합집합(중복포함, 더 빠름 - 정렬/비교 불필요)
-SELECT customer_id FROM orders WHERE ... 2024 INTERSECT SELECT customer_id FROM orders WHERE ... 2025; -- 교집합
-SELECT student_id FROM enrollments WHERE course='DB' EXCEPT SELECT student_id ... WHERE course='Algorithm'; -- 차집합(Oracle: MINUS)
--- MySQL은 INTERSECT/EXCEPT 미지원 → NOT EXISTS/LEFT JOIN + IS NULL로 우회</code></pre></div>
+
+  <h3>2) EXISTS / IN / ANY / ALL</h3>
+<div class="sqlbox"><div class="sqlhead">IN과 EXISTS (연습장 실행 가능)</div><pre><code>-- IN: 서브쿼리가 만든 목록에 포함되는지
+SELECT name FROM students
+WHERE major_id IN (SELECT id FROM majors WHERE code IN ('CS','EE'));
+
+-- EXISTS: 서브쿼리에 행이 하나라도 존재하면 TRUE
+SELECT name FROM students s
+WHERE EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.id);</code></pre></div>
+<ul class="b">
+<li><code>EXISTS</code>는 <b>행이 하나라도 있는지만</b> 본다. 값은 보지 않는다 — 12장의 <b>Semi-Join</b>이 이것이다. 빠른 이유는 <b>첫 행을 찾는 즉시 멈추기 때문</b>이다.</li>
+<li>다만 <b>"대용량에서 IN보다 빠름"은 조건부</b>다. 현대 옵티마이저는 <code>IN (서브쿼리)</code>도 Semi-Join으로 변환해서 사실상 같은 계획으로 실행하는 경우가 많다(PostgreSQL에서 둘 다 <code>Hash Semi Join</code>). 즉 <b>긍정형은 대개 성능 차이가 없다. 차이가 확실한 것은 부정형이다.</b></li>
+</ul>
+<div class="callout myth"><span class="ctitle">⚠️ <code>NOT IN</code>의 NULL 함정 — 결론은 하나, 부정형은 <code>NOT EXISTS</code></span>
+<p>서브쿼리에 NULL이 하나라도 있으면 <b>결과가 통째로 빈 집합</b>이 된다. 흔히 "항상 FALSE"라고 설명하는데 <b>정확히는 FALSE가 아니라 UNKNOWN</b>이다. 결과적으로 WHERE를 통과하지 못한다는 점은 같지만, <code>NOT (UNKNOWN)</code>은 여전히 UNKNOWN이지 TRUE가 되지 않는다는 점이 3값 논리의 핵심이므로 구분해 두자.</p></div>
+<h4>ANY / ALL — 등가 변환으로 이해하기</h4>
+<table class="t"><thead><tr><th style="width:24%">표현</th><th style="width:24%">같은 뜻</th><th>읽는 법</th></tr></thead><tbody>
+<tr><td><code>&gt; ANY</code></td><td><code>&gt; MIN</code></td><td>목록의 <b>아무 값 하나보다만</b> 크면 된다</td></tr>
+<tr><td><code>&lt; ANY</code></td><td><code>&lt; MAX</code></td><td>—</td></tr>
+<tr><td><code>&gt; ALL</code></td><td><code>&gt; MAX</code></td><td>목록의 <b>모든 값보다</b> 커야 한다</td></tr>
+<tr><td><code>&lt; ALL</code></td><td><code>&lt; MIN</code></td><td>—</td></tr>
+<tr><td><code>= ANY</code></td><td><code>IN</code></td><td><b><code>IN</code>은 사실 <code>= ANY</code>의 축약</b></td></tr>
+<tr><td><code>&lt;&gt; ALL</code></td><td><code>NOT IN</code></td><td><b>그래서 NULL 함정이 <code>&lt;&gt; ALL</code>에도 그대로 있다</b></td></tr>
+</tbody></table>
+<ul class="b">
+<li><b>비교 연산자가 바뀌면 등가 변환도 뒤집힌다.</b> 이 표가 그 이야기다.</li>
+<li>실무에서 <code>ANY</code>/<code>ALL</code>은 잘 쓰지 않는다. <code>&gt; ANY</code> 대신 <code>&gt; (SELECT MIN(...))</code>이 훨씬 읽기 쉽기 때문이다. 다만 <b>읽을 줄은 알아야</b> 남의 쿼리를 볼 수 있다.</li>
+</ul>
+<div class="callout myth"><span class="ctitle">⚠️ 서브쿼리가 0행이면 <code>&gt; ALL</code>은 항상 참이다 (공허참)</span>
+<p>"모든 값보다 크다"는 조건이 값이 하나도 없으면 <b>공허하게 참(vacuous truth)</b>이 되기 때문이다. 반대로 <code>&gt; ANY</code>는 0행이면 항상 FALSE다. <b>HR 부서가 없어졌는데 전 직원이 조건을 통과하는 식의 결과</b>가 나올 수 있다.</p></div>
+
+  <h3>3) 집합 연산자 — UNION / INTERSECT / EXCEPT</h3>
+<p>JOIN이 테이블을 <b>옆으로</b> 붙인다면, 집합 연산자는 <b>아래로</b> 붙이거나 뺀다. 전제 조건이 있다 — <b>양쪽 SELECT의 컬럼 개수가 같고 타입이 호환되어야 한다.</b> 컬럼 이름은 달라도 되며, 결과의 컬럼명은 첫 번째 SELECT의 것을 따른다.</p>
+<div class="sqlbox norun"><div class="sqlhead">UNION / UNION ALL</div><pre><code>-- UNION: 합집합 (중복 제거)
+SELECT name FROM students_2024
+UNION
+SELECT name FROM students_2025;   -- 같은 이름은 1번만 출력
+
+-- UNION ALL: 합집합 (중복 포함, 훨씬 빠름 — 중복 불필요 시 권장)
+SELECT 'sale'   AS type, product_id, amount FROM sales
+UNION ALL
+SELECT 'refund', product_id, amount FROM refunds;</code></pre></div>
+<ul class="b">
+<li><code>UNION</code>은 <b>중복을 제거한다.</b> 제거하려면 전체를 정렬하거나 해시해야 하므로 비용이 든다. <code>UNION ALL</code>은 그냥 이어 붙인다.</li>
+<li><code>'sale' AS type</code>은 <b>어느 테이블에서 왔는지 표시하는 상수 컬럼</b>이다. 이어 붙이고 나면 구분이 안 되므로 흔히 쓰는 기법이다.</li>
+</ul>
+<div class="cp"><div class="cphead">✔ 기본값을 <code>UNION ALL</code>로 두자</div><ul>
+<li>중복이 실제로 문제가 되는 경우에만 <code>UNION</code>을 쓴다. 원래 중복이 있을 수 없는 데이터를 <code>UNION</code>으로 합치면 비용만 더 든다. 더 나쁘게는 <b>우연히 값이 같은 서로 다른 거래 두 건이 하나로 합쳐져 데이터가 사라진다.</b></li>
+</ul></div>
+<div class="callout deep"><span class="ctitle">🔎 <code>students_2024</code> / <code>students_2025</code>가 왜 따로 있는가 — 파티셔닝의 출발점</span>
+<p>학생 정보를 <b>연도별로 쪼개 둔 것</b>이다. 한 학교의 학적 데이터는 수십 년치가 쌓이는데, <code>students</code> 한 테이블에 전부 넣으면 재학생을 조회할 때마다 졸업생 수십 년치가 섞이고 조건을 하나 잘못 쓰면 1990년대 학번까지 딸려 나온다.</p>
+<ul>
+<li><b>테이블 분리</b> — 사람이 직접 나누고 합칠 때 <code>UNION ALL</code>을 직접 쓴다. 가장 원시적이지만 지금 배운 문법만으로 가능하다.</li>
+<li><b>파티셔닝</b> — 논리적으로는 한 테이블인데 DB가 내부적으로 연도별 조각으로 나눠 저장한다. 조회 조건에 연도가 있으면 해당 조각만 읽는다(<b>파티션 프루닝</b>). <b>합치는 일을 DB가 대신 해 준다.</b></li>
+<li><b>샤딩</b> — 조각을 아예 <b>다른 서버</b>로 나눠 보낸다. 한 대로 감당이 안 될 때. (22장)</li>
+</ul></div>
+<div class="sqlbox norun"><div class="sqlhead">INTERSECT (교집합) / EXCEPT (차집합, Oracle은 MINUS)</div><pre><code>-- 2024~2025년 모두 구매한 고객
+SELECT customer_id FROM orders WHERE order_date &gt;= '2024-01-01' AND order_date &lt; '2025-01-01'
+INTERSECT
+SELECT customer_id FROM orders WHERE order_date &gt;= '2025-01-01' AND order_date &lt; '2026-01-01';
+
+-- DB 수강 but 알고리즘 미수강 학생 (12장의 Anti-Join을 집합 연산으로)
+SELECT student_id FROM enrollments WHERE course='DB'
+EXCEPT
+SELECT student_id FROM enrollments WHERE course='Algorithm';</code></pre></div>
+<ul class="b">
+<li><b><code>EXCEPT</code>는 NULL에 안전하다.</b> <code>NOT IN</code>과 달리 집합 연산은 NULL을 하나의 값처럼 취급해 비교하므로 빈 집합이 되는 함정이 없다 — <b><code>NOT IN</code>을 피할 이유가 하나 더</b>다.</li>
+<li>참고로 위 예제에서 <code>EXTRACT(YEAR FROM order_date)=2024</code> 대신 범위 비교를 쓴 이유는, <b>컬럼에 함수를 씌우면 인덱스가 무력화되기 때문</b>이다.</li>
+</ul>
+<table class="t"><thead><tr><th style="width:18%">연산자</th><th>의미</th><th>중복 제거</th><th>Oracle</th><th>MySQL</th></tr></thead><tbody>
+<tr><td><code>UNION</code></td><td>합집합</td><td>O</td><td>동일</td><td>지원</td></tr>
+<tr><td><code>UNION ALL</code></td><td>합집합</td><td>✗ (빠름)</td><td>동일</td><td>지원</td></tr>
+<tr><td><code>INTERSECT</code></td><td>교집합</td><td>O</td><td>동일</td><td><b>8.0.31+</b></td></tr>
+<tr><td><code>EXCEPT</code></td><td>차집합</td><td>O</td><td><b>MINUS</b></td><td><b>8.0.31+</b></td></tr>
+</tbody></table>
+<div class="note"><b>MySQL은 8.0.31(2022.10)부터 <code>INTERSECT</code>·<code>EXCEPT</code>를 지원한다.</b> "MySQL 미지원"이라는 설명은 그 이전 버전 기준이다. 실무에는 8.0.31 미만이 여전히 많이 돌고 있으므로 <b>버전을 확인하고 쓰자.</b> 미지원 환경에서의 <code>EXCEPT</code> 우회는 <b><code>LEFT JOIN + IS NULL</code></b>과 <b><code>NOT EXISTS</code></b> 두 가지이고, 둘 다 유효하지만 서로 다른 기법이다.</div>
+
+  <h3>4) 서브쿼리 vs JOIN vs 집합 연산 — 무엇을 언제</h3>
+<table class="t"><thead><tr><th style="width:40%">하고 싶은 것</th><th>권장</th></tr></thead><tbody>
+<tr><td>짝이 있는 것만 (값은 불필요)</td><td><b><code>EXISTS</code></b> (Semi-Join)</td></tr>
+<tr><td>짝이 없는 것만</td><td><b><code>NOT EXISTS</code></b> 또는 <code>EXCEPT</code></td></tr>
+<tr><td>양쪽의 값을 함께 보기</td><td><b>JOIN</b></td></tr>
+<tr><td>각 행에 집계값을 붙이기</td><td><b>CTE + JOIN</b>(14장) 또는 <b>윈도우 함수</b>(15장)</td></tr>
+<tr><td>두 결과를 위아래로 합치기</td><td><b><code>UNION ALL</code></b> (중복 상관없으면)</td></tr>
+<tr><td>복잡한 다단계 가공</td><td><b>CTE</b> (14장)</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ 핵심 원칙 하나</div><ul>
+<li><b>상관 서브쿼리 안에 집계가 있으면 일단 의심하자.</b> 대개 CTE + JOIN으로 다시 쓸 수 있고, 그쪽이 빠르고 읽기 쉽다.</li>
+</ul></div>
+
+  <h3>5) 함정 / 감점 포인트</h3>
+<ul class="b">
+<li><b><code>NOT IN</code> 서브쿼리 사용</b> — NULL 하나로 결과가 통째로 비어도 에러가 안 난다. <code>NOT EXISTS</code>나 <code>EXCEPT</code>를 쓰자.</li>
+<li><b>FROM 절 서브쿼리에 별칭 누락</b> · <b>집계가 들어간 상관 서브쿼리</b> · <b>스칼라 서브쿼리를 SELECT 절에 여러 개 나열</b>(컬럼 개수 × 행 수만큼 실행된다)</li>
+<li><b><code>UNION</code>을 습관적으로 쓰기</b> — 중복 제거 비용이 들고, 우연히 값이 같은 서로 다른 행이 합쳐져 데이터가 사라질 수 있다.</li>
+<li><b>MySQL에서 <code>EXCEPT</code>/<code>INTERSECT</code>를 버전 확인 없이 쓰기</b> · <b>Oracle에서 <code>EXCEPT</code> 쓰기</b>(<code>MINUS</code>다) · <b><code>&gt; ALL</code>을 빈 서브쿼리에 쓰기</b></li>
+</ul>
+
+  <h3>6) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>서브쿼리와 JOIN이 같은 결과를 낸다면 어느 쪽이 더 빠른가요?</summary><div class="fa">경우에 따라 다르지만 방향성은 있습니다. <b>독립 서브쿼리(바깥을 참조하지 않는 것)는 한 번만 실행되므로 안전</b>합니다 — <code>WHERE salary &gt; (SELECT AVG(salary) FROM employees)</code> 같은 것은 JOIN으로 바꿔도 이득이 없습니다. 반면 <b>행마다 실행되는 것(스칼라 서브쿼리, 집계가 든 상관 서브쿼리)은 JOIN이 대체로 빠릅니다.</b> 판단 기준은 "이 서브쿼리가 몇 번 실행되는가"이고, 확실히 알려면 11장의 <code>EXPLAIN ANALYZE</code>에서 <b><code>loops</code> 값</b>을 보면 됩니다 — <code>loops=1</code>이면 한 번, <code>loops=100000</code>이면 10만 번입니다.</div></details>
+<details><summary>"전체 평균보다 높은 학생"과 "자기 학과 평균보다 높은 학생"을 각각 짰는데 결과가 똑같이 나왔습니다. 잘못 쓴 건가요?</summary><div class="fa">둘 다 맞았을 수도 있고 둘 다 틀렸을 수도 있습니다. <b>결과가 같다는 사실만으로는 판별할 수 없습니다</b> — 두 쿼리는 결과가 아니라 <b>구조</b>로 구분되기 때문입니다. 구분 방법은 하나입니다: <b>서브쿼리 안에 바깥 쿼리의 별칭(<code>s.</code>)이 등장하는가.</b> 등장하면 상관, 안 하면 독립입니다.<br><br>왜 결과가 같아질 수 있는가 — <b>모든 그룹의 분포 모양이 우연히 똑같을 때</b> 그렇습니다. GPA가 <code>2.0 + (학번 % 30) / 10</code>처럼 만들어지고 학과가 <code>학번 % 5</code>로 정해진 실습 데이터라면 30이 5의 배수이므로 <b>모든 학과가 완전히 같은 GPA 분포</b>를 갖습니다. 이런 데이터에서는 상관 서브쿼리를 써야 할 자리에 독립 서브쿼리를 써 놓고도 결과가 맞아 보이고, <b>실제 데이터로 바꾸는 순간 조용히 틀립니다.</b> 그래서 보는 것은 결과가 아니라 쿼리 구조입니다. (두 결과가 정말 같은지 확인하려면 <code>EXCEPT</code>를 <b>양방향</b>으로 돌려 둘 다 0행이어야 합니다.)</div></details>
+<details><summary><code>IN</code>에 값 목록을 아주 많이 넣어도 되나요? 1만 개쯤요.</summary><div class="fa">권장하지 않습니다. 첫째, <b>쿼리 문자열이 거대해집니다</b> — 파싱 시간이 늘고 DB의 쿼리 길이 제한에 걸릴 수 있습니다. 둘째, <b>실행계획 캐시가 무력해집니다</b> — 값이 하나만 달라져도 다른 쿼리로 취급되어 매번 새로 계획을 세웁니다. 셋째, PostgreSQL은 목록이 길어지면 선형 비교로 처리할 수 있어 느려집니다. 대안은 (1) 그 목록이 어디서 왔는지 보고 <b>서브쿼리로 바꾸거나</b>, (2) 임시 테이블에 넣고 JOIN하거나, (3) <code>= ANY(ARRAY[...])</code>나 <code>VALUES</code> 목록과 조인하는 형태입니다. <b>수십 개 수준이면 <code>IN</code>으로 충분합니다.</b></div></details>
+<details><summary><code>UNION ALL</code>이 빠르다면 <code>UNION</code>은 언제 쓰나요?</summary><div class="fa">중복이 <b>실제로 생길 수 있고, 그 중복을 없애야 의미가 맞을 때</b>만 씁니다. <code>students_2024 UNION students_2025</code>가 그런 경우입니다 — 2년 연속 재학한 학생이 이름 목록에 두 번 나오면 "전체 학생 이름 목록"으로서 어색합니다. 반면 매출과 환불을 합치는 예는 각 거래가 별개이므로 <code>UNION ALL</code>이 맞습니다. 판단 기준은 <b>"같은 행이 두 번 나오면 틀린 것인가"</b>입니다. 그리고 12장의 FULL OUTER JOIN 우회처럼 <code>UNION</code>이어야만 하는 경우도 있으니 <b>습관이 아니라 매번 판단</b>해야 합니다.</div></details>
+<details><summary>인라인 뷰(FROM 절 서브쿼리)와 CTE는 같은 건가요? 그럼 왜 둘 다 있나요?</summary><div class="fa">기능적으로는 거의 같고 PostgreSQL에서는 실행계획도 대체로 같습니다. 차이는 <b>읽기 쉬움과 재사용</b>입니다. 인라인 뷰는 쿼리 한가운데에 중첩되므로 3단계쯤 되면 괄호를 따라가기가 어렵습니다. CTE는 <code>WITH a AS (...), b AS (...)</code>처럼 <b>위에서부터 순서대로 이름을 붙여 가는 형태</b>라 읽기 좋고, 같은 이름을 여러 번 참조할 수 있으며, <b>재귀 쿼리는 CTE로만 가능</b>합니다. 실무 권장은 <b>"인라인 뷰가 한 겹이면 상관없고, 두 겹 이상이면 CTE로"</b>입니다. (14장)</div></details>
+<details><summary><code>EXCEPT</code>가 <code>NOT EXISTS</code>보다 편해 보이는데, 왜 <code>NOT EXISTS</code>를 더 많이 쓰나요?</summary><div class="fa">용도가 조금 다릅니다. <code>EXCEPT</code>는 <b>양쪽 SELECT의 컬럼 구성이 같아야</b> 하고 결과로 그 컬럼들만 나옵니다. "DB를 수강했지만 알고리즘은 안 들은 학생의 <b>id</b>"까지는 되는데, 거기에 이름과 학과를 붙이려면 다시 조인해야 합니다. <code>NOT EXISTS</code>는 바깥 쿼리가 그대로 살아 있으므로 <b>원하는 컬럼을 자유롭게 SELECT할 수 있습니다.</b> 그래서 "빼기 자체가 목적"이면 <code>EXCEPT</code>가 간결하고, "거른 결과에 정보를 붙여야 하면" <code>NOT EXISTS</code>가 편합니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>스칼라 서브쿼리·인라인 뷰·WHERE 서브쿼리는 각각 무엇을 반환해야 하는가?</li>
+<li>독립 서브쿼리와 상관 서브쿼리의 실행 횟수 차이는? <b>무엇으로 구분하는가?</b></li>
+<li>상관 서브쿼리 중 특히 위험한 형태는? 무엇으로 대체하는가?</li>
+<li><code>&gt; ANY</code>와 <code>&gt; ALL</code>을 <code>MIN</code>/<code>MAX</code>로 바꿔 쓸 수 있는가? <code>= ANY</code>는 무엇과 같은가?</li>
+<li><code>UNION</code>과 <code>UNION ALL</code> 중 기본으로 쓸 것은? Oracle에서 <code>EXCEPT</code>에 해당하는 키워드는?</li>
+<li>서브쿼리가 몇 번 실행되는지 실행계획의 어느 값으로 확인하는가?</li>
+</ul></div>
 </section>
 
 
