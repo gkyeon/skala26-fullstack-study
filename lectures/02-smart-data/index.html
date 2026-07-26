@@ -2472,31 +2472,157 @@ psql postgres -U (계정) -W</code></pre></div>
     <span class="day-badge day1">Day 1</span>
     <h2><span class="num">9.</span> Day 1 핵심 복습 &amp; DBMS 생태계</h2>
   </div>
-  <p class="subtitle">DDL/DML 정리 · DBMS vs DW vs Data Mining · MSA 연동</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 1일차 내용 정리 + 실제 서비스에서 DB가 Kafka·Redis 같은 다른 시스템과 어떻게 협업하는지 보는 파트예요.</div></div>
-  <h4>이전 내용 빠른 복습</h4>
-<ul class="b">
-<li>DB개요: 파일시스템 한계→DBMS등장 / ACID 4원칙 / WAL(로그먼저→데이터반영→장애복구) / Isolation(RC→RR→Serializable) / Dirty·NonRepeatable·Phantom Read</li>
-<li>관계형모델: 테이블·PK·FK·UK·관계(1:1/1:N/N:M) / 정규화 1NF~BCNF(부분종속2NF, 이행종속3NF, 비후보키결정자BCNF)</li>
-<li>ERD: Entity·Attribute·Relationship / IE표기법(까마귀발) / 개념→논리→물리 3단계</li>
-<li>DDL: CREATE TABLE·제약조건·데이터타입/ALTER TABLE/DBMS별 차이, PK 생성방식 차이</li>
-<li>DML: SELECT 실행순서(FROM→WHERE→GROUP→HAVING→SELECT→ORDER)/INSERT·UPDATE·DELETE/NULL 주의(=NULL(X)→IS NULL(O))</li>
-</ul>
-<h4>DBMS vs Data Warehouse vs Data Mining</h4>
-<table class="t"><thead><tr>
-<th>구분</th>
-<th>DBMS</th>
-<th>Data Warehouse</th>
-<th>Data Mining</th>
-</tr></thead><tbody>
-<tr><td>목적</td><td>실시간 트랜잭션 처리(OLTP)</td><td>분석용 데이터 통합 저장(OLAP)</td><td>패턴/지식 발견</td></tr>
-<tr><td>데이터</td><td>최신 상태, 정규화</td><td>이력 포함, 반정규화(스타스키마)</td><td>DW/DB에서 추출한 데이터</td></tr>
+  <p class="subtitle">1~7장 빠른 복습 · DBMS vs Data Warehouse vs Data Mining · 데이터 거버넌스 · MSA에서의 Kafka / Elasticsearch / Redis</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 앞의 7장은 "DB <b>안에서</b>" 벌어지는 일이었어요. 이 장은 그 <b>주변 지형도</b>입니다. 실제 시스템에서 DB 옆에는 캐시(Redis), 검색 엔진(Elasticsearch), 메시지 큐(Kafka), 분석 창고(DW)가 함께 서 있어요. <b>핵심은 "셋 다 원본이 아니라 사본"</b>이라는 것 — 원본은 언제나 RDBMS에 있습니다.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표 — 왜 지금 이걸 배우나</span>
+  <ul>
+  <li><b>DB로 전부 하려는 실수를 막는다.</b> "검색도 DB로, 캐시도 DB로, 로그도 DB로" 하면 DB 한 대에 부하가 몰려 전부 느려진다. 각 도구가 왜 따로 있는지 알아야 어디까지 DB로 할지 판단할 수 있다.</li>
+  <li><b>면접과 팀 프로젝트에서 나온다.</b> "왜 Redis를 쓰셨나요?", "이 데이터는 왜 Elasticsearch로 보냈나요?"는 흔한 질문이고, 답하려면 각 도구의 역할 구분이 있어야 한다.</li>
+  </ul></div>
+
+  <h3>1) 이전 내용 빠른 복습</h3>
+<table class="t"><thead><tr><th style="width:18%">주제</th><th>핵심</th></tr></thead><tbody>
+<tr><td><b>DB 개요</b> (1장)</td><td>파일 시스템의 한계 → DBMS 등장 / <b>ACID 4원칙</b> / <b>WAL</b>: 로그 먼저 → 데이터 파일 반영 → 장애 복구 보장 / <b>Isolation Level</b>: RC → RR → Serializable / Dirty · Non-Repeatable · Phantom Read</td></tr>
+<tr><td><b>관계형 모델</b> (2장)</td><td>테이블 · PK · FK · UK · 관계(1:1 / 1:N / N:M) / <b>정규화 1NF~BCNF</b> — 부분종속(2NF), 이행종속(3NF), 비후보키 결정자(BCNF)</td></tr>
+<tr><td><b>ERD</b> (3·4장)</td><td>Entity · Attribute · Relationship / <b>IE 표기법(까마귀발)</b> / 개념→논리→물리 3단계</td></tr>
+<tr><td><b>DDL</b> (6장)</td><td>CREATE TABLE · 제약조건 · 데이터 타입 / ALTER TABLE / DBMS별 차이 / PK: <code>GENERATED ALWAYS AS IDENTITY</code>(PG) vs <code>AUTO_INCREMENT</code>(MySQL)</td></tr>
+<tr><td><b>DML</b> (7장)</td><td><b>SELECT 실행 순서</b> / INSERT · UPDATE · DELETE / <b>NULL 주의</b>: <code>= NULL</code>(✗) → <code>IS NULL</code>(○) / <code>COALESCE()</code> / <code>CASE WHEN</code></td></tr>
 </tbody></table>
-<h4>MSA 환경에서 DB 연동 — Kafka / Elasticsearch / Redis</h4>
+<div class="note">짚어 둘 것 — 슬라이드는 실행 순서를 6단계로 줄여 적었지만, 7장에서 본 전체 순서는 <code>FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT</code> <b>8단계</b>이고, 순서를 답해야 할 때는 이쪽이 안전하다.</div>
+
+  <h3>2) DBMS vs Data Warehouse vs Data Mining</h3>
+<p>세 가지는 "데이터를 다룬다"는 점만 같고 <b>목적이 전혀 다르다.</b></p>
+<table class="t"><thead><tr>
+<th style="width:14%">구분</th><th>DBMS</th><th>Data Warehouse</th><th>Data Mining</th>
+</tr></thead><tbody>
+<tr><td><b>목적</b></td><td>일상 트랜잭션 처리(<b>OLTP</b>)</td><td>분석, 의사결정 지원(<b>OLAP</b>)</td><td>숨겨진 패턴, 지식 발견</td></tr>
+<tr><td><b>데이터 특성</b></td><td>현재 데이터, 정규화, 실시간</td><td>이력 데이터, <b>비정규화</b>, 주기적 적재</td><td>대용량 데이터, 통계/ML 모델</td></tr>
+<tr><td><b>쿼리 유형</b></td><td>단순 CRUD, 짧은 트랜잭션</td><td>복잡한 집계, 다차원 분석</td><td>분류, 군집, 연관, 예측</td></tr>
+<tr><td><b>예시</b></td><td>MySQL, PostgreSQL, Oracle</td><td>BigQuery, Snowflake, Redshift</td><td>Python ML, Spark MLlib</td></tr>
+<tr><td><b>응답시간</b></td><td>ms ~ 초</td><td>초 ~ 분</td><td>분 ~ 시간</td></tr>
+<tr><td><b>갱신방식</b></td><td>실시간 INSERT/UPDATE/DELETE</td><td>배치 ETL(야간 주기적 적재)</td><td>배치/온라인 모델 학습</td></tr>
+</tbody></table>
+<div class="sqlbox norun"><div class="sqlhead">따로 외우지 말고 — 데이터가 흘러가는 순서로 읽기</div><pre><code>[운영 시스템]              [분석 시스템]           [모델링]
+   DBMS        --ETL--&gt;    Data Warehouse   --&gt;   Data Mining
+ 주문이 들어옴              밤에 하루치를 모아         쌓인 데이터로
+ 재고가 깎임                분석용으로 변환·적재       패턴을 찾고 예측
+ (초당 수천 건)             (하루 1번, 대량)          (주 1회 학습)</code></pre></div>
 <ul class="b">
-<li><b>Kafka 연동</b>: 비동기 메시징, DB 변경(Event Sourcing)을 Topic으로 전파 → 다른 MSA 서비스 구독. Kafka 전송 전 DB COMMIT 완료 필요. Schema Registry로 스키마 호환성 관리</li>
-<li><b>Elasticsearch 연동</b>: 빠른 검색/로그분석, DB→Logstash/Debezium→ES 동기화(CDC). ES는 Eventually Consistent — 실시간 정합성 보장 불가</li>
-<li><b>Redis 연동</b>: 캐시(Cache-Aside/Write-Through), 세션, Pub/Sub, Rate Limiting. 캐시 히트율 90%+ 목표, Cache Stampede 방지(Lock/Jitter)</li>
+<li><b>DBMS는 "지금"을 다룬다.</b> 주문이 방금 들어왔고 재고가 방금 깎였다. 정확성과 속도가 생명이라 정규화되어 있고 트랜잭션이 짧다.</li>
+<li><b>DW는 "그동안"을 다룬다.</b> 3년치 주문을 지역별·상품별로 집계한다. 이력이 통째로 필요하므로 데이터가 훨씬 크고, JOIN을 줄이려고 <b>일부러 비정규화</b>한다.</li>
+<li><b>Data Mining은 "앞으로"를 다룬다.</b> 쌓인 데이터에서 "이 고객은 이탈할 것 같다" 같은 패턴을 찾는다. DB 기술이라기보다 통계·ML 영역이다.</li>
+<li><b>ETL</b>(Extract, Transform, Load) — 운영 DB에서 뽑아 분석용 형태로 바꾸고 DW에 넣는 과정. 보통 야간 배치. 요즘은 순서를 바꿔 먼저 적재하고 나중에 변환하는 <b>ELT</b>도 많이 쓴다(DW의 계산력이 좋아졌기 때문).</li>
 </ul>
+<div class="callout myth"><span class="ctitle">⚠️ DW는 "큰 DB"가 아니라 방향이 다른 DB다</span>
+<p>크기가 아니라 <b>최적화 방향</b>이 다르다. DBMS는 "한 행을 빠르게 찾아 고치기"에, DW는 "한 컬럼 전체를 빠르게 훑어 합산하기"에 최적화되어 있다. 그래서 DW 제품(BigQuery, Snowflake, Redshift)은 4장에서 본 <b>컬럼 기반 저장(Columnstore)</b>을 쓴다. 지난주 실습에서 만진 Polars와 DuckDB가 같은 계열이다.</p></div>
+<div class="callout deep"><span class="ctitle">🔎 심화 — 왜 DW는 비정규화를 하는가</span>
+<p>2장에서 정규화가 원칙이라고 배웠는데 DW는 반대로 간다. 이유는 목적이 다르기 때문이다. 정규화의 이점은 "갱신 이상 방지"인데 <b>DW는 갱신을 하지 않는다.</b> 한 번 적재하면 읽기만 한다. 갱신이 없으면 갱신 이상도 없으므로 <b>정규화의 이점이 사라지고 남는 것은 JOIN 비용이라는 단점뿐</b>이다. 그래서 DW에서는 사실 테이블 하나에 차원 정보를 붙여 두는 <b>스타 스키마(Star Schema)</b> 같은 비정규화 설계를 쓴다. (28장)</p></div>
+<h4>데이터 거버넌스 — 분석의 전제</h4>
+<p><b>데이터 거버넌스(data governance)</b>는 데이터를 <b>어떤 기준으로 모으고, 누가 어디까지 접근하고, 품질을 어떻게 관리하고, 어떤 프로세스로 정리할지</b>를 미리 정해 둔 규칙 체계다. 거버넌스가 없으면 다음이 전부 정해지지 않은 채로 남는다.</p>
+<ul class="b">
+<li><b>수집 기준</b> — 무엇을 남기고 무엇을 버릴 것인가. 기준이 없으면 쓸모없는 데이터만 쌓인다.</li>
+<li><b>품질·노이즈 관리</b> — 결측·중복·이상값을 누가 언제 걸러내는가.</li>
+<li><b>접근 권한</b> — 개인정보가 섞인 컬럼을 누가 볼 수 있는가. (30장)</li>
+<li><b>생애주기</b> — 언제까지 보관하고 언제 지우는가.</li>
+</ul>
+<div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — 데이터 프로젝트는 거버넌스부터 확인한다</span>
+<p>"데이터 분석의 가장 기본이 되는 건 데이터 거버넌스예요. 거버넌스가 없는 상태에서 노이즈 관리라든지 보안이라든지 접근 권한이 없으면, 아무리 데이터를 모아 놓더라도 어떤 기준으로 모으고 어떻게 관리하고 어떤 프로세스에서 정리할지가 정해지지 않아요. 그래서 데이터 웨어하우스라든지 데이터 관련 프로젝트를 할 때는 <b>고객사하고 먼저 확인할 사항이 데이터에 대한 거버넌스가 있는지</b>고, 없다면 그거 잡으면서 진행을 해야 됩니다."</p>
+<p>즉 요구사항을 받아 바로 파이프라인을 만드는 것이 아니라, <b>거버넌스 체계가 있는지부터 확인하고 없으면 그것을 세우는 일을 프로젝트 범위에 넣는다</b>는 뜻이다. 팀 프로젝트에서 공개 데이터셋을 쓰더라도 "이 컬럼은 무슨 기준으로 수집됐고 결측을 어떻게 처리했는가"를 먼저 적어 두는 것이 같은 습관이다.</p></div>
+
+  <h3>3) MSA 환경에서 DB 연동 — 왜 도구가 늘어나는가</h3>
+<p><b>MSA(Microservices Architecture)</b>는 하나의 큰 애플리케이션을 여러 개의 작은 서비스로 쪼개는 구조다. 주문 서비스, 회원 서비스, 재고 서비스가 각각 독립적으로 배포되고 각자의 DB를 갖는다.</p>
+<div class="cp"><div class="cphead">✔ 여기서 문제가 생긴다</div><ul>
+<li><b>서비스가 쪼개지면 데이터도 쪼개진다.</b> 주문 서비스가 회원 정보를 알아야 하는데 그건 회원 서비스의 DB에 있다. 매번 물어보면 느리고, 회원 서비스가 죽으면 주문도 못 받는다. <b>이 문제를 푸는 도구들이 Kafka · Elasticsearch · Redis다.</b></li>
+</ul></div>
+<h4>Kafka — 비동기 메시징과 decoupling</h4>
+<ul class="b">
+<li><b>목적</b>: 비동기 메시징, 이벤트 기반 아키텍처, <b>서비스 간 decoupling</b></li>
+<li>DB 변경사항(<b>Event Sourcing</b>)을 Kafka Topic으로 전파 → 다른 마이크로서비스가 구독</li>
+<li><b>주의!</b> Kafka 메시지 전송 전 <b>DB COMMIT 완료</b> / Kafka Transaction 기능으로 atomic 처리</li>
+<li><b>Schema Registry</b>: Producer/Consumer 간 스키마(Avro/Protobuf) 중앙 관리 → 호환성 보장</li>
+</ul>
+<p>서비스 A가 "주문이 생성됨"이라는 메시지를 큐에 던지면 서비스 B·C·D가 각자 그걸 읽어 간다. <b>A는 누가 읽는지 알 필요가 없다</b> — 이것이 decoupling(결합도 낮추기)이다.</p>
+<div class="sqlbox norun"><div class="sqlhead">DB 저장과 메시지 발행의 순서가 왜 중요한가 — 두 가지 사고</div><pre><code>1. DB에 주문 INSERT
+2. Kafka에 "주문 생성됨" 메시지 발행   ← 여기서 실패
+   → DB에는 주문이 있는데 아무도 모른다
+
+또는
+
+1. Kafka에 "주문 생성됨" 메시지 발행
+2. DB INSERT 후 ROLLBACK               ← 여기서 실패
+   → 존재하지 않는 주문의 배송이 시작된다</code></pre></div>
+<div class="callout deep"><span class="ctitle">🔎 이중 쓰기 문제(dual write problem)와 Outbox 패턴</span>
+<p>DB에 저장하고 Kafka에 메시지를 보내는 두 작업은 <b>서로 다른 시스템이라 하나의 트랜잭션으로 묶이지 않는다.</b> 이것이 이중 쓰기 문제이고, MSA에서 가장 흔한 데이터 정합성 이슈다. <b>1장에서 배운 ACID의 A가 한 DB 안에서만 보장된다는 사실의 실무적 귀결</b>이다.</p>
+<p>"Kafka 전송 전 DB COMMIT"이라는 원칙은 <b>두 번째 사고만</b> 막는다. 첫 번째까지 막으려면 <b>Outbox 패턴</b>을 쓴다 — 메시지를 Kafka에 직접 보내는 대신 <b>같은 DB의 outbox 테이블에 INSERT</b>하면 주문 INSERT와 메시지 INSERT가 <b>하나의 트랜잭션</b>이 된다. 별도 프로세스가 outbox를 읽어 Kafka로 보낸다.</p></div>
+<h4>Elasticsearch — 검색 전담</h4>
+<ul class="b">
+<li><b>목적</b>: 빠른 검색, 필터링, 로그 분석, 비정형 텍스트 인덱싱</li>
+<li>DB → <b>Logstash/Debezium</b> → Elasticsearch 동기화 (<b>CDC 패턴</b>)</li>
+<li><b>주의!</b> ES는 <b>Eventually Consistent</b> → 실시간 정합성 보장 불가, RDBMS와 역할 분리 필요</li>
+</ul>
+<p>7장에서 <code>LIKE '%키워드%'</code>가 인덱스를 못 탄다고 배웠다. <b>그 문제의 본격적인 해답이 Elasticsearch</b>다 — 형태소 분석, 관련도 랭킹, 오타 교정 같은 검색 기능을 전담한다.</p>
+<ul class="b">
+<li><b>CDC (Change Data Capture)</b> — DB의 변경을 실시간으로 감지해 다른 시스템으로 흘려보내는 기법. <b>Debezium은 PostgreSQL의 WAL을 직접 읽어서</b> 변경 이벤트를 만든다. <b>1장에서 배운 WAL이 여기서 다시 등장한다.</b> 애플리케이션 코드를 전혀 건드리지 않고도 모든 변경을 잡아낼 수 있다는 것이 장점이다.</li>
+<li><b>Eventually Consistent(최종적 일관성)</b> — "언젠가는 같아진다"는 보장. DB에 저장된 직후 ES에는 아직 반영되지 않았을 수 있고, 보통 수백 ms~수 초 뒤에 반영된다.</li>
+<li><b>"역할 분리 필요"의 실무적 의미</b> — 상품을 등록한 직후 검색 화면에서 안 보일 수 있다는 뜻이다. 그래서 <b>돈이 걸린 판단은 항상 RDBMS로</b> 한다. 검색 결과로 목록을 보여 주는 것까지는 ES로 하되, <b>결제 시점의 재고 확인과 가격은 반드시 RDBMS에서 다시 읽어야 한다.</b></li>
+</ul>
+<h4>Redis — 캐시와 세션</h4>
+<ul class="b">
+<li><b>목적</b>: 캐시(<b>Cache-Aside / Write-Through</b>), 세션 저장, Pub/Sub, Rate Limiting</li>
+<li><b>캐시 히트율 목표 90%+</b> / <b>Cache Stampede</b> 방지 (Lock 또는 Jitter)</li>
+<li><b>데이터 유실 주의</b>: persistence 설정(<b>RDB/AOF</b>) 확인 필수</li>
+</ul>
+<p>MSA에서 특히 필요해지는 이유가 하나 더 있다. 서비스마다 DB가 쪼개져 있으면 <b>화면 하나를 그리는 데 필요한 데이터가 여러 DB에 흩어져 있다.</b> 요청마다 여러 번 왕복하면 그 시간이 그대로 응답 지연이 된다. 즉 Redis는 단일 DB의 부하를 덜어 주는 용도이면서, MSA에서는 <b>쪼개진 데이터를 다시 모아 두는 자리</b> 역할도 한다.</p>
+<table class="t"><thead><tr><th style="width:22%">용어</th><th>뜻</th></tr></thead><tbody>
+<tr><td><b>Cache-Aside</b></td><td>애플리케이션이 먼저 캐시를 보고, 없으면 DB에서 읽어 캐시에 넣는 방식. 가장 흔하다</td></tr>
+<tr><td><b>Write-Through</b></td><td>쓸 때 캐시와 DB에 같이 쓰는 방식. 캐시가 항상 최신이지만 쓰기가 느려진다</td></tr>
+<tr><td><b>캐시 히트율</b></td><td>요청 중 캐시에서 바로 답한 비율. 90%면 10번 중 9번은 DB까지 안 간다. 히트율이 낮으면 캐시를 두는 의미가 없다</td></tr>
+<tr><td><b>Cache Stampede</b></td><td>인기 캐시 항목의 유효기간이 만료되는 <b>바로 그 순간</b> 수천 요청이 동시에 캐시 미스가 나서 전부 DB로 몰려가는 현상. DB가 순간적으로 죽는다<br>→ <b>Lock</b>: 첫 요청만 DB에 가고 나머지는 그 결과를 기다림 / <b>Jitter</b>: 만료 시간에 무작위 값을 더해 시점을 흩뜨림(300초 대신 270~330초 랜덤)</td></tr>
+<tr><td><b>RDB / AOF</b></td><td>Redis의 두 영속화 방식. <b>RDB</b>는 주기적 메모리 스냅샷(빠르지만 마지막 스냅샷 이후 유실), <b>AOF</b>는 모든 쓰기 명령을 로그에 기록(안전하지만 파일이 커짐). <b>AOF가 1장의 WAL과 같은 발상</b>이다</td></tr>
+</tbody></table>
+<div class="note">헷갈리지 말 것 — Redis의 <b>RDB는 관계형 DB(Relational DataBase)가 아니다.</b> Redis Database 파일 포맷을 가리키는 다른 약어다.</div>
+<h4>셋을 한눈에</h4>
+<table class="t"><thead><tr>
+<th style="width:18%">도구</th><th>무엇을 대신 맡는가</th><th>DB와의 관계</th><th>정합성</th>
+</tr></thead><tbody>
+<tr><td><b>Kafka</b></td><td>서비스 간 통신</td><td>DB 변경을 이벤트로 흘려보냄</td><td>비동기</td></tr>
+<tr><td><b>Elasticsearch</b></td><td>검색</td><td>DB의 사본을 검색용으로 유지</td><td>최종적 일관성</td></tr>
+<tr><td><b>Redis</b></td><td>반복 조회</td><td>DB 앞단의 캐시</td><td>캐시 무효화 정책에 의존</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ 공통점이 하나 있다</div><ul>
+<li><b>셋 다 원본이 아니다.</b> 원본은 항상 RDBMS에 있고 이 셋은 그 사본이거나 파생물이다. 그래서 <b>셋 중 무엇이 날아가도 DB만 있으면 복구할 수 있어야 하는 것</b>이 올바른 설계다.</li>
+</ul></div>
+<div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — 쿼리로만 풀어야 하나를 먼저 생각하라</span>
+<p>"<b>꼭 데이터베이스에서 쿼리로 풀어야 하나를 생각해 보라</b>"고 강조하셨다. 같은 문제를 애플리케이션 코드 단에서 푸는 방법도 있고, 다른 도구로 푸는 방법도 있다. 지나가는 내용을 그대로 받아들이지 말고 비판적으로 보라는 것이다. 이 절의 Kafka/ES/Redis가 정확히 그 이야기다 — 검색을 DB의 <code>LIKE</code>로 풀 것인가, ES로 넘길 것인가.</p>
+<p>덧붙여, "각 도구가 영역을 나눠 맡는다"는 이 그림의 <b>경계가 지금 빠르게 흐려지고 있다</b>는 점도 알아 두자. 벡터 검색이 뜨자 그래프 DB가 벡터 기능을 넣고, 전통 RDBMS도 벡터 타입을 넣고, 반대로 벡터 DB는 그래프 기능을 붙인다. <b>"이건 무슨 DB다"라고 외우기보다 어느 제품이 지금 어떤 기능을 지원하는지 그때그때 확인하는 습관</b>이 필요하다. (29장)</p></div>
+
+  <h3>4) 흔한 함정</h3>
+<ul class="b">
+<li><b>DW를 "큰 DB"로 설명하기</b> — 크기가 아니라 목적(OLTP vs OLAP)과 최적화 방향(행 vs 컬럼)이 다르다.</li>
+<li><b>Redis/ES를 원본 저장소로 쓰기</b> — 둘 다 사본이다. "Redis에 회원 정보를 저장한다"가 아니라 "<b>캐싱한다</b>"가 맞는 표현이다.</li>
+<li><b>DB 저장과 메시지 발행을 순서만 맞추고 끝내기</b> — "COMMIT 완료 후 전송"은 두 사고 중 하나만 막는다. 나머지 하나는 <b>Outbox 패턴</b>이라야 막힌다.</li>
+<li><b>캐시를 도입해 놓고 히트율·무효화 전략을 정하지 않기</b> — 캐시는 <b>"언제 지울 것인가"가 본체</b>다. 히트율 목표와 만료 정책이 없으면 설계가 아니다.</li>
+<li><b>Eventually Consistent를 "느린 것"으로 이해하기</b> — 느린 게 아니라 <b>한동안 다를 수 있다</b>는 뜻이다. 속도 문제가 아니라 정합성 모델의 문제다.</li>
+</ul>
+
+  <h3>5) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>검색 기능도 DB에서 <code>LIKE</code>로 하면 되는데 왜 Elasticsearch를 따로 두나요?</summary><div class="fa">데이터가 작으면 실제로 <code>LIKE</code>로 충분합니다. ES가 필요해지는 지점은 셋입니다. 첫째, <b>성능</b> — <code>LIKE '%키워드%'</code>는 인덱스를 못 타서 전체를 훑습니다. 수백만 행이면 매 검색이 수 초씩 걸립니다. 둘째, <b>검색 품질</b> — "데이터베이스"로 검색했을 때 "데이터 베이스", "DB", "database"도 찾아 주고 관련도 순으로 정렬해 주는 것은 <code>LIKE</code>로 불가능합니다. 셋째, <b>부하 분리</b> — 검색은 무거운 쿼리라 주문 처리를 하는 운영 DB에서 같이 돌리면 주문까지 느려집니다. 반대로 말하면 이 셋이 문제되지 않는 규모에서 ES를 도입하는 것은 과한 복잡도입니다.</div></details>
+<details><summary>Redis가 메모리라서 빠르다면, DB도 메모리를 늘리면 되지 않나요?</summary><div class="fa">부분적으로는 맞습니다. PostgreSQL도 <code>shared_buffers</code>로 데이터를 메모리에 캐싱하고, 메모리를 늘리면 실제로 빨라집니다. 그런데 차이가 남습니다. 첫째, <b>DB는 여전히 WAL을 디스크에 fsync합니다</b> — 1장에서 본 지속성 보장 때문에 쓰기는 디스크 속도에 묶입니다. Redis는 그 보장을 (기본적으로) 포기해서 빠른 것입니다. 둘째, <b>DB는 트랜잭션·잠금·MVCC 같은 처리를 매번 합니다.</b> Redis는 단일 스레드로 명령을 순서대로 처리할 뿐이라 오버헤드가 훨씬 적습니다. 즉 Redis가 빠른 이유는 메모리만이 아니라 <b>보장을 덜 하기 때문</b>이고, 그래서 원본 저장소로 쓸 수 없습니다.</div></details>
+<details><summary>캐시 히트율이 90%면 DB 부하가 10%로 줄어드는 건가요?</summary><div class="fa">정확히 그렇지는 않습니다. 히트율 90%는 <b>요청 건수</b>의 90%가 캐시에서 처리된다는 뜻이지 DB 부하가 10분의 1이 된다는 뜻은 아닙니다. 캐시에 담기는 것이 대개 <b>가볍고 반복되는 조회</b>이기 때문입니다 — 무거운 집계 쿼리나 쓰기 작업은 여전히 DB로 갑니다. 반대로, 무거운 쿼리 결과를 캐싱하면 히트율이 낮아도 부하는 크게 줄어듭니다. <b>무엇을 캐싱하느냐가 히트율 숫자보다 중요합니다.</b></div></details>
+<details><summary>Kafka도 데이터를 저장하는데, 그럼 Kafka를 DB처럼 쓰면 안 되나요?</summary><div class="fa">권장하지 않습니다. Kafka는 메시지를 일정 기간 보관하기는 하지만 <b>조회에 최적화되어 있지 않습니다.</b> "id가 12345인 주문을 가져와"를 Kafka에 물을 수 없습니다. 로그를 처음부터 순서대로 읽는 것이 기본 접근이라 특정 레코드를 찾으려면 전부 재생해야 합니다. 인덱스도, JOIN도, 제약조건도 없습니다. Event Sourcing 패턴에서 Kafka를 원본 저장소처럼 쓰기는 하지만, 그때도 <b>조회용 뷰를 따로 만들어 DB에 둡니다.</b> 즉 Kafka는 "무슨 일이 있었는지의 기록"이고 DB는 "지금 상태"입니다.</div></details>
+<details><summary>MSA에서 서비스마다 DB를 나누면 JOIN을 못 하는데, 불편하지 않나요?</summary><div class="fa">불편합니다. 그게 MSA의 가장 큰 대가입니다. 회원 서비스와 주문 서비스의 DB가 분리되어 있으면 "이번 달 VIP 회원의 주문 목록"을 SQL 한 줄로 못 뽑습니다. 그래서 (1) 애플리케이션에서 각각 조회해 합치거나, (2) 자주 필요한 정보를 <b>의도적으로 복제</b>해 두거나(주문 테이블에 회원 이름을 같이 저장), (3) 분석이 필요한 데이터는 DW로 모아 거기서 JOIN합니다. 이 불편을 감수하는 이유는 <b>독립 배포와 장애 격리</b> 때문입니다. 즉 MSA는 "데이터 정합성을 일부 포기하고 개발·운영 속도를 얻는" 거래이고, <b>나눌 만한 규모가 아니라면 하나의 DB로 두는 편이 낫습니다.</b></div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>OLTP와 OLAP의 차이를 목적·쿼리 유형·응답시간 세 축으로 설명할 수 있는가?</li>
+<li>DW가 비정규화를 하는데도 문제가 없는 이유는?</li>
+<li>이중 쓰기 문제란 무엇이고, Outbox 패턴은 그것을 어떻게 푸는가?</li>
+<li>CDC란 무엇인가? Debezium은 PostgreSQL의 무엇을 읽는가?</li>
+<li>Eventually Consistent가 "느리다"와 어떻게 다른가?</li>
+<li>Cache Stampede가 무엇이고 해결책 두 가지는?</li>
+<li>Redis가 빠른 이유를 "메모리라서" 말고 하나 더 댈 수 있는가?</li>
+</ul></div>
 </section>
 
 
