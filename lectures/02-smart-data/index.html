@@ -6053,10 +6053,10 @@ CREATE TABLE knowledge_base (
 CREATE INDEX ON knowledge_base USING hnsw (embedding vector_cosine_ops);
 
 -- 거리 연산자 세 가지:  &lt;-&gt;  L2   |  &lt;#&gt;  내적  |  &lt;=&gt;  코사인
-SELECT id, title, 1 - (embedding <=> $1) AS similarity
+SELECT id, title, 1 - (embedding &lt;=&gt; $1) AS similarity
 FROM knowledge_base
 WHERE lang = 'ko'                    -- 메타데이터 필터링 = pgvector가 이기는 지점
-ORDER BY embedding <=> $1
+ORDER BY embedding &lt;=&gt; $1
 LIMIT 5;</code></pre></div>
 <div class="callout myth"><span class="ctitle">⚠️ HNSW는 <b>근사</b> 검색이다 — recall을 반드시 측정하자</span>
 <p>벡터 인덱스(HNSW, IVFFlat)는 <b>ANN(Approximate Nearest Neighbor)</b>, 즉 <b>정확한 정답을 보장하지 않는다.</b> 인덱스 없이 전수 비교한 결과와 비교해 <b>몇 개나 맞혔는지(recall)를 재야</b> 한다 — 실측에서 기본 설정으로 <b>10개 중 7개</b>가 나오는 것도 흔하다. 조절 손잡이는 HNSW의 <code>m</code>·<code>ef_construction</code>(생성 시)과 <code>hnsw.ef_search</code>(조회 시)이고, <b>올릴수록 정확하지만 느려진다.</b></p>
