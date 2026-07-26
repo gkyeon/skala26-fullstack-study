@@ -3779,88 +3779,265 @@ REFRESH MATERIALIZED VIEW CONCURRENTLY mv_monthly_sales;</code></pre></div>
     <span class="day-badge day2">Day 2</span>
     <h2><span class="num">15.</span> Windows Function – 분석 함수</h2>
   </div>
-  <p class="subtitle">ROW_NUMBER · RANK · DENSE_RANK · NTILE · LAG · LEAD · 누적합 · 이동평균 (+부록: LATERAL, UPSERT, JSONB, RAG 등)</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: GROUP BY랑 비슷한데 그룹으로 묶어도 <b>원래 행이 사라지지 않는 것</b>이 핵심 차이예요. 순위 매기기(RANK), 전월 대비(LAG) 같은 데 씁니다. 이 세션은 분량이 많은데 뒤쪽 '[참고]'는 실무 심화 부록이라 처음엔 앞부분(순위/LAG/누적합)만 확실히 이해해도 충분해요.</div></div>
-  <table class="t"><thead><tr>
-<th></th>
-<th>GROUP BY</th>
-<th>Window Function</th>
-</tr></thead><tbody>
-<tr><td>동작</td><td>그룹으로 집계 → 행 수 줄어듦(개별행 소실)</td><td>집계하면서도 원래 행 유지 → 행별결과+집계값 동시</td></tr>
+  <p class="subtitle">OVER 절 3부품 · 순위 함수 · LAG/LEAD · 프레임(누적합·이동평균) · FIRST/LAST_VALUE · 백분위 · Gap and Island</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">한 줄로 외우면 <b>"집계는 하되 행은 안 줄인다."</b> <code>GROUP BY</code>는 지역별 합계를 주는 대신 <b>"1월 서울 매출이 얼마였는지"를 지워 버립니다.</b> 윈도우 함수는 <b>각 행을 그대로 두고 옆에 집계값을 붙여</b> 줘서, 비중 계산·순위·전월 대비 증감·누적합·이동평균을 <b>한 줄</b>로 풀어요.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표 — GROUP BY의 대가</span>
+  <p>실무 질문은 대개 둘을 <b>동시에</b> 요구한다 — "각 매출 행 옆에 그 지역 전체 합계를 같이", "각 직원 옆에 부서 평균 연봉을", "이번 달과 <b>지난달</b> 매출을 한 행에", "매출 순위 1등부터".</p>
+  <table class="t"><thead><tr><th style="width:24%"></th><th>GROUP BY</th><th>Window Function</th></tr></thead><tbody>
+  <tr><td>결과 행 수</td><td>그룹 수만큼 <b>줄어듦</b></td><td>원본 그대로 <b>유지</b></td></tr>
+  <tr><td>개별 행 정보</td><td>사라짐</td><td>남음</td></tr>
+  <tr><td>얻는 것</td><td>집계값</td><td>행별 값 <b>+</b> 집계값</td></tr>
+  </tbody></table>
+  <p>13장의 서브쿼리나 14장의 CTE로 집계를 따로 만들어 다시 조인해도 되지만, <b>같은 테이블을 두 번 읽고 CTE를 만들고 다시 조인</b>한다 — 질문 하나에 세 단계다. 윈도우 함수는 이걸 <b>한 줄</b>로 푼다.</p></div>
+
+  <h3>1) OVER 절 뜯어보기 — 세 부품</h3>
+<div class="sqlbox norun"><div class="sqlhead">모든 Window Function은 이 모양</div><pre><code>함수명(인자) OVER ( [PARTITION BY 컬럼] [ORDER BY 컬럼] [프레임] )
+--                  └ 어느 그룹 ┘      └ 어느 순서 ┘   └ 어디부터 어디까지 ┘</code></pre></div>
+<p><code>OVER</code>가 붙는 순간 <b>"이건 집계지만 행을 줄이지 마"</b>라는 뜻이 된다. 괄호 안의 세 부품이 <b>"어느 범위를 보고 계산할 것인가"</b>를 정한다.</p>
+<div class="sqlbox"><div class="sqlhead">PARTITION BY — 나눠서 계산만 하고 행은 합치지 않는다 (연습장 실행 가능)</div><pre><code>SELECT s.name, m.name AS major, s.gpa,
+       ROUND(AVG(s.gpa) OVER (PARTITION BY s.major_id), 2) AS 학과평균,
+       ROUND(s.gpa - AVG(s.gpa) OVER (PARTITION BY s.major_id), 2) AS 편차
+FROM students s JOIN majors m ON m.id = s.major_id
+ORDER BY m.name, s.gpa DESC;</code></pre></div>
+<ul class="b">
+<li><code>PARTITION BY</code>는 <code>GROUP BY</code>와 역할이 같다 — "지역별로", "학과별로" 나눠서 각각 계산한다. 다른 점은 <b>나눠서 계산만 하고 행을 합치지는 않는다</b>는 것.</li>
+<li>집계값이 같은 그룹의 <b>모든 행에 똑같이 반복</b>되는 것이 정상이다. "집계값을 각 행에 나눠 준다"가 윈도우 함수가 하는 일이다.</li>
+<li><b>비중 계산</b>이 대표 용도다 — <code>revenue / SUM(revenue) OVER (PARTITION BY region)</code>. <b><code>GROUP BY</code>만으로는 이 계산이 불가능하다</b> — 분자(개별 행)가 이미 사라졌기 때문이다.</li>
+<li><b><code>PARTITION BY</code>를 아예 안 쓰면 테이블 전체가 하나의 파티션</b>이다. <code>SUM(revenue) OVER ()</code> = 전체 합계.</li>
+<li>맨 끝의 <code>ORDER BY</code>는 <b>윈도우와 무관한 그냥 결과 정렬</b>이다. <code>OVER()</code> 괄호 <b>밖</b>의 <code>ORDER BY</code>는 늘 그렇다 — <b>이 둘을 구분하는 게 중요하다.</b></li>
+</ul>
+<div class="callout myth"><span class="ctitle">⚠️ 언제 계산되는가 — 이것이 함정의 근원이다</span>
+<div class="sqlbox norun"><div class="sqlhead">논리적 처리 순서</div><pre><code>FROM → WHERE → GROUP BY → HAVING → [ Window Function ] → SELECT → DISTINCT → ORDER BY → LIMIT</code></pre></div>
+<p><b>Window Function은 <code>WHERE</code>가 다 끝난 뒤에 계산된다.</b> 여기서 두 가지가 따라온다.</p>
+<ul>
+<li><b><code>WHERE</code>로 걸러진 행은 윈도우 계산에 아예 안 들어간다.</b> <code>WHERE region = 'Seoul'</code>을 걸면 <code>SUM(revenue) OVER ()</code>는 서울만의 합이 된다.</li>
+<li><b><code>WHERE</code>에서 윈도우 함수를 쓸 수 없다</b> — 아직 계산되지 않았기 때문이다. <code>ERROR: window functions are not allowed in WHERE</code></li>
+</ul>
+<p>윈도우 결과로 필터링하려면 <b>한 겹 감싸야 한다</b>(서브쿼리든 CTE든). 이 <b>"윈도우 → CTE로 감싸기 → WHERE"</b> 패턴은 앞으로 계속 나온다.</p></div>
+<div class="sqlbox"><div class="sqlhead">따라 치기 — 학과별 1등만 뽑기 (감싸기 패턴)</div><pre><code>WITH ranked AS (
+  SELECT s.name, s.major_id, s.gpa,
+         RANK() OVER (PARTITION BY s.major_id ORDER BY s.gpa DESC) AS r
+  FROM students s
+)
+SELECT name, major_id, gpa FROM ranked WHERE r = 1;</code></pre></div>
+<div class="note">일부 DBMS(Snowflake, BigQuery, DuckDB)는 이 감싸기를 줄여 주는 <code>QUALIFY</code> 절을 제공한다 — <code>HAVING</code>이 <code>GROUP BY</code>에 대해 하는 일을 윈도우 함수에 대해 해 준다. <b>PostgreSQL·MySQL·Oracle·SQL Server에는 없다.</b> 인터넷 예제를 그대로 넣으면 문법 오류가 나는 이유다.</div>
+
+  <h3>2) 순위 함수 — ROW_NUMBER / RANK / DENSE_RANK / NTILE</h3>
+<table class="t"><thead><tr><th style="width:22%">함수</th><th style="width:44%">동점 처리</th><th>결과 예</th></tr></thead><tbody>
+<tr><td><code>ROW_NUMBER()</code></td><td>동점이어도 <b>무조건 서로 다른 번호</b></td><td>1, 2, 3, 4</td></tr>
+<tr><td><code>RANK()</code></td><td>동점은 같은 순위, <b>다음 번호는 건너뜀</b></td><td>1, 2, 2, <b>4</b></td></tr>
+<tr><td><code>DENSE_RANK()</code></td><td>동점은 같은 순위, <b>번호는 연속</b></td><td>1, 2, 2, <b>3</b></td></tr>
+<tr><td><code>NTILE(n)</code></td><td>순서대로 <b>n개 그룹으로 균등 분할</b></td><td>1, 1, 2, 3</td></tr>
 </tbody></table>
-<div class="sqlbox"><div class="sqlhead">기본 문법 — PARTITION BY(분석단위구분) · ORDER BY(윈도우내정렬) · ROWS/RANGE(집계범위 프레임)</div><pre><code>함수명() OVER ([PARTITION BY 컬럼] [ORDER BY 컬럼] [ROWS/RANGE 프레임])</code></pre></div>
-<h4>핵심 함수 분류</h4>
+<p><code>RANK</code>가 건너뛰는 이유는 <b>올림픽 시상식</b>을 생각하면 된다 — 공동 2위가 둘이면 다음은 4위다. <code>DENSE_RANK</code>는 "몇 번째로 높은 <b>값</b>인가"를 세므로 3이다.</p>
+<div class="sqlbox"><div class="sqlhead">따라 치기 — 네 함수를 한 번에 비교 (동점이 있는 데이터로!)</div><pre><code>SELECT student_id, score,
+       ROW_NUMBER() OVER (ORDER BY score DESC) AS row_num,
+       RANK()       OVER (ORDER BY score DESC) AS rank_r,
+       DENSE_RANK() OVER (ORDER BY score DESC) AS d_rank,
+       NTILE(4)     OVER (ORDER BY score DESC) AS quartile
+FROM enrollments
+WHERE course_id = 1
+ORDER BY score DESC;</code></pre></div>
+<div class="callout deep"><span class="ctitle">🔎 셋 중 무엇을 쓰나</span>
+<ul>
+<li><b><code>ROW_NUMBER</code></b> — "그룹별 최신 1건"처럼 <b>중복 없이 정확히 N개</b>를 뽑아야 할 때. 동점이어도 하나만 나온다.</li>
+<li><b><code>RANK</code></b> — 등수를 <b>사람에게 보여 줄 때.</b> 공동 2위 다음이 4위라는 상식적 순위.</li>
+<li><b><code>DENSE_RANK</code></b> — "상위 3개 가격대의 상품 전부"처럼 <b>값의 종류를 기준</b>으로 셀 때.</li>
+<li><b><code>RANK() &lt;= 3</code>과 <code>DENSE_RANK() &lt;= 3</code>은 결과가 다르다.</b> 동점이 있으면 후자가 더 많은 행을 낸다.</li>
+</ul></div>
+<div class="callout myth"><span class="ctitle">⚠️ 두 가지 주의</span>
+<ul>
+<li><b>동점을 깨는 두 번째 정렬 키를 넣자.</b> <code>ROW_NUMBER() OVER (PARTITION BY region ORDER BY revenue DESC, month)</code> — <b>결과가 재현되지 않는 쿼리는 과제에서 감점 요인</b>이다. 채점자가 돌렸을 때 내 결과와 다르게 나올 수 있다.</li>
+<li><b><code>NTILE</code>은 값이 아니라 행 개수로 자른다.</b> 그래서 구간 경계에 동점이 걸치면 <b>같은 값인데 다른 구간</b>에 들어간다. 10행에 <code>NTILE(3)</code>이면 앞쪽 구간부터 한 행씩 더 가져가 4, 3, 3이 된다. "같은 점수인데 다른 등급"이 문제라면 <code>PERCENT_RANK</code>/<code>CUME_DIST</code>나 명시적 <code>CASE WHEN</code> 구간을 쓴다.</li>
+</ul></div>
+
+  <h3>3) LAG / LEAD — 이전 행, 다음 행 보기</h3>
+<p>지금까지는 "같은 그룹의 집계값"을 옆에 붙였다. 이번엔 <b>다른 행의 값</b>을 붙인다. <code>LAG(컬럼, n [, 기본값])</code> = n행 이전, <code>LEAD(...)</code> = n행 이후. <code>n</code>을 생략하면 1이다. <b>관계형 모델에는 원래 "행 순서"라는 개념이 없어서(2장) 이런 계산이 전통적으로 아주 어려웠다.</b></p>
+<div class="sqlbox norun"><div class="sqlhead">따라 치기 — 전월 대비 증감(MoM)</div><pre><code>SELECT region, month, revenue,
+  LAG(revenue) OVER w AS prev_month,
+  revenue - LAG(revenue) OVER w AS mom_diff,
+  ROUND((revenue - LAG(revenue) OVER w) / NULLIF(LAG(revenue) OVER w, 0) * 100, 1) AS mom_pct,
+  LEAD(revenue) OVER w AS next_month
+FROM sales
+WINDOW w AS (PARTITION BY region ORDER BY month)    -- ← 윈도우에 이름 붙이기
+ORDER BY region, month;</code></pre></div>
 <ul class="b">
-<li><b>순위함수</b>: ROW_NUMBER(고유번호 1,2,3,4) / RANK(동점시 같은순위,건너뜀 1,2,2,4) / DENSE_RANK(동점시 같은순위,연속 1,2,2,3) / NTILE(n)(n개그룹균등분할)</li>
-<li><b>이동/비교함수</b>: LAG(col,n) / LEAD(col,n) / FIRST_VALUE / LAST_VALUE</li>
-<li><b>집계Window</b>: SUM/AVG/COUNT/MIN/MAX OVER() — 누적합, 이동평균</li>
+<li><b><code>ORDER BY month</code>가 여기서는 필수다.</b> "이전"이라는 개념은 순서가 있어야 성립한다.</li>
+<li><b>각 파티션의 첫 행은 <code>LAG</code>가 NULL</b>이다(이전 행이 없으므로). 마지막 행은 <code>LEAD</code>가 NULL.</li>
+<li><code>NULLIF(x, 0)</code> — <b>0으로 나누기 에러를 막는 관용구.</b> 이전 달 매출이 0이면 쿼리 전체가 에러로 죽는데, NULL로 바꿔 주면 결과가 NULL이 될 뿐 <b>쿼리는 산다.</b></li>
+<li><code>LAG(revenue, 1, 0)</code>처럼 <b>세 번째 인자로 NULL 대신 쓸 기본값</b>을 줄 수 있다. 단 "이전 달이 없다"와 "이전 달 매출이 0이다"를 뭉개는 것이므로 의미상 맞는지 따져 보자.</li>
+<li><b><code>WINDOW</code> 절</b> — 같은 <code>OVER (...)</code>가 네 번 반복되면 한 글자만 틀려도 다른 윈도우가 되어 위험하다. <code>WINDOW w AS (...)</code>로 이름을 붙이면 <b>한 곳만 고치면 된다.</b> PostgreSQL·MySQL 8.0+·Oracle 21c+ 지원, <b>SQL Server는 미지원.</b></li>
 </ul>
-<div class="sqlbox"><div class="sqlhead">ROW_NUMBER / RANK / DENSE_RANK 비교</div><pre><code>SELECT region, month, revenue,
- ROW_NUMBER() OVER (PARTITION BY region ORDER BY revenue DESC) AS row_num,
- RANK()       OVER (PARTITION BY region ORDER BY revenue DESC) AS rank_r,
- DENSE_RANK() OVER (PARTITION BY region ORDER BY revenue DESC) AS d_rank,
- NTILE(3)     OVER (PARTITION BY region ORDER BY revenue DESC) AS tier
-FROM sales;</code></pre></div>
-<div class="sqlbox"><div class="sqlhead">LAG/LEAD — 전월 대비 증감 (NULLIF로 0나누기 방지)</div><pre><code>SELECT region, month, revenue,
- LAG(revenue,1) OVER (PARTITION BY region ORDER BY month) AS prev_month_sales,
- ROUND((revenue - LAG(revenue,1) OVER (PARTITION BY region ORDER BY month))
-   / NULLIF(LAG(revenue,1) OVER (PARTITION BY region ORDER BY month),0) * 100, 1) AS mom_growth_pct,
- LEAD(revenue,1) OVER (PARTITION BY region ORDER BY month) AS next_month_sales
-FROM sales;
--- 활용: MoM/YoY(LAG 12개월전) 성장률, 연속 이벤트 감지, 대기시간 계산</code></pre></div>
-<div class="sqlbox"><div class="sqlhead">누적합 / 이동평균 — ROWS vs RANGE 프레임</div><pre><code>-- 누적합
-SUM(revenue) OVER (PARTITION BY region ORDER BY month
-  ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cumulative_revenue
--- 3개월 이동평균
-AVG(revenue) OVER (PARTITION BY region ORDER BY month
-  ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS ma_3month
--- ROWS: 물리적 행 개수 기준(정확) / RANGE: 논리적 값(ORDER BY 값 같으면 모두 포함) 기준
--- 프레임 키워드: UNBOUNDED PRECEDING / N PRECEDING / CURRENT ROW / N FOLLOWING / UNBOUNDED FOLLOWING</code></pre></div>
-<div class="sqlbox"><div class="sqlhead">실무 패턴 — TOP-N per Group / LATERAL JOIN / Gap&amp;Island</div><pre><code>-- TOP-N per Group (학과별 성적 상위 3명) — 3가지 방법
--- 1) Window Function (가장 추천)
-SELECT * FROM ( SELECT s.name, e.score,
-  ROW_NUMBER() OVER (PARTITION BY s.major_id ORDER BY e.score DESC) AS rn
-  FROM students s JOIN enrollments e ON e.student_id=s.id ) ranked WHERE rn&lt;=3;
--- 2) LATERAL JOIN (PostgreSQL, 행별 독립 서브쿼리)
-SELECT m.name, top3.name, top3.score FROM majors m
-CROSS JOIN LATERAL ( SELECT s.name, e.score FROM students s JOIN enrollments e ON e.student_id=s.id
-  WHERE s.major_id=m.id ORDER BY e.score DESC LIMIT 3 ) top3;
--- Gap &amp; Island: 연속 구간 찾기 (연속 로그인 등)
-SELECT MIN(login_date), MAX(login_date), COUNT(*) FROM (
-  SELECT login_date, login_date - ROW_NUMBER() OVER (ORDER BY login_date)*INTERVAL '1 day' AS grp
-  FROM user_logins ) t GROUP BY grp;</code></pre></div>
-<h4>[참고] 심화 패턴 모음</h4>
+<div class="callout myth"><span class="ctitle">⚠️ <code>LAG(revenue, 12)</code>는 "12개월 전"이 아니라 "12행 전"이다</span>
+<p>각 파티션에 월이 <b>하나도 빠짐없이</b> 들어 있어야 12행 전이 12개월 전이 된다. 매출이 없어서 <b>행 자체가 없는 달</b>이 있으면 12행 전이 13개월 전일 수도 있다. 신경 쓰인다면 날짜 축 테이블을 <code>LEFT JOIN</code>으로 채운 뒤 <code>LAG</code>를 걸거나, <code>month = 대상월 - INTERVAL '1 year'</code> 조건으로 직접 조인하자.</p></div>
+<p><b>활용</b> — MoM(전월 대비), YoY(<code>LAG(revenue, 12)</code>), <b>간격 계산</b>(<code>order_date - LAG(order_date) OVER (PARTITION BY customer_id ORDER BY order_date)</code>로 재구매 주기), 연속 이벤트 감지(아래 Gap and Island).</p>
+
+  <h3>4) 프레임 — 누적합과 이동평균</h3>
+<p><code>OVER</code> 괄호의 세 번째 부품이다. <code>PARTITION BY</code>가 "어느 그룹", <code>ORDER BY</code>가 "어느 순서"였다면 프레임은 <b>"그 순서 안에서 현재 행 기준 어디부터 어디까지"</b>다.</p>
+<table class="t"><thead><tr><th style="width:34%">키워드</th><th>뜻</th></tr></thead><tbody>
+<tr><td><code>UNBOUNDED PRECEDING</code></td><td>파티션의 첫 행</td></tr>
+<tr><td><code>N PRECEDING</code></td><td>N행(또는 N값) 이전</td></tr>
+<tr><td><code>CURRENT ROW</code></td><td>현재 행</td></tr>
+<tr><td><code>N FOLLOWING</code> / <code>UNBOUNDED FOLLOWING</code></td><td>N행 이후 / 파티션의 마지막 행</td></tr>
+</tbody></table>
+<div class="sqlbox"><div class="sqlhead">누적합과 이동평균 (연습장 실행 가능)</div><pre><code>SELECT customer_id, order_date, amount,
+       SUM(amount) OVER (PARTITION BY customer_id ORDER BY order_date
+                         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS 누적매출,
+       ROUND(AVG(amount) OVER (PARTITION BY customer_id ORDER BY order_date
+                               ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0) AS 이동평균3
+FROM orders
+ORDER BY customer_id, order_date;</code></pre></div>
 <ul class="b">
-<li><b>UPSERT</b>(PostgreSQL): INSERT ... ON CONFLICT (col) DO UPDATE SET x=EXCLUDED.x — MySQL은 ON DUPLICATE KEY UPDATE, SQL Server는 MERGE</li>
-<li><b>STRING_AGG/ARRAY_AGG/JSON_AGG</b>: 여러 행을 문자열/배열/JSON으로 집계 (API 응답 생성에 유용)</li>
-<li><b>PIVOT</b>: PostgreSQL/MySQL은 전용 문법 없음 → CASE WHEN 방식으로 구현 (Oracle/SQL Server는 PIVOT 직접 지원)</li>
-<li><b>ON 절 vs WHERE 절</b>(OUTER JOIN): WHERE로 우측테이블 필터링하면 사실상 INNER JOIN이 됨! LEFT JOIN 유지하려면 조건을 ON 절에 추가</li>
-<li><b>CTE MATERIALIZED</b>(PG12+): 여러번 참조되거나 random()/now() 포함 시, 또는 옵티마이저가 잘못된 플랜 선택 시 강제 고정</li>
+<li><b>누적합</b>: <code>UNBOUNDED PRECEDING AND CURRENT ROW</code> = <b>파티션 첫 행부터 지금까지</b> — 누적합의 정의 그대로다. 파티션이 바뀌면 <b>0에서 다시 시작</b>한다. (<code>ROWS UNBOUNDED PRECEDING</code>으로 줄여 쓸 수 있다.)</li>
+<li><b>이동평균</b>: <code>2 PRECEDING AND CURRENT ROW</code> = 앞 2개 + 현재 = <b>3개.</b> "3개월 이동평균"인데 숫자가 2인 이유가 이것이다 — <b>헷갈리기 쉬운 지점.</b></li>
+<li><b>파티션 앞부분에서는 3개가 안 채워진다.</b> 첫 행은 자기 하나만, 둘째는 둘의 평균이다. 에러가 아니라 정상 동작인데, <b>리포트에 그대로 실으면 초반 값이 이동평균이 아니라는 걸 모르고 해석하게 된다</b> — 앞 2개월을 잘라내거나 각주를 달자.</li>
 </ul>
-<div class="sqlbox"><div class="sqlhead">[참고] AI 시대의 DB — pgvector RAG 하이브리드 검색</div><pre><code>-- pgvector 하이브리드 검색 (RAG 패턴) — 벡터 유사도 70% + 키워드 검색 30%
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE TABLE knowledge_base (id BIGSERIAL PRIMARY KEY, content TEXT,
-  embedding VECTOR(1536), search_ts TSVECTOR);
-CREATE INDEX ON knowledge_base USING HNSW (embedding vector_cosine_ops);
-WITH vector_search AS (
-  SELECT id, 1-(embedding &lt;=&gt; $1::VECTOR) AS vec_score FROM knowledge_base
-  ORDER BY embedding &lt;=&gt; $1::VECTOR LIMIT 20),
-keyword_search AS (
-  SELECT id, ts_rank(search_ts, plainto_tsquery('korean',$2)) AS kw_score FROM knowledge_base
-  WHERE search_ts @@ plainto_tsquery('korean',$2))
-SELECT kb.content, COALESCE(vs.vec_score,0)*0.7 + COALESCE(ks.kw_score,0)*0.3 AS hybrid_score
-FROM knowledge_base kb LEFT JOIN vector_search vs ON vs.id=kb.id
- LEFT JOIN keyword_search ks ON ks.id=kb.id ORDER BY hybrid_score DESC LIMIT 5;</code></pre></div>
-<h4>[참고] JOIN 실수 패턴 및 방지법</h4>
+<div class="callout myth"><span class="ctitle">⚠️ ROWS vs RANGE — 실무에서 가장 자주 물리는 함정</span>
+<ul>
+<li><b><code>ROWS</code></b> = 물리적 행 기준(정확) / <b><code>RANGE</code></b> = <code>ORDER BY</code> <b>값</b> 기준(같은 값은 모두 포함)</li>
+<li><code>RANGE</code> 모드의 <code>CURRENT ROW</code>는 "현재 행"이 아니라 <b>"현재 행과 값이 같은 모든 행(peer)"</b>을 뜻한다. 그래서 동점 행들이 <b>통째로</b> 들어간다.</li>
+<li><b>그리고 <code>ORDER BY</code>가 있고 프레임을 생략하면 기본값이 <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>다.</b> SQL 표준이 그렇게 정해 두었다.</li>
+</ul>
+<p>즉 누적합을 만들려고 프레임을 생략했는데 동점이 섞여 있으면 <b>동점 행들이 전부 같은 누적값을 갖는 결과</b>가 나온다. 그러고도 <b>데이터에 동점이 없는 동안은 멀쩡히 돌아가다가 어느 날 갑자기 이상해진다.</b> → <b>누적합·이동평균에는 <code>ROWS</code>를 명시한다.</b></p></div>
+<div class="callout deep"><span class="ctitle">🔎 <code>RANGE</code>가 필요한 경우 — 값의 범위로 창을 잡을 때</span>
+<div class="sqlbox norun"><div class="sqlhead">최근 7일간 합계 (행 개수가 아니라 날짜 범위 기준)</div><pre><code>SUM(revenue) OVER (
+  ORDER BY sale_date
+  RANGE BETWEEN INTERVAL '6 days' PRECEDING AND CURRENT ROW
+)</code></pre></div>
+<p>데이터가 없는 날이 중간에 비어 있어도 <b>항상 "7일치"</b>를 본다. <code>ROWS 6 PRECEDING</code>이면 빠진 날 때문에 실제로는 더 오래된 구간까지 잡힌다. <b>PostgreSQL 11 이상</b>에서만 이 형태(<code>RANGE</code>에 offset)를 쓸 수 있고, <code>ORDER BY</code> 컬럼이 <b>정확히 하나</b>여야 하며 그 타입에 덧셈·뺄셈이 정의돼 있어야 한다.</p>
+<table class="t"><thead><tr><th style="width:50%">목적</th><th>쓸 것</th></tr></thead><tbody>
+<tr><td>정확히 N개 행 기준 이동평균 · 누적합</td><td><b><code>ROWS</code></b> (동점 안전)</td></tr>
+<tr><td>최근 N일/N원 <b>범위</b> 집계</td><td><b><code>RANGE</code></b></td></tr>
+<tr><td>동점을 한 덩어리로 묶어 누적</td><td><code>RANGE</code> (의도적일 때만)</td></tr>
+</tbody></table></div>
+
+  <h3>5) FIRST_VALUE / LAST_VALUE · 백분위</h3>
+<div class="callout myth"><span class="ctitle">⚠️ <code>LAST_VALUE</code>는 기본 프레임에서 "자기 자신"이 나온다</span>
+<div class="sqlbox norun"><div class="sqlhead">프레임을 열어 줘야 진짜 마지막 값이 나온다</div><pre><code>FIRST_VALUE(revenue) OVER (PARTITION BY region ORDER BY month)              AS first_rev,
+LAST_VALUE(revenue)  OVER (PARTITION BY region ORDER BY month)              AS last_wrong,
+LAST_VALUE(revenue)  OVER (PARTITION BY region ORDER BY month
+                           ROWS BETWEEN UNBOUNDED PRECEDING
+                                    AND UNBOUNDED FOLLOWING)                AS last_ok</code></pre></div>
+<p>기본 프레임이 "첫 행부터 현재 행까지"이므로 <b>그 안의 마지막 행 = 현재 행</b>이다. <code>FIRST_VALUE</code>는 프레임 시작이 <code>UNBOUNDED PRECEDING</code>이라 기본 프레임에서도 잘 동작한다 — <b>그래서 이 함정이 더 잘 안 보인다.</b></p>
+<p>대안: <code>ORDER BY</code>를 뒤집고 <code>FIRST_VALUE</code>를 쓴다 — <code>FIRST_VALUE(revenue) OVER (PARTITION BY region ORDER BY month DESC)</code>. 프레임을 안 건드려도 되고 읽기도 쉽다.</p></div>
+<h4>백분위 — PERCENT_RANK / CUME_DIST</h4>
+<table class="t"><thead><tr><th style="width:22%">함수</th><th style="width:44%">정의</th><th>범위</th></tr></thead><tbody>
+<tr><td><code>PERCENT_RANK()</code></td><td><code>(RANK - 1) / (전체 행 수 - 1)</code></td><td>0 ~ 1 (첫 행이 정확히 0)</td></tr>
+<tr><td><code>CUME_DIST()</code></td><td>현재 행까지의 누적 행 수(동점 포함) / 전체 행 수</td><td>0 초과 ~ 1 (마지막 행이 정확히 1)</td></tr>
+</tbody></table>
+<div class="callout deep"><span class="ctitle">🔎 "상위 20%"에는 <code>CUME_DIST</code>를 쓴다</span>
+<p><b><code>PERCENT_RANK &lt;= 0.2</code>가 "상위 20%"를 보장하지 않는다.</b> 5행짜리 데이터(95, 88, 88, 76, 64)에 <code>pct_rank &lt;= 0.3</code>을 걸면 세 행이 나온다 — <b>60%다.</b> 같은 조건을 <code>cume_dist &lt;= 0.3</code>으로 바꾸면 한 행, 20%다.</p>
+<ul>
+<li>정확히 <b>"상위 N%의 행"</b>을 원한다 → <b><code>CUME_DIST</code></b> (정의 자체가 "여기까지 몇 퍼센트의 행이 있나")</li>
+<li><b>"1등과의 상대적 거리"</b>를 보고 싶다 → <b><code>PERCENT_RANK</code></b> (1등이 정확히 0)</li>
+</ul>
+<p>과제에서 "상위 20% 추출"이 요구사항이면 <code>CUME_DIST</code>를 쓰고 <b>왜 그쪽을 골랐는지 한 줄 적어 두면 이해한 흔적</b>이 된다. 참고로 <code>CUME_DIST</code>를 "현재 값 <b>이하</b>인 행의 비율"이라고 설명하는 자료가 많은데, 정확히는 <b>"ORDER BY 순서상 현재 행과 같거나 앞에 오는 행 수 / 전체"</b>다 — "이하"인지 "이상"인지는 <code>ASC</code>/<code>DESC</code>에 달렸다.</p>
+<p><b>PostgreSQL 주의</b>: 이 둘은 <code>double precision</code>을 돌려주는데 <code>ROUND(값, 자릿수)</code> 2인자 형태는 <code>numeric</code>에만 있다. <code>ROUND(PERCENT_RANK() OVER (...)::NUMERIC, 2)</code>처럼 <b>캐스팅을 먼저</b> 붙여야 한다.</p></div>
+
+  <h3>6) Gap and Island — 연속 구간 찾기</h3>
+<p>"며칠 연속 로그인했나", "언제부터 언제까지 연속 품절이었나". SQL에서 전통적으로 어려운 문제인데 <b>윈도우 함수 하나로 풀리는 유명한 요령</b>이 있다.</p>
+<div class="sqlbox norun"><div class="sqlhead">원리 — 날짜가 하루씩 연속이면 "날짜 − 행번호"가 상수가 된다</div><pre><code> login_date   ROW_NUMBER   login_date - ROW_NUMBER(일)
+ 03-01            1              02-28   ┐
+ 03-02            2              02-28   ├ 같은 값 = 한 덩어리
+ 03-03            3              02-28   ┘
+ 03-07            4              03-03   ┐
+ 03-08            5              03-03   ┘ 다른 값 = 다른 덩어리
+ 03-15            6              03-09   ─ 또 다른 덩어리</code></pre></div>
+<p>날짜는 1씩 늘고 행 번호도 1씩 는다 — 둘이 나란히 가는 동안 차이는 <b>고정</b>이다. 중간에 날짜가 건너뛰면 차이가 그만큼 <b>점프</b>한다. 그래서 이 차이값을 <b>그룹 키</b>로 삼아 <code>GROUP BY</code> 하면 연속 구간이 하나씩 뭉친다.</p>
+<div class="sqlbox norun"><div class="sqlhead">따라 치기 — 연속 로그인 구간</div><pre><code>WITH login_data AS (
+  SELECT DISTINCT user_id, login_date          -- ← DISTINCT가 핵심!
+  FROM user_logins WHERE user_id = 42
+),
+grouped AS (
+  SELECT user_id, login_date,
+         login_date - (ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY login_date)
+                       * INTERVAL '1 day') AS grp_key
+  FROM login_data
+)
+SELECT user_id, MIN(login_date) AS streak_start, MAX(login_date) AS streak_end,
+       COUNT(*) AS consecutive_days
+FROM grouped
+GROUP BY user_id, grp_key
+ORDER BY streak_start;</code></pre></div>
+<ul class="b">
+<li><b><code>SELECT DISTINCT</code>가 핵심이다.</b> 같은 날 두 번 로그인한 행이 있으면 행 번호가 한 칸 더 밀려서 차이값이 어긋나고 <b>연속 구간이 조용히 쪼개진다.</b></li>
+<li><b>윈도우 함수로 그룹 키를 만들고, 그 키로 <code>GROUP BY</code> 집계한다</b> — 두 도구를 이어 쓰는 전형적인 패턴이다.</li>
+<li>하루짜리도 길이 1인 구간으로 잡힌다. "2일 이상만"이면 <code>HAVING COUNT(*) &gt;= 2</code>.</li>
+<li>반대로 <b>Gap(비어 있는 구간)</b>은 <code>LEAD</code>로 다음 로그인을 당겨 와 하루보다 크게 벌어진 지점을 찾는다. 이때도 <b><code>LEAD</code>를 <code>WHERE</code>에서 못 쓰므로 CTE로 감싸야 한다.</b></li>
+<li><b>활용</b>: 연속 출석 보너스, 비정상적으로 긴 연속 이벤트(이상 탐지), 재고 연속 품절 기간, 장애 연속 발생 구간 — <b>전부 같은 요령</b>이다.</li>
+</ul>
+
+  <h3>7) DBMS 지원 비교 · 언제 무엇을 쓰나</h3>
 <table class="t"><thead><tr>
-<th>실수 패턴</th>
-<th>증상</th>
-<th>해결</th>
+<th style="width:26%">함수/기능</th><th>PostgreSQL</th><th>MySQL</th><th>Oracle</th><th>SQL Server</th>
 </tr></thead><tbody>
-<tr><td>ON 조건 누락</td><td>카르테시안 곱 폭발</td><td>반드시 ON a.id=b.a_id 명시</td></tr>
-<tr><td>OUTER JOIN 후 WHERE 필터</td><td>INNER JOIN으로 변질</td><td>필터를 ON 절에 추가</td></tr>
-<tr><td>1:N 조인 중복 폭발</td><td>COUNT(*) 비정상적으로 큼</td><td>서브쿼리에서 먼저 집계 후 JOIN, 또는 DISTINCT</td></tr>
-<tr><td>NOT IN + NULL</td><td>결과가 항상 빈 집합</td><td>NOT EXISTS로 변경</td></tr>
+<tr><td><code>ROW_NUMBER</code>/<code>RANK</code>/<code>NTILE</code></td><td>O</td><td>O (8.0+)</td><td>O</td><td>O (2005+)</td></tr>
+<tr><td><code>LAG</code>/<code>LEAD</code>/<code>FIRST_VALUE</code>/<code>LAST_VALUE</code></td><td>O</td><td>O (8.0+)</td><td>O</td><td>O (<b>2012+</b>)</td></tr>
+<tr><td><code>ROWS</code>/<code>RANGE BETWEEN</code></td><td>O</td><td>O (8.0+)</td><td>O</td><td>O (<b>2012+</b>)</td></tr>
+<tr><td><code>FILTER</code> 절</td><td>O</td><td>✗ (CASE 대체)</td><td>✗</td><td>✗</td></tr>
 </tbody></table>
+<ul class="b">
+<li><b>MySQL은 8.0이 분기점이다.</b> 5.7 이하에는 윈도우 함수가 <b>아예 없다.</b> 그 시절 코드가 사용자 변수(<code>@rownum := @rownum + 1</code>) 같은 편법으로 순위를 매기는 이유다. <b>"MySQL"이라고만 듣고 윈도우 함수를 전제하면 안 된다.</b></li>
+<li><b>SQL Server 버전 표기 주의</b> — <code>ROW_NUMBER</code>는 2005+지만 <code>LAG</code>/<code>LEAD</code>와 프레임은 <b>2012에서 추가</b>됐다.</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">"자기 부서 평균보다 연봉이 높은 직원"을 세 방법으로</div><pre><code>-- (1) 상관 서브쿼리: 바깥 행마다 안쪽 쿼리 반복 → 느림
+SELECT e.emp_name, e.salary FROM employees e
+WHERE e.salary &gt; (SELECT AVG(salary) FROM employees WHERE dept_id = e.dept_id);
+
+-- (2) CTE: 부서 평균을 한 번만 계산해 조인 (테이블 두 번 읽음)
+WITH dept_avg AS (SELECT dept_id, AVG(salary) AS avg_sal FROM employees GROUP BY dept_id)
+SELECT e.emp_name, e.salary, d.avg_sal
+FROM employees e JOIN dept_avg d ON d.dept_id = e.dept_id
+WHERE e.salary &gt; d.avg_sal;
+
+-- (3) Window Function: 테이블을 한 번만 읽는다  ← 이 장의 요점
+SELECT emp_name, salary, dept_id, dept_avg FROM (
+  SELECT emp_name, salary, dept_id,
+         AVG(salary) OVER (PARTITION BY dept_id) AS dept_avg
+  FROM employees
+) t WHERE salary &gt; dept_avg;</code></pre></div>
+<table class="t"><thead><tr><th style="width:24%">도구</th><th>쓸 때</th></tr></thead><tbody>
+<tr><td><b>서브쿼리</b></td><td>단순하고 한 번만 쓰는 조건 / 소량 목록 <code>IN</code> / <code>EXISTS</code> 존재 확인</td></tr>
+<tr><td><b>CTE</b></td><td>복잡한 쿼리를 단계로 분해 / 같은 집계를 여러 곳에서 재사용 / <b>재귀</b></td></tr>
+<tr><td><b>Window Function</b></td><td><b>원래 행을 유지하면서</b> 집계값이 필요할 때(순위·누적·비교) / <code>LAG</code>·<code>LEAD</code> / 프레임 이동 집계</td></tr>
+<tr><td><b>JOIN</b></td><td>두 테이블의 데이터를 함께 조회 — <b>항상 먼저 고려</b></td></tr>
+</tbody></table>
+<div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — 계산은 프론트가 아니라 백엔드로 분산</span>
+<p>"물론 코드로 짜셔도 돼요. 근데 <b>코드에서 돌리면서 프론트엔드에 부하를 주느니 저 같으면 백엔드 쪽에 부하를 주면서 양쪽에 부하 분산</b>을 하는 것도 좋을 것 같아서 이 함수들을 말씀드리는 겁니다. RDB는 이런 쿼리 몇 개만 활용하면 통계치를 쉽게 뽑을 수 있는 장점이 있습니다."</p>
+<p>판단 기준은 취향이 아니라 <b>그 계산이 데이터 양을 줄이는가</b>다. <b>행 수가 크게 줄어드는 계산은 DB에서</b> 한다 — "지역별 상위 3개"는 10만 행을 읽어 30행을 내놓는데, 애플리케이션에서 하려면 10만 행을 네트워크로 실어 날라야 한다. 반대로 <b>행 수가 그대로인 변환(통화 포맷, 라벨 붙이기)은 애플리케이션에서</b> 해도 된다. 다만 <b>DB는 스케일아웃이 어렵다</b>는 점은 늘 염두에 두자 — "다 DB로"도 답이 아니다.</p>
+<p>덧붙여 <b>작성 비용</b>도 있다. 같은 "전월 대비 증감률"을 애플리케이션 코드로 짜면 정렬·그룹 경계 처리·0 나누기 방어를 직접 구현해야 하지만, SQL에서는 <code>LAG</code>와 <code>NULLIF</code> 두 개로 끝난다 — <b>코드가 짧다는 것은 버그가 숨을 자리가 적다는 뜻</b>이다.</p></div>
+
+  <h3>8) 함정 / 감점 포인트</h3>
+<ul class="b">
+<li><b><code>WHERE</code>·<code>HAVING</code>에 윈도우 함수를 쓰기</b> — 항상 에러다. CTE로 감싸고 바깥에서 거른다.</li>
+<li><b>누적합·이동평균에서 프레임을 생략하기</b> — 기본값이 <code>RANGE</code>라 <b>동점 행이 전부 같은 값</b>을 받는다.</li>
+<li><b><code>LAST_VALUE</code>를 기본 프레임으로 쓰기</b> · <b><code>ROW_NUMBER</code>에 동점을 깨는 정렬 키를 안 주기</b> · <b><code>RANK</code>와 <code>DENSE_RANK</code>를 바꿔 쓰기</b></li>
+<li><b><code>PERCENT_RANK &lt;= 0.2</code>를 "상위 20%"로 쓰기</b> · <b><code>LAG(x, 12)</code>를 "12개월 전"으로 단정하기</b></li>
+<li><b><code>OVER</code> 밖의 <code>ORDER BY</code>와 안의 <code>ORDER BY</code>를 헷갈리기</b> — 안쪽은 계산 순서, 바깥쪽은 출력 순서다.</li>
+<li><b>Gap and Island에서 <code>DISTINCT</code>를 빠뜨리기</b> · <b>정수끼리 나눠서 비율 내기</b> · <b><code>ROUND(double precision, 2)</code> 호출</b>(PostgreSQL에서 함수 없음 에러)</li>
+<li><b>MySQL 5.7 환경에서 윈도우 함수를 전제하기</b> · <b>이동평균 초반값을 그대로 리포트에 싣기</b></li>
+</ul>
+
+  <h3>9) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>Window Function이 GROUP BY보다 좋은 거면, 집계는 다 윈도우로 하면 되지 않나요?</summary><div class="fa">아닙니다. 목적이 다릅니다. <b>결과를 요약해서 줄이는 게 목적이면 <code>GROUP BY</code>가 맞습니다.</b> "지역별 총매출 2행"이 필요한데 윈도우로 만들면 5행에 같은 값이 반복된 결과가 나오고 거기서 <code>DISTINCT</code>로 다시 줄여야 합니다. 성능도 윈도우 쪽이 항상 유리하지는 않습니다 — 윈도우 함수는 원본 행을 전부 들고 정렬한 뒤 계산하므로 <b>큰 테이블을 요약만 하면 되는 경우에는 <code>GROUP BY</code>가 훨씬 적은 메모리로 끝납니다.</b> 판단 기준은 하나입니다: <b>"결과에 개별 행이 필요한가?"</b></div></details>
+<details><summary><code>PARTITION BY</code>가 <code>GROUP BY</code>와 같은 뜻이라면 둘을 같이 쓸 수도 있나요?</summary><div class="fa">쓸 수 있고 실제로 유용합니다. 다만 <b>순서를 알아야 합니다</b> — <code>GROUP BY</code>가 먼저 실행되고 윈도우 함수는 <b>그 집계 결과 위에서</b> 동작합니다. 그래서 <code>SUM(SUM(revenue)) OVER (PARTITION BY region ORDER BY month ROWS UNBOUNDED PRECEDING)</code> 같은 이상한 모양이 나옵니다 — <b>안쪽 <code>SUM</code>은 <code>GROUP BY</code>의 집계이고 바깥 <code>SUM</code>은 그 결과들에 대한 윈도우</b>입니다. "월별로 집계한 다음 그걸 누적한다"는 뜻이고, 처음 보면 오타처럼 보이지만 정상 문법입니다.</div></details>
+<details><summary><code>ROW_NUMBER</code>가 단순하니까 순위는 그냥 <code>ROW_NUMBER</code>를 쓰면 되지 않나요?</summary><div class="fa">용도가 다릅니다. <code>ROW_NUMBER</code>는 <b>동점을 임의로 갈라놓습니다</b> — 같은 매출인 두 지점에 2위와 3위를 매기고, 어느 쪽이 2위가 될지는 실행할 때마다 다를 수 있습니다. 사람에게 보여 주는 등수에 쓰면 "왜 같은 점수인데 등수가 다르냐"는 문제가 생깁니다. <code>ROW_NUMBER</code>가 맞는 자리는 <b>"각 그룹에서 정확히 1건만"</b> 같은 중복 제거입니다 — 고객별 최신 주문 하나만 뽑을 때 <code>RANK</code>를 쓰면 같은 시각에 들어온 주문 두 건이 다 나와 버립니다. <b>"등수를 보여 준다 → RANK 계열 / 하나만 고른다 → ROW_NUMBER"</b>로 나눠 두면 됩니다.</div></details>
+<details><summary><code>ORDER BY</code>를 <code>OVER</code> 안에 썼으면 바깥 <code>ORDER BY</code>는 안 써도 되지 않나요?</summary><div class="fa">아닙니다. <code>OVER</code> 안의 <code>ORDER BY</code>는 <b>계산 순서</b>를 정할 뿐 결과 출력 순서를 보장하지 않습니다. <b>우연히 정렬돼 보이는 경우가 많아서 더 위험합니다</b> — 실행계획이 바뀌거나 병렬 처리가 켜지면 순서가 달라집니다. SQL 전반의 규칙과 같습니다: <b>최종 <code>ORDER BY</code>가 없으면 행 순서는 보장되지 않습니다.</b> 과제 결과가 채점자 환경에서 다르게 나오는 사고가 대개 여기서 납니다.</div></details>
+<details><summary>프레임을 생략하면 파티션 전체가 계산 범위 아닌가요?</summary><div class="fa"><b><code>ORDER BY</code>가 있느냐에 따라 다릅니다.</b> 이게 가장 헷갈리는 지점입니다. <code>OVER (PARTITION BY region)</code>은 <b>파티션 전체</b>지만, <code>OVER (PARTITION BY region ORDER BY month)</code>는 <b>첫 행 ~ 현재 행(+동점 행들)</b>입니다. <code>ORDER BY</code>를 붙이는 순간 기본 프레임이 <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>로 바뀝니다. 그래서 "부서 평균을 옆에 붙이려고" <code>AVG(salary) OVER (PARTITION BY dept_id ORDER BY hire_date)</code>라고 쓰면 부서 평균이 아니라 <b>입사일 순 누적 평균</b>이 나옵니다 — <b>값이 그럴듯해서 틀린 걸 눈치채기 어렵습니다.</b> 파티션 전체를 원하면 <code>ORDER BY</code>를 넣지 않거나 프레임을 명시하세요.</div></details>
+<details><summary>윈도우 함수를 많이 쓰면 쿼리가 느려지지 않나요?</summary><div class="fa"><b>같은 <code>OVER</code> 절을 공유하는 함수들은 거의 공짜입니다.</b> 윈도우 함수의 비용 대부분은 정렬이고, <code>PARTITION BY</code>/<code>ORDER BY</code>/프레임이 완전히 같으면 DB가 <b>한 번만 정렬하고 여러 함수를 함께 계산</b>합니다. 그래서 <code>ROW_NUMBER</code>·<code>RANK</code>·<code>DENSE_RANK</code>·<code>NTILE</code>을 한꺼번에 쓰는 건 부담이 크지 않습니다. 비싸지는 건 <b>서로 다른 <code>OVER</code> 절을 여러 개 쓸 때</b>입니다. 성능이 중요하면 (1) <code>PARTITION BY</code>/<code>ORDER BY</code> 컬럼에 <b>인덱스</b>를 두어 정렬을 건너뛰게 하고(17장), (2) <code>EXPLAIN</code>으로 <code>WindowAgg</code>와 <code>Sort</code> 노드 개수를 확인합니다(18장).</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li><code>GROUP BY</code>와 Window Function의 결과 행 수는 왜 다른가? 한 문장으로 말할 수 있는가?</li>
+<li><code>ROW_NUMBER</code>, <code>RANK</code>, <code>DENSE_RANK</code>가 동점 1개(2위 공동)에서 각각 어떤 숫자를 내는가?</li>
+<li>윈도우 함수 결과로 행을 필터링하려면 왜 한 겹 감싸야 하는가?</li>
+<li><code>OVER (PARTITION BY a)</code>와 <code>OVER (PARTITION BY a ORDER BY b)</code>의 <b>계산 범위 차이</b>는?</li>
+<li><code>ROWS</code>와 <code>RANGE</code>는 동점 행에서 어떻게 갈리는가? 누적합에는 어느 쪽인가?</li>
+<li><code>LAST_VALUE</code>가 기본 프레임에서 이상하게 나오는 이유는? "3개월 이동평균"인데 왜 <code>2 PRECEDING</code>인가?</li>
+<li><code>PERCENT_RANK</code>와 <code>CUME_DIST</code> 중 "상위 20% 행"을 정확히 뽑는 쪽은? 왜인가?</li>
+<li>Gap and Island에서 <code>날짜 - ROW_NUMBER</code>가 왜 그룹 키가 되는가? <code>DISTINCT</code>가 왜 필요한가?</li>
+</ul></div>
 </section>
 
 
