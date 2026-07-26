@@ -2944,36 +2944,163 @@ ORDER BY (graduated_at IS NULL), graduated_at DESC;
     <span class="day-badge day2">Day 2</span>
     <h2><span class="num">11.</span> SQL 고급 — JOIN 알고리즘</h2>
   </div>
-  <p class="subtitle">NL·Hash·Merge·BNL/BKA · DBMS별 엔진 비교</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: JOIN을 DB가 내부적으로 어떻게 처리하는지예요. 몰라도 쿼리는 짤 수 있지만, 알면 '왜 이 쿼리가 느린지' 이해하는 데 도움돼요.</div></div>
-  <table class="t"><thead><tr>
-<th>알고리즘</th>
-<th>동작 방식</th>
-<th>적합한 경우</th>
-</tr></thead><tbody>
-<tr><td>Nested Loop Join(NLJ)</td><td>외부 테이블 행마다 내부 테이블 탐색</td><td>외부 집합 작을 때 / 내부 인덱스 있을 때</td></tr>
-<tr><td>Hash Join(HJ)</td><td>작은쪽 해시테이블, 큰쪽 프로브탐색</td><td>대용량 등가 조인, 인덱스 없을 때</td></tr>
-<tr><td>Sort-Merge Join(SMJ)</td><td>양쪽 정렬 후 병합 매칭</td><td>이미 정렬된 대용량, 범위/비등가 조인</td></tr>
-<tr><td>BNL/BKA(MySQL)</td><td>여러 행을 버퍼에 모아 배치 조회</td><td>join_buffer_size로 튜닝</td></tr>
-</tbody></table>
-<div class="sqlbox"><div class="sqlhead">실행계획으로 JOIN 알고리즘 확인</div><pre><code>EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
-SELECT s.name, c.title, e.score FROM students s
- JOIN enrollments e ON e.student_id = s.id
- JOIN courses c ON c.id = e.course_id
-WHERE s.grade = 3;
--- Hash Join (cost=12.5..45.8 rows=200) (actual time=0.5..2.3 rows=185)
--- Buffers: shared hit=12 read=5   ← hit=메모리(빠름), read=디스크(느림)
--- -&gt; Seq Scan on enrollments  ← Full Scan, 인덱스 검토 필요
--- -&gt; Index Scan on students   ← 인덱스 사용 중
--- MySQL 8.0.18+: Hash Batches &gt; 1 → work_mem 부족 신호(Spill 발생)</code></pre></div>
-<h4>JOIN 성능 튜닝 체크리스트</h4>
+  <p class="subtitle">Nested Loop · Hash · Sort-Merge · BNL/BKA · DBMS별 JOIN 엔진 · 실행계획 읽는 법 · 튜닝 체크리스트</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: DB가 두 테이블을 실제로 <b>어떤 방식으로 붙이는지</b>에 대한 이야기예요. 방식이 세 가지 있는데 — <b>작은 것 × 인덱스 = Nested Loop, 큰 것 × 큰 것 = Hash, 정렬돼 있거나 범위 조건 = Merge</b>. 중요한 건 <b>내가 고르는 게 아니라 옵티마이저가 고른다</b>는 점이라, 우리가 할 일은 "왜 저걸 골랐는지 읽는 법"을 익히는 거예요.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p><b>JOIN은 SQL에서 가장 느려지기 쉬운 연산이다.</b> 100만 행 × 100만 행을 아무 생각 없이 하면 1조 번의 비교가 필요하다. DB는 그러지 않고 상황에 맞는 전략을 고르는데, 그 전략이 잘못 골라졌을 때 쿼리가 수십 초씩 걸린다.</p>
+  <ul>
+  <li>네 알고리즘(NL·Hash·Merge·BNL/BKA)이 <b>각각 언제 유리한지</b> 판단한다</li>
+  <li><code>EXPLAIN ANALYZE</code>로 <b>어떤 알고리즘이 쓰였는지 확인</b>하고, 느릴 때 무엇부터 볼지 안다</li>
+  </ul>
+  <p><b>알고리즘은 내가 고르는 것이 아니다.</b> SQL에는 "Hash Join으로 해라"라고 쓰는 문법이 없다(Oracle 힌트 같은 예외를 빼면). <b>옵티마이저</b>가 통계를 보고 자동으로 고른다. 그래서 실용적 목표는 "고르는 법"이 아니라 <b>"왜 저걸 골랐는지 읽는 법"</b>과 <b>"내가 원하는 걸 고르도록 조건을 만들어 주는 법"</b>이다.</p></div>
+<div class="note">용어 — <b>JOIN</b>은 두 테이블을 특정 조건으로 이어 붙여 한 결과로 만드는 연산이다. <code>FROM students s JOIN enrollments e ON e.student_id = s.id</code>는 "학생의 <code>id</code>와 수강신청의 <code>student_id</code>가 같은 것끼리 붙여라"는 뜻이다. <b>2장에서 정규화로 테이블을 쪼갰기 때문에 조회할 때는 다시 붙여야 하고, 그 도구가 JOIN이다.</b> (문법 자체는 12장에서 자세히 다룬다.)</div>
+
+  <h3>1) Nested Loop Join (NLJ) — 이중 반복문</h3>
+<div class="sqlbox norun"><div class="sqlhead">의사코드</div><pre><code>for each row R in 외부테이블:              -- outer, driving table
+    for each matching row S in 내부테이블:  -- inner
+        if R.key == S.key:
+            output (R, S)</code></pre></div>
 <ul class="b">
-<li>FK 컬럼에 반드시 인덱스! (ON DELETE CASCADE 대상 포함)</li>
-<li>작은×큰 테이블+인덱스 → Nested Loop / 대형×대형 → Hash</li>
-<li>ON 조건 누락 주의 → 카르테시안 곱(N×M행) 발생</li>
-<li>PostgreSQL: work_mem·hash_mem_multiplier 확인, Hash Batches>1 → Spill 신호</li>
-<li>MySQL: join_buffer_size 설정, 8.0.18+ Hash Join 후보</li>
-<li>SQL Server: tempdb Spill 감지 → 통계 갱신, Adaptive Join(2017+) 활용</li>
+<li><b>인덱스가 없으면 최악이다.</b> 외부가 1000행, 내부가 100만 행이면 <b>10억 번 비교</b>한다.</li>
+<li><b>인덱스가 있으면 최고다.</b> 안쪽 반복이 "전부 훑기"가 아니라 <b>"인덱스로 바로 찾아가기"</b>로 바뀐다. 외부 1000행 × 인덱스 조회 1000번이면 순식간이다.</li>
+<li>그래서 조건이 두 개다 — <b>외부 집합이 작을 것</b>, 그리고 <b>내부에 인덱스가 있을 것.</b> 6장에서 "FK 컬럼에 인덱스를 만들라"고 한 이유가 여기서 다시 확인된다.</li>
 </ul>
+
+  <h3>2) Hash Join (HJ) — 각 테이블을 딱 한 번씩</h3>
+<div class="sqlbox norun"><div class="sqlhead">두 단계로 동작한다</div><pre><code>1단계 (Build):  작은 테이블 전체를 읽어 조인 키로 해시 테이블을 메모리에 만든다
+2단계 (Probe):  큰 테이블을 한 행씩 읽으며 해시 테이블에서 짝을 찾는다</code></pre></div>
+<ul class="b">
+<li>각 테이블을 <b>딱 한 번씩만</b> 읽는다. NLJ가 내부 테이블을 반복해서 읽는 것과 대비된다. 해시 조회는 평균 O(1)이라 큰 테이블끼리도 감당이 된다.</li>
+<li><b>인덱스가 필요 없다.</b> 인덱스 없는 대용량 조인에서 옵티마이저가 고르는 기본 전략이다.</li>
+<li><b>한계 — 등호(<code>=</code>) 조인에만 쓸 수 있다.</b> 해시는 "값이 같은가"만 답할 수 있고 "값이 큰가"는 답할 수 없기 때문이다. <code>ON a.x &gt; b.y</code> 같은 비등가 조인에는 쓸 수 없다.</li>
+<li><b>Spill(스필)</b> — 해시 테이블이 메모리에 안 들어가면 디스크로 넘긴다. <b>이러면 급격히 느려진다.</b> 뒤의 튜닝 항목에서 계속 나오는 그 문제다.</li>
+</ul>
+
+  <h3>3) Sort-Merge Join (SMJ) · BNL / BKA</h3>
+<div class="sqlbox norun"><div class="sqlhead">Sort-Merge — 두 정렬된 명단을 나란히 짚어 내려간다</div><pre><code>1단계: 양쪽을 조인 키로 정렬한다
+2단계: 두 정렬된 목록을 앞에서부터 나란히 훑으며 짝을 맞춘다</code></pre></div>
+<ul class="b">
+<li>정렬 비용이 크다. 그래서 <b>이미 정렬되어 있을 때</b> 진가가 나온다 — 조인 키에 인덱스가 있으면 인덱스가 이미 정렬 상태이므로 <b>정렬 단계를 건너뛸 수 있다.</b></li>
+<li><b>비등가 조인이 가능하다.</b> 정렬된 상태에서는 <code>&gt;</code>, <code>&lt;</code>, <code>BETWEEN</code> 같은 비교도 순차 진행으로 처리할 수 있다. <b>Hash Join이 못 하는 영역</b>이다.</li>
+<li><b>BNL / BKA (MySQL 고유)</b> — MySQL은 오랫동안 Hash Join이 없어서(8.0.18에야 추가) NLJ를 개선하는 방향으로 발전했다.
+  <ul>
+  <li><b>BNL(Block Nested Loop)</b>: 외부 행을 버퍼에 여러 개 모아 두고 내부 테이블을 <b>한 번 훑으면서</b> 버퍼의 모든 행과 비교. 내부 스캔 횟수가 <code>외부 행 수</code>에서 <code>외부 행 수 / 버퍼 크기</code>로 줄어든다.</li>
+  <li><b>BKA(Batched Key Access)</b>: 모은 키들을 정렬해 인덱스를 <b>배치로</b> 조회. 랜덤 읽기가 순차에 가까워져 I/O가 개선된다. <code>join_buffer_size</code>로 튜닝.</li>
+  </ul>
+</li>
+</ul>
+<h4>네 알고리즘 고르기</h4>
+<table class="t"><thead><tr>
+<th style="width:18%"></th><th>각 테이블 읽는 횟수</th><th>인덱스 필요</th><th>비등가 조인</th><th>유리한 상황</th>
+</tr></thead><tbody>
+<tr><td><b>Nested Loop</b></td><td>외부 1회 / 내부 N회</td><td><b>필수에 가까움</b></td><td>가능</td><td>작은 외부 + 인덱스 있는 내부</td></tr>
+<tr><td><b>Hash</b></td><td>각 1회</td><td>불필요</td><td><b>불가 (등호만)</b></td><td>대형 × 대형, 인덱스 없음</td></tr>
+<tr><td><b>Sort-Merge</b></td><td>각 1회 (+정렬)</td><td>있으면 정렬 생략</td><td>가능</td><td>이미 정렬됨, 범위 조인</td></tr>
+<tr><td><b>BNL/BKA</b></td><td>외부 1회 / 내부 N÷버퍼회</td><td>BKA는 필요</td><td>가능</td><td>MySQL에서 인덱스 부재 시</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ 외우는 요령</div><ul>
+<li><b>작은 것 × 인덱스 = NL, 큰 것 × 큰 것 = Hash, 정렬되어 있거나 범위 = Merge.</b></li>
+</ul></div>
+
+  <h3>4) DBMS별 JOIN 엔진 비교</h3>
+<table class="t"><thead><tr>
+<th style="width:14%">DBMS</th><th>지원 알고리즘</th><th>기본 전략</th><th>특이사항</th>
+</tr></thead><tbody>
+<tr><td><b>PostgreSQL</b></td><td>NLJ · Hash · Merge + 병렬 Hash</td><td>통계 기반 옵티마이저 자동 선택</td><td><code>enable_hashjoin</code>/<code>mergejoin</code>/<code>nestloop</code> 스위치</td></tr>
+<tr><td><b>MySQL 8.0+</b></td><td>NLJ · BNL · BKA + Hash(8.0.18+)</td><td><b>인덱스 있으면 NLJ, 없으면 BNL</b></td><td><code>optimizer_switch</code>로 토글</td></tr>
+<tr><td><b>SQL Server</b></td><td>NLJ · Hash · Merge + Adaptive Join</td><td><b>실행 중 NL ↔ Hash 자동 전환</b></td><td>통계 부정확 시 tempdb Spill 주의</td></tr>
+<tr><td><b>Oracle</b></td><td>NLJ · Sort-Merge · Hash</td><td>힌트: <code>USE_NL</code>/<code>USE_HASH</code>/<code>USE_MERGE</code></td><td>Adaptive Plan / Stats Feedback</td></tr>
+</tbody></table>
+<div class="callout deep"><span class="ctitle">🔎 여기서 짚을 것 셋</span>
+<ul>
+<li><b>세 알고리즘을 다 갖춘 것이 표준이고 MySQL만 다르다.</b> Hash Join이 늦게 들어왔고 Sort-Merge Join은 지금도 없다. 그래서 <b>MySQL에서는 인덱스가 훨씬 더 중요하다</b> — 인덱스가 없으면 대안이 BNL밖에 없기 때문이다.</li>
+<li><b><code>enable_hashjoin</code> 같은 스위치는 튜닝용이 아니라 진단용이다.</b> "Hash를 막으면 뭘 고르나? 그게 더 빠른가?"를 실험해서 <b>옵티마이저의 판단이 맞는지 확인</b>하는 데 쓴다.</li>
+<li><b>Adaptive Join(SQL Server)과 Adaptive Plan(Oracle)은 같은 발상이다.</b> 옵티마이저는 실행 <b>전에</b> 통계를 보고 계획을 세우는데 통계가 낡았으면 잘못 고른다. Adaptive 방식은 실행 중 실제 행 수를 보고 계획을 바꾼다 — <b>통계가 틀렸을 때의 보험</b>이다.</li>
+</ul></div>
+
+  <h3>5) 실행계획으로 JOIN 알고리즘 확인 — 가장 실용적인 부분</h3>
+<div class="sqlbox norun"><div class="sqlhead">PostgreSQL — EXPLAIN (ANALYZE, BUFFERS)</div><pre><code>EXPLAIN (ANALYZE, BUFFERS)
+SELECT s.name, c.title, e.score
+FROM students s
+JOIN enrollments e ON e.student_id = s.id
+JOIN courses c ON c.id = e.course_id
+WHERE s.grade = 3;
+
+Hash Join  (cost=12.5..45.8 rows=200 width=32)
+           (actual time=0.5..2.3 rows=185 loops=1)
+  Hash Cond: (e.student_id = s.id)
+  Buffers: shared hit=12 read=5          ← 디스크 읽기 횟수
+  -&gt;  Seq Scan on enrollments            ← Full Scan (인덱스 필요?)
+  -&gt;  Hash
+        -&gt;  Index Scan on students       ← 인덱스 사용
+              Index Cond: (grade = 3)</code></pre></div>
+<ul class="b">
+<li><b><code>Hash Join</code></b> — 이 조인에 무엇이 쓰였는지. <b>여기가 알고리즘을 확인하는 자리</b>다. <code>Nested Loop</code>, <code>Merge Join</code>이면 각각 그 이름이 나온다.</li>
+<li><b><code>cost=12.5..45.8</code></b> — 옵티마이저의 <b>비용 추정치</b>. 앞이 첫 행까지, 뒤가 전부까지. <b>단위는 초가 아니라 임의의 상대 단위</b>이고, 다른 계획과 비교할 때만 의미가 있다.</li>
+<li><b><code>rows=200</code> vs <code>actual ... rows=185</code></b> — <b>예측과 실제.</b> 이 둘의 차이가 실행계획 읽기에서 <b>가장 중요한 신호</b>다. 비슷하면 통계가 정확하다는 뜻이고, <b>수십 배 이상 다르면 통계가 낡았거나 조건이 복잡한 것</b>이라 잘못된 알고리즘을 골랐을 가능성이 높다 → <code>ANALYZE 테이블명;</code>으로 통계를 갱신하고 다시 본다.</li>
+<li><b><code>loops=1</code></b> — 이 노드가 몇 번 실행됐는지. <b>Nested Loop의 안쪽 노드에서는 이 값이 커진다.</b> 주의할 것은 <code>actual time</code>이 <b>1회당 평균</b>이라는 점 — <code>actual time=0.1 loops=1000</code>이면 총 100ms다. <b>곱해서 봐야 한다.</b></li>
+<li><b><code>Buffers: shared hit=12 read=5</code></b> — 12블록은 메모리에서, 5블록은 디스크에서. <code>read</code>가 크면 I/O가 병목이다.</li>
+<li><b><code>Seq Scan</code></b> — 테이블 전체 읽기. 다만 <b>항상 나쁜 것은 아니다</b> — 테이블의 상당 부분을 읽어야 한다면 인덱스로 하나씩 찾아가는 것보다 통째로 읽는 게 빠르다.</li>
+<li><b>들여쓰기 읽는 법</b> — 실행계획은 트리다. <b>안쪽(더 들여쓰인) 노드가 먼저 실행되고</b> 결과가 바깥으로 올라간다. 위 예에서는 <code>Index Scan on students</code> → <code>Hash</code>(해시 테이블 만들기) → <code>Seq Scan on enrollments</code>로 프로브 → <code>Hash Join</code> 순이다. 즉 <b>작은 쪽(grade=3으로 걸러진 students)이 build 쪽</b>이 되었다 — 옵티마이저가 제대로 고른 것이다.</li>
+</ul>
+<div class="callout myth"><span class="ctitle">⚠️ <code>EXPLAIN ANALYZE</code>는 쿼리를 진짜 실행한다</span>
+<p><code>UPDATE</code>나 <code>DELETE</code>에 붙이면 <b>데이터가 바뀐다.</b> 확인만 하고 싶으면 <code>BEGIN;</code> → <code>EXPLAIN ANALYZE ...;</code> → <code>ROLLBACK;</code>으로 감싸자.</p></div>
+<div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — 동시 접속 수를 곱해 응답시간을 보라</span>
+<p>"이 데이터베이스의 쿼리는 한 사람만 실행하는 게 아니고, 그 시간에 접속하는 게 1000명이면 1000명이에요. <b>한 사람이 0.5초면 곱하기 1000명이니까 시간이 엄청 오래 걸립니다.</b> 0.0몇 밀리세컨드 이렇게 쭉 떨어져야 '이 정도 속도면 잘 나온다'고 할 수 있어요."</p>
+<p><code>EXPLAIN ANALYZE</code>는 <b>한 세션이 서버를 독차지한 상태에서 잰 값</b>이라 실제 서비스에서 나오는 시간이 아니다. 밀리초 아래로 떨어져야 한다는 것은 모든 쿼리의 절대 기준이 아니라 <b>사용자 요청 하나가 여러 번 호출하는 조회성 쿼리에 대한 기준</b>으로 읽는 것이 맞다 — 야간 배치나 월간 리포트는 수십 초여도 문제가 아니다. 요점은 숫자 자체보다 <b>"이 쿼리가 초당 몇 번 호출되는가"를 곱해 보고 판단하라</b>는 절차다.</p></div>
+<div class="note">MySQL에서는 <code>EXPLAIN ANALYZE</code> 결과에 <code>-&gt; Inner hash join (o.customer_id = c.id)</code>처럼 나온다. 참고로 <b><code>work_mem</code>은 PostgreSQL 파라미터</b>다 — MySQL 설명에 이 이름이 섞인 자료가 있는데 잘못된 것이고, MySQL의 대응은 <code>join_buffer_size</code>다.</div>
+
+  <h3>6) JOIN 성능 튜닝 실전 체크리스트</h3>
+<h4>공통 원칙 (모든 DBMS 동일)</h4>
+<ul class="b">
+<li><b>FK 컬럼에 반드시 인덱스!</b> (<code>ON DELETE CASCADE</code> 대상 컬럼 포함) — 이유가 두 겹이다. ① <b>JOIN 성능</b>: FK 인덱스가 없으면 NLJ가 안쪽에서 매번 전체 스캔을 한다. ② <b><code>ON DELETE CASCADE</code> 성능</b>: 부모를 지울 때 자식을 찾아야 하는데 인덱스가 없으면 자식 테이블을 통째로 훑는다.</li>
+<li>작은 테이블 × 큰 테이블 + 인덱스 → <b>Nested Loop</b> / 대형 × 대형 → <b>Hash</b></li>
+<li><b><code>ON</code> 조건 누락 주의</b> → <b>카르테시안 곱</b>(N×M행) 발생. 1000행 × 1000행 = 100만 행. <b>실수로 이걸 하면 쿼리가 안 끝난다.</b> (12장)</li>
+</ul>
+<h4>DBMS별 항목</h4>
+<table class="t"><thead><tr><th style="width:18%">DBMS</th><th>핵심 파라미터와 신호</th></tr></thead><tbody>
+<tr><td><b>PostgreSQL</b></td><td>큰 동등 조인 → <b><code>work_mem</code> 늘리기</b> / <code>hash_mem_multiplier</code> 확인 · <code>enable_parallel_hash=on</code>, <code>max_parallel_workers_per_gather</code> 상향 · <b><code>Hash Batches &gt; 1</code> → Spill 발생 → <code>work_mem</code> 부족 신호</b></td></tr>
+<tr><td><b>MySQL</b></td><td>인덱스 부재 조인 → BNL/BKA → <code>join_buffer_size</code> 적절히 · 8.0.18+ Hash Join 후보는 <code>EXPLAIN ANALYZE</code>로 확인 · <b>과대 설정 주의: 스레드 × 조인 수만큼 메모리 할당</b></td></tr>
+<tr><td><b>SQL Server</b></td><td><b>tempdb Spill(Hash/Sort Warning) 감지</b> → 통계 갱신, MAXDOP 조정 · Adaptive Join 활용(2017+)</td></tr>
+</tbody></table>
+<div class="callout myth"><span class="ctitle">⚠️ <code>work_mem</code>은 서버 전체가 아니라 <b>연산 하나당</b> 할당이다</span>
+<p>한 쿼리에 해시 조인이 3개면 3배를 쓰고, 동시 접속이 100개면 최대 100배가 될 수 있다. <b>무작정 크게 잡으면 메모리가 터진다.</b> 실무에서는 서버 전역값은 보수적으로 두고, 무거운 배치 쿼리에서만 <code>SET work_mem = '256MB';</code>로 세션 단위 조정을 한다. (<code>hash_mem_multiplier</code>는 PG 13+에서 추가된 값으로, 해시 연산에는 <code>work_mem × 배수</code>만큼 허용한다. 해시는 정렬보다 메모리를 더 쓰기 때문. 기본 2.0)</p></div>
+<div class="cp"><div class="cphead">✔ 세 DBMS를 관통하는 것 — 제품별 이름은 달라도 이야기는 같다</div><ul>
+<li><b>인덱스가 1순위다.</b> 파라미터 튜닝보다 인덱스 하나가 훨씬 큰 차이를 만든다.</li>
+<li><b>Spill을 감시하라.</b> 메모리에 안 들어가서 디스크로 넘어가는 순간이 <b>성능 절벽</b>이다. PostgreSQL의 <code>Hash Batches &gt; 1</code>, SQL Server의 tempdb Spill이 같은 신호다.</li>
+<li><b>메모리 파라미터는 곱해진다.</b> 연산 수 × 동시 접속 수만큼 늘어난다.</li>
+<li><b>통계가 틀리면 다 틀린다.</b> 예측과 실제 행 수가 크게 다르면 통계 갱신부터 한다.</li>
+</ul></div>
+
+  <h3>7) 함정 / 감점 포인트</h3>
+<ul class="b">
+<li><b>FK 인덱스 누락</b> — DBMS를 가리지 않고 첫 번째로 꼽히는 항목. FK를 걸었다고 인덱스가 자동으로 생기지 않는다.</li>
+<li><b><code>EXPLAIN ANALYZE</code>를 UPDATE/DELETE에 그냥 붙이기</b> — 실제로 실행된다.</li>
+<li><b><code>cost</code> 값을 시간으로 오해하기</b> — "cost 45면 45초"가 아니다.</li>
+<li><b><code>Seq Scan</code>을 무조건 나쁘다고 쓰기</b> — 작은 테이블이거나 대부분의 행을 읽어야 하면 Seq Scan이 정답이다.</li>
+<li><b><code>loops</code>를 무시하고 <code>actual time</code>만 보기</b> · <b><code>work_mem</code>을 전역으로 크게 잡기</b></li>
+<li><b>알고리즘을 직접 고를 수 있다고 쓰기</b> — PostgreSQL/MySQL에는 "이걸 써라"는 힌트가 표준으로 없다. <b>조건(인덱스·통계·메모리)을 만들어 유도</b>하는 것이다.</li>
+</ul>
+
+  <h3>8) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>Hash Join이 인덱스 없이도 빠르다면, 인덱스는 왜 만드나요?</summary><div class="fa">Hash Join이 빠른 것은 <b>대형 × 대형</b>일 때입니다. 실제 서비스 쿼리의 대다수는 그런 모양이 아닙니다 — "이 학생 한 명의 수강 목록"처럼 <b>작은 결과를 뽑는 조회</b>가 훨씬 많고, 여기서는 인덱스를 탄 Nested Loop가 압도적으로 빠릅니다. Hash Join은 작은 쪽이라도 테이블 전체를 읽어 해시 테이블을 만들어야 하는데, <b>한 학생의 수강 3건을 찾자고 10만 행짜리 테이블을 통째로 읽는 것은 낭비</b>입니다. 게다가 인덱스는 JOIN만을 위한 것이 아니라 <code>WHERE</code>, <code>ORDER BY</code>, FK 삭제 검사에도 쓰입니다. <b>인덱스가 1순위이고 Hash Join은 인덱스로 감당 안 되는 대용량의 대안</b>입니다.</div></details>
+<details><summary>그럼 Nested Loop가 항상 낫나요? 인덱스만 잘 만들면 되잖아요.</summary><div class="fa">아닙니다. 인덱스가 있어도 <b>읽어야 할 행이 많으면 NLJ가 더 느립니다.</b> 인덱스로 한 행을 찾는 것은 빠르지만, 그 짓을 100만 번 하면 <b>100만 번의 랜덤 I/O</b>입니다. 반면 Hash Join은 두 테이블을 순차적으로 한 번씩 읽고, 순차 읽기는 랜덤 읽기보다 훨씬 빠르기 때문에 어느 지점을 넘어가면 역전됩니다. <b>옵티마이저가 하는 일이 바로 이 손익분기점을 통계로 추정하는 것</b>입니다. 그래서 "어느 쪽이 낫다"가 아니라 <b>"행 수에 따라 다르다"</b>가 정답이고, 통계가 정확해야 제대로 고를 수 있습니다.</div></details>
+<details><summary><code>EXPLAIN</code>만 봐도 되지 않나요? <code>ANALYZE</code>까지 붙일 필요가 있나요?</summary><div class="fa"><code>EXPLAIN</code>만으로는 <b>옵티마이저의 예측이 맞는지 알 수 없습니다.</b> 가장 중요한 정보가 <code>rows=200</code>(예측)과 <code>actual rows=185</code>(실제)의 비교인데, <code>ANALYZE</code> 없이는 실제값이 안 나옵니다. 예측이 200인데 실제가 20만이라면 옵티마이저는 "작은 테이블"이라 판단하고 Nested Loop를 골랐을 텐데 실제로는 대형이라 엄청나게 느려집니다. <b>이런 문제는 <code>EXPLAIN</code>만 봐서는 절대 안 보입니다.</b> 다만 실제로 실행되므로 몇 분씩 걸리거나 데이터를 변경하는 문장이면 조심해야 합니다.</div></details>
+<details><summary>실행계획이 이상해서 <code>enable_hashjoin = off</code>를 운영에 걸면 안 되나요?</summary><div class="fa">권장하지 않습니다. 그 스위치는 <b>전역</b>입니다 — 이 쿼리 하나를 위해 Hash Join을 끄면 서버의 모든 쿼리가 Hash Join을 못 쓰게 되어 다른 쿼리들이 느려집니다. 정석적인 순서는 (1) <code>ANALYZE 테이블명;</code>으로 <b>통계 갱신</b>(실행계획 문제의 상당수가 낡은 통계 탓입니다), (2) 필요한 <b>인덱스</b> 확인, (3) <b>쿼리 재작성</b>(불필요한 서브쿼리 제거, 조건을 인덱스가 타게 변형), (4) 그래도 안 되면 세션 단위로만 <code>SET LOCAL enable_hashjoin = off;</code>를 쓰되 임시방편이라는 인식을 갖습니다. <b>스위치는 원인을 찾는 실험 도구이지 해결책이 아닙니다.</b></div></details>
+<details><summary>MySQL은 Sort-Merge Join이 없는데, 범위 조인은 어떻게 하나요?</summary><div class="fa">BNL(Block Nested Loop)로 합니다. Sort-Merge가 없어도 Nested Loop 계열은 등호가 아닌 조건도 처리할 수 있기 때문입니다. 다만 <b>정렬된 상태를 활용하지 못하므로 대용량 범위 조인에서는 PostgreSQL보다 불리</b>합니다. MySQL에서 범위 조인이 느리면 (1) 인덱스로 후보를 최대한 줄이거나, (2) 범위 조인 자체를 피하도록 데이터 모델을 바꾸는(구간을 미리 계산해 <b>등호 조인으로 만드는</b>) 쪽으로 접근합니다.</div></details>
+<details><summary>Spill이 나면 얼마나 느려지나요? 조금 느려지는 정도 아닌가요?</summary><div class="fa">"조금"이 아닙니다. 메모리 접근과 디스크 접근은 대략 <b>수백~수천 배</b> 차이가 나고, Spill이 나면 해시 테이블을 여러 배치로 나눠 <b>테이블을 여러 번 다시 읽어야</b> 합니다. 실무에서 "어제까지 2초였는데 오늘 90초"처럼 갑자기 느려지는 쿼리의 흔한 원인이 이것입니다 — <b>데이터가 조금 늘어나 <code>work_mem</code> 경계를 넘는 순간 절벽처럼 떨어집니다.</b> 그래서 어느 DBMS를 쓰든 Spill 감지가 튜닝 항목에 빠지지 않습니다. (32장)</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>Nested Loop Join이 빠르려면 어떤 조건 두 가지가 필요한가?</li>
+<li>Hash Join이 비등가 조인(<code>&gt;</code>, <code>&lt;</code>)에 쓰일 수 없는 이유는?</li>
+<li>Sort-Merge Join이 유리한 상황은? 인덱스가 있으면 무엇이 생략되는가?</li>
+<li>실행계획에서 <code>rows</code>와 <code>actual rows</code>가 크게 다르면 무엇을 의심하고 무엇을 먼저 해 보는가?</li>
+<li><code>loops=1000</code>이고 <code>actual time=0.1</code>이면 이 노드의 총 시간은?</li>
+<li><code>Hash Batches &gt; 1</code>은 무엇을 뜻하고 왜 위험한가?</li>
+<li><code>work_mem</code>을 전역으로 크게 잡으면 안 되는 이유는?</li>
+</ul></div>
 </section>
 
 
