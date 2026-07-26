@@ -6052,7 +6052,7 @@ CREATE TABLE knowledge_base (
 
 CREATE INDEX ON knowledge_base USING hnsw (embedding vector_cosine_ops);
 
--- 거리 연산자 세 가지:  <->  L2   |  <#>  내적  |  <=>  코사인
+-- 거리 연산자 세 가지:  &lt;-&gt;  L2   |  &lt;#&gt;  내적  |  &lt;=&gt;  코사인
 SELECT id, title, 1 - (embedding <=> $1) AS similarity
 FROM knowledge_base
 WHERE lang = 'ko'                    -- 메타데이터 필터링 = pgvector가 이기는 지점
