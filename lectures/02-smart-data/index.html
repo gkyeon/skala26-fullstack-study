@@ -6113,56 +6113,142 @@ LIMIT 5;</code></pre></div>
     <span class="day-badge day4">Day 4</span>
     <h2><span class="num">30.</span> 보안 및 권한 관리</h2>
   </div>
-  <p class="subtitle">인증·인가·SQL Injection·암호화·Row-Level Security·감사</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 누가 접속할 수 있고(인증) 뭘 할 수 있는지(권한)를 정하고, 해킹의 대표격인 SQL Injection을 막는 방법이에요.</div></div>
-  <h4>DB 보안 전체 구조 — 최소 권한 원칙(Least Privilege)</h4>
-<table class="t"><thead><tr>
-<th>요소</th>
-<th>설명</th>
-</tr></thead><tbody>
-<tr><td>인증(Authentication)</td><td>누가 접속했는가 (아이디/비번, AD/IAM)</td></tr>
-<tr><td>인가(Authorization)</td><td>그 사람이 무엇을 할 수 있나 (SELECT/INSERT 등 권한)</td></tr>
-<tr><td>입력검증/파라미터바인딩</td><td>악성 입력으로부터 SQL 보호</td></tr>
-<tr><td>암호화</td><td>전송(TLS)과 저장(디스크/TDE/컬럼) 보호</td></tr>
-<tr><td>감사(Audit)</td><td>누가 언제 무슨 쿼리 실행했는지 기록</td></tr>
-</tbody></table>
-<div class="sqlbox"><div class="sqlhead">사용자·역할·권한 생성 (Postgres / MySQL)</div><pre><code>-- PostgreSQL
-CREATE ROLE app_reader NOLOGIN;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO app_reader;
-CREATE ROLE app_user LOGIN PASSWORD 'secret';
-GRANT app_reader TO app_user;
--- MySQL 8+
-CREATE ROLE 'app_reader'; GRANT SELECT ON mydb.* TO 'app_reader';
-CREATE USER 'app_user'@'%' IDENTIFIED BY 'secret'; GRANT 'app_reader' TO 'app_user'@'%';</code></pre></div>
-<div class="sqlbox"><div class="sqlhead">Row-Level Security (행 단위 보안)</div><pre><code>-- Row-Level Security(RLS): 같은 테이블에서 사용자별로 볼 수 있는 행 제한 (멀티테넌시)
-ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
-CREATE POLICY customer_policy ON orders FOR SELECT
-  USING (customer_id = current_setting('app.customer_id')::int);
-SELECT set_config('app.customer_id','42', true); -- 앱이 세션에 고객ID 설정 → 그 고객 데이터만 조회</code></pre></div>
-<div class="sqlbox"><div class="sqlhead">SQL Injection — 원인과 방어법 (파라미터 바인딩 필수)</div><pre><code># 위험(절대 금지!): 문자열 포맷으로 SQL 조립
-sql = f"SELECT * FROM users WHERE name = '{user_input}'"   # ' OR '1'='1 공격 가능
-# 안전: 파라미터 바인딩(Prepared Statement)
-cur.execute("SELECT * FROM users WHERE name = %s", (user_input,))
-# ORDER BY 등 컬럼명은 바인딩 불가 → 화이트리스트 검증
-if order not in ('name','created_at'): order = 'created_at'</code></pre></div>
-<div class="note">ORM(SQLAlchemy 등)도 raw SQL이나 .execute(text(...))에 입력을 직접 포맷팅하면 취약 — ORM의 파라미터 바인딩 API만 사용</div>
-<table class="t"><thead><tr>
-<th>암호화 종류</th>
-<th>설명</th>
-</tr></thead><tbody>
-<tr><td>전송 암호화(TLS)</td><td>클라이언트↔DB 연결 암호화, 항상 켜기</td></tr>
-<tr><td>디스크 암호화/TDE</td><td>DB파일 자동 암호화(앱은 모름), 컬럼단위 제어 불가</td></tr>
-<tr><td>컬럼 암호화</td><td>민감 데이터만 타겟(pgcrypto/Always Encrypted), 인덱스/검색 제약·성능저하 단점</td></tr>
-</tbody></table>
-<div class="sqlbox"><div class="sqlhead">PostgreSQL pgcrypto 컬럼 암호화</div><pre><code>CREATE EXTENSION IF NOT EXISTS pgcrypto;
-INSERT INTO customers (name, ssn_enc) VALUES ('Alice', pgp_sym_encrypt('111-22-3333','mypassword'));
-SELECT pgp_sym_decrypt(ssn_enc,'mypassword') FROM customers;</code></pre></div>
-<h4>흔히 하는 실수 &amp; 해결방법 / 체크리스트: TLS강제, Prepared Statement, 최소권한, 감사로그</h4>
+  <p class="subtitle">보안 5개 층 · 최소 권한 원칙 · Role과 GRANT/REVOKE · VIEW 기반 보안 · Row-Level Security · SQL Injection · 암호화</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">다섯 층이 <b>위에서부터 순서대로 통과해야 데이터에 닿습니다</b> — <b>인증</b>("너 누구야?") → <b>인가</b>("그래서 뭘 해도 되는데?") → <b>입력 검증</b> → <b>암호화</b> → <b>감사</b>. 실무 사고의 전형은 <b>"인증은 강했는데(SSO·MFA) 인가가 통짜여서 계정 하나 털리자 전부 털린 경우"</b>예요. 그래서 <b>계층 방어</b>입니다.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 DB 보안 다섯 개의 층</span>
+  <table class="t"><thead><tr><th style="width:26%">층</th><th style="width:34%">질문</th><th>대표 수단</th></tr></thead><tbody>
+  <tr><td><b>인증(Authentication)</b></td><td>누가 접속했는가</td><td>아이디/비밀번호, AD/IAM (<code>pg_hba.conf</code>)</td></tr>
+  <tr><td><b>인가(Authorization)</b></td><td>그 사람이 무엇을 할 수 있나</td><td><code>GRANT</code>/<code>REVOKE</code>, RLS</td></tr>
+  <tr><td><b>입력 검증/바인딩</b></td><td>악성 입력으로부터 SQL 보호</td><td>Prepared Statement, 화이트리스트</td></tr>
+  <tr><td><b>암호화</b></td><td>훔쳐 가도 못 읽게</td><td>전송(TLS), 저장(TDE/컬럼)</td></tr>
+  <tr><td><b>감사(Audit)</b></td><td>누가 언제 무슨 쿼리를 실행했나</td><td>로그, 감사 테이블, pgaudit</td></tr>
+  </tbody></table>
+  <p><b>인증과 인가는 한 글자 차이라 계속 섞이는데</b> 구분은 간단하다 — <b>여권 확인이 인증, 탑승권의 좌석 등급이 인가</b>다. <b>인증을 통과했는데 아무것도 못 하는 계정</b>도, <b>인가는 충분한데 접속 자체가 안 되는 롤(<code>NOLOGIN</code>)</b>도 만들 수 있다.</p></div>
+
+  <h3>1) 최소 권한 원칙 — 말은 쉬운데 왜 안 지켜지나</h3>
+<p><b>어떤 주체에게 자기 일을 하는 데 꼭 필요한 최소한의 권한만, 필요한 기간만 준다.</b> 지키기 어려운 이유는 <b>권한을 좁게 주면 개발 중에 자꾸 막히기 때문</b>이다 — 그래서 "일단 다 주고 나중에 줄이자"가 되고 <b>그 "나중에"는 오지 않는다.</b></p>
+<div class="cp"><div class="cphead">✔ 그래서 실무는 반대로 접근한다</div><ul>
+<li><b>역할(Role)을 먼저 설계하고</b> 사람·애플리케이션은 그 역할에 <b>붙이기만</b> 한다.</li>
+<li>새 권한이 필요하면 <b>개인 계정이 아니라 역할에 붙인다</b> — 그래야 나중에 회수할 때 한 곳만 보면 된다.</li>
+<li>운영 DB에서 <b>DDL 권한(CREATE/ALTER/DROP)은 애플리케이션 계정에서 뗀다.</b> 애플리케이션은 테이블을 만들 일이 없다.</li>
+</ul></div>
+
+  <h3>2) PostgreSQL의 Role — User와 Role은 같은 것이다</h3>
+<div class="sqlbox norun"><div class="sqlhead">CREATE USER는 CREATE ROLE ... LOGIN의 별칭일 뿐</div><pre><code>CREATE USER u1 PASSWORD 'x';        -- 이것과
+CREATE ROLE u1 LOGIN PASSWORD 'x';  -- 이것은 완전히 같다</code></pre></div>
 <ul class="b">
-<li>애플리케이션에 DB 관리자 권한 부여 → 역할분리·최소권한으로 해결</li>
-<li>클라우드 KMS 키 권한 삭제 → 키 권한 정책 문서화, 백업키 관리</li>
-<li>로그에 민감정보 평문 노출 → 마스킹/로그필터링, 민감컬럼 암호화</li>
-<li>ORDER BY 등 파라미터 검증없이 사용 → 화이트리스트 검증</li>
+<li>PostgreSQL에는 "사용자"라는 별도 개념이 없다. <b>롤 하나가 있고, <code>LOGIN</code> 속성이 붙으면 접속 계정처럼, 없으면 권한 묶음(그룹)처럼</b> 쓰인다.</li>
+<li><b>주요 속성</b>: <code>LOGIN</code> / <code>CREATEDB</code>·<code>CREATEROLE</code> / <code>INHERIT</code>(부모 롤 권한 상속) / <code>BYPASSRLS</code>(행 수준 보안 우회 — <b>RLS 절에서 중요</b>) / <code>VALID UNTIL</code>(만료일)</li>
 </ul>
+<div class="callout myth"><span class="ctitle">⚠️ 속성(attribute)과 권한(privilege)은 다른 것이다</span>
+<p><code>LOGIN</code>·<code>CREATEDB</code> 같은 것은 <b>롤 자체에 붙는 성질</b>이라 <code>CREATE ROLE</code>/<code>ALTER ROLE</code>로 지정하고, "sales 테이블을 SELECT할 수 있다"는 <b>객체에 붙는 권한</b>이라 <code>GRANT</code>로 준다. 섞으면 <code>GRANT LOGIN TO ...</code> 같은 <b>존재하지 않는 문법</b>을 쓰게 된다.</p>
+<p>같은 이유로 <code>CREATE ROLE readonly_user LOGIN NOSUPERUSER;</code>는 <b>이름만 "읽기 전용"이지 이 문장만으로는 읽기 전용이 되지 않는다</b> — 읽기 전용은 속성이 아니라 권한이라 <code>GRANT SELECT</code>를 따로 해야 한다. <b>이름에 속으면 안 된다.</b></p></div>
+
+  <h3>3) GRANT / REVOKE — 인가의 본체</h3>
+<div class="sqlbox norun"><div class="sqlhead">역할 기반 권한 분리 설계</div><pre><code>-- 1) 권한 묶음 역할을 만든다 (로그인 불가)
+CREATE ROLE app_reader NOLOGIN;
+CREATE ROLE app_writer NOLOGIN;
+
+-- 2) 역할에 권한을 준다
+GRANT USAGE ON SCHEMA public TO app_reader;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO app_reader;
+GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_writer;
+
+-- 3) 실제 계정을 역할에 붙인다
+CREATE ROLE app_user LOGIN PASSWORD '...';
+GRANT app_reader, app_writer TO app_user;
+
+-- 컬럼 수준 권한도 된다 — 급여만 숨기기
+GRANT SELECT (emp_id, emp_name, department) ON employee TO hr_viewer;</code></pre></div>
+<div class="callout myth"><span class="ctitle">⚠️ <code>ALL TABLES</code>는 <b>미래의 테이블</b>을 포함하지 않는다</span>
+<p><code>GRANT ... ON ALL TABLES IN SCHEMA</code>는 <b>실행한 그 순간에 존재하는 테이블에만</b> 적용된다. <b>"마이그레이션으로 테이블을 추가한 다음 날 왜 갑자기 권한 오류가 나지?"의 90%가 이것</b>이다.</p>
+<div class="sqlbox norun"><div class="sqlhead">해결 — 과거분 + 미래분을 한 세트로</div><pre><code>GRANT SELECT ON ALL TABLES IN SCHEMA public TO app_reader;      -- 과거분
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT ON TABLES TO app_reader;                          -- 미래분(예약)</code></pre></div>
+<p>중요한 제약 — <b>이 예약은 "누가 만든 객체인가"에 묶인다.</b> 위 문장은 <b>실행한 롤이 만드는 테이블에만</b> 적용되므로, 마이그레이션을 <code>dev_user</code>가 돌린다면 <code>ALTER DEFAULT PRIVILEGES <b>FOR ROLE dev_user</b> IN SCHEMA public GRANT ...</code>로 대상을 명시해야 한다 — <b>"설정했는데 왜 또 안 되지"의 원인</b>이다.</p></div>
+<div class="note"><b><code>PUBLIC</code> — 아무것도 안 했는데 이미 열려 있는 것들.</b> PostgreSQL은 기본적으로 <b>모든 롤에게 <code>public</code> 스키마 사용 권한과 함수 실행 권한</b>을 준다(PG 15부터 public 스키마 CREATE 권한은 회수됨). 그래서 <b>정말 잠그려면 <code>REVOKE ... FROM PUBLIC</code>을 명시적으로</b> 해야 한다. 반대로 <code>pg_read_all_data</code> 같은 <b>미리 만들어진 롤</b>을 쓰면 "모든 테이블 읽기"를 한 줄로 줄 수 있다.</div>
+
+  <h3>4) VIEW 기반 보안과 Row-Level Security</h3>
+<div class="callout goal"><span class="ctitle">💡 두 가지가 서로 다른 축을 자른다</span>
+<ul>
+<li><b>VIEW</b>는 <b>컬럼(세로)</b>을 자른다 — 원본 테이블 권한은 주지 않고 <b>필요한 컬럼만 담은 View에만 권한</b>을 준다(14장). 되는 이유는 <b>뷰가 소유자의 권한으로 실행되기 때문</b>이다.</li>
+<li><b>RLS</b>는 <b>행(가로)</b>을 자른다 — <b>같은 <code>SELECT * FROM orders</code>가 사람마다 다른 결과</b>를 낸다.</li>
+</ul></div>
+<div class="sqlbox norun"><div class="sqlhead">RLS — DB가 직접 "자기 행만" 강제한다</div><pre><code>ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY orders_self ON orders
+  FOR ALL
+  USING      (owner = current_user)     -- 읽을 수 있는 행
+  WITH CHECK (owner = current_user);    -- 쓸 수 있는 행
+
+-- 세션 변수로 테넌트를 거는 방식
+CREATE POLICY tenant_isolation ON orders
+  USING (tenant_id = current_setting('app.tenant_id')::int);</code></pre></div>
+<table class="t"><thead><tr><th style="width:26%">구분</th><th>뜻</th></tr></thead><tbody>
+<tr><td><code>USING</code></td><td><b>읽을 수 있는 행</b>을 정한다 (SELECT/UPDATE/DELETE의 대상 필터)</td></tr>
+<tr><td><code>WITH CHECK</code></td><td><b>쓸 수 있는 행</b>을 정한다 (INSERT/UPDATE 결과가 이 조건을 만족해야 한다)</td></tr>
+<tr><td><b>PERMISSIVE</b>(기본)</td><td>정책이 여러 개면 <b>OR</b>로 합쳐진다 — 하나만 통과해도 된다</td></tr>
+<tr><td><b>RESTRICTIVE</b></td><td>정책이 여러 개면 <b>AND</b>로 합쳐진다 — 전부 통과해야 한다</td></tr>
+</tbody></table>
+<div class="callout myth"><span class="ctitle">⚠️ RLS의 세 가지 함정</span>
+<ul>
+<li><b>테이블 소유자와 슈퍼유저는 정책을 그냥 통과한다.</b> 소유자에게도 적용하려면 <code>ALTER TABLE ... FORCE ROW LEVEL SECURITY</code>가 필요하다. <b>"정책을 걸었는데 내가 테스트하면 다 보인다"</b>의 원인이다(<code>BYPASSRLS</code> 속성도 마찬가지).</li>
+<li><b>세션 변수를 한 번도 안 심으면 에러가 난다.</b> <code>current_setting('app.tenant_id')</code>는 값이 없으면 실패하므로 <code>current_setting('app.tenant_id', true)</code>(missing_ok)로 쓰고 NULL 처리를 해야 한다.</li>
+<li><b>실행계획에 정책이 조건으로 붙는다.</b> 즉 <b>RLS 조건 컬럼에도 인덱스가 필요</b>하고, 정책이 복잡하면 그만큼 느려진다.</li>
+</ul>
+<p>참고로 <b>5장의 멀티테넌시 Pool Model</b>에서 "<code>tenant_id</code> 조건을 한 번이라도 빠뜨리면 남의 데이터가 노출된다"고 했는데, <b>RLS가 바로 그 실수를 원천적으로 막는 장치</b>다 — 애플리케이션이 조건을 안 걸어도 DB가 건다.</p></div>
+
+  <h3>5) SQL Injection — 원인과 한 줄 방어법</h3>
+<p>여기서 층이 바뀐다. 앞까지는 "정당한 사용자가 뭘 할 수 있나"(인가)였고, 지금부터는 <b>"입력이 SQL 문법을 바꿔 버리는"</b> 문제다. <b>원인은 한 줄</b> — <b>개발자가 사용자 입력을 직접 SQL 문자열에 붙여넣어 공격자가 SQL 구조를 바꿀 수 있게 된 것.</b></p>
+<div class="sqlbox norun"><div class="sqlhead">무슨 일이 일어나는지 눈으로</div><pre><code># 위험: 문자열 포맷 (절대 금지)
+sql = f"SELECT * FROM users WHERE name = '{user_input}'"
+
+입력이 '  OR '1'='1  이면 실제 실행되는 SQL:
+SELECT * FROM users WHERE name = '' OR '1'='1'      → 전 행이 나온다
+
+입력이 ' ; DROP TABLE audit_log; --  이면:
+SELECT * FROM users WHERE name = '' ; DROP TABLE audit_log; --'
+                                      └ stacked query 공격. 테이블이 사라진다
+
+# 안전: 파라미터 바인딩
+cur.execute("SELECT * FROM users WHERE name = %s", (user_input,))</code></pre></div>
+<div class="cp"><div class="cphead">✔ 핵심은 "값이 값의 자리에 머무는가"</div><ul>
+<li>공격 입력은 <b>작은따옴표를 닫고 나와서 조건을 새로 붙인다</b> — 개발자가 의도한 <b>SQL 문장의 구조 자체가 바뀌는 것</b>이다. 파라미터 바인딩은 값을 <b>SQL 문자열과 분리해</b> 전달하므로 <b>무엇이 들어와도 값으로만 취급</b>된다.</li>
+<li><code>%s</code>는 <b>파이썬의 <code>%</code> 포맷이 아니라 드라이버의 자리표시자</b>다. <code>cur.execute("... = %s" % user_input)</code>처럼 <b><code>%</code>로 미리 끼워 넣으면 문자열 이어붙이기와 완전히 같아진다</b> — 생김새가 비슷해서 가장 많이 하는 실수다.</li>
+<li><b>여기서 최소 권한 원칙이 왜 중요한지가 드러난다</b> — <b>애플리케이션 계정에 <code>DROP</code> 권한이 없었다면 뚫려도 테이블은 살아남았다.</b> 두 층이 다 있어야 사고가 막힌다.</li>
+</ul></div>
+<div class="callout myth"><span class="ctitle">⚠️ 바인딩으로 안 되는 자리가 있다 — 정렬·컬럼 이름</b></span>
+<p><code>ORDER BY $1</code>이나 <code>FROM $1</code>은 <b>동작하지 않는다.</b> 바인딩은 <b>값</b>의 자리에만 쓸 수 있고 <b>식별자</b>는 안 된다. 그래서 정렬 컬럼을 사용자가 고르게 하려면 <b>화이트리스트</b>(허용된 컬럼명 목록에 있는지 코드로 검사)를 쓰고, 동적으로 만들어야 한다면 PL/pgSQL의 <code>format('... %I ...', col)</code>처럼 <b>식별자 전용 이스케이프(<code>%I</code>)</b>를 쓴다.</p>
+<p>그리고 <b>ORM도 자동 방어가 아니다.</b> ORM이 만들어 주는 쿼리는 안전하지만, <b>raw SQL을 문자열로 조립하는 순간</b>(<code>@Query("... where name = '" + name + "'")</code>) 똑같이 뚫린다. <b>저장 프로시저·뷰도 마찬가지</b>다 — 그 안에서 동적 SQL을 문자열로 만들면 소용없다.</p></div>
+
+  <h3>6) 암호화와 감사</h3>
+<table class="t"><thead><tr><th style="width:24%">구분</th><th>무엇을 막나</th><th>수단</th></tr></thead><tbody>
+<tr><td><b>전송 중(in transit)</b></td><td>네트워크 도청</td><td><b>TLS/SSL 연결 강제</b> (<code>sslmode=require</code> 이상)</td></tr>
+<tr><td><b>저장 시(at rest)</b></td><td><b>디스크·백업 파일을 통째로 훔쳐 갔을 때</b></td><td>TDE, 디스크 암호화, 클라우드의 스토리지 암호화</td></tr>
+<tr><td><b>컬럼 암호화</b></td><td><b>DB 안에서도 못 읽게</b> (DBA조차)</td><td><code>pgcrypto</code>(<code>pgp_sym_encrypt</code>), 애플리케이션 단 암호화</td></tr>
+</tbody></table>
+<div class="callout deep"><span class="ctitle">🔎 세 층은 막는 대상이 다르다</span>
+<p><b>저장 시 암호화(TDE)는 "디스크를 뽑아 갔을 때"를 막는 것</b>이지, <b>정당하게 접속한 사용자에게는 아무 소용이 없다</b> — DB가 알아서 복호화해서 보여 주기 때문이다. 개인정보를 <b>DBA에게도 감추려면</b> 컬럼 암호화가 필요하고, 그러면 <b>그 컬럼으로는 인덱스 검색·정렬이 안 된다</b>는 대가가 따른다(17장의 함수 기반 인덱스 이야기와 같은 구조). 그래서 2장에서 <b>"개인정보를 PK로 쓰지 마라"</b>고 한 것이다 — PK를 암호화하면 조인마다 복호화가 따라붙는다.</p>
+<p><b>감사(Audit)</b>는 <code>pgaudit</code> 확장이나 25장의 트리거로 남긴다. 다만 <b>25장에서 본 한계</b>를 기억하자 — <b>트리거 로그는 같은 트랜잭션 안에 있어 롤백되면 같이 사라진다.</b> "누가 뭘 하려다 실패했는지"까지 남기려면 <b>서버 로그나 외부 수집기</b>가 필요하다.</p></div>
+
+  <h3>7) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>애플리케이션 계정 하나로 다 하면 안 되나요?</summary><div class="fa">동작은 하지만 <b>사고가 났을 때 피해 범위가 곧 그 계정의 권한</b>이 됩니다. 최소한 셋으로 나누세요 — <b>마이그레이션용</b>(DDL 권한 있음, 배포 때만 사용), <b>애플리케이션용</b>(DML만, <code>DROP</code> 없음), <b>분석/조회용</b>(SELECT만, 가능하면 읽기 복제본). 위 SQL Injection 실습에서 본 대로 <b>애플리케이션 계정에 <code>DROP</code>이 없었다면 뚫려도 테이블은 살아남습니다.</b> 그리고 계정을 나눠 두면 <b>감사 로그에서 누가 한 일인지가 구분</b>됩니다.</div></details>
+<details><summary>VIEW와 RLS 중 무엇을 써야 하나요?</summary><div class="fa">자르는 축이 다릅니다 — <b>VIEW는 컬럼(세로), RLS는 행(가로)</b>입니다. 그래서 <b>둘 다 쓰는 경우가 많습니다</b>(민감 컬럼을 뺀 View 위에 RLS로 자기 행만). 선택 기준은 <b>"조건이 사용자마다 달라지는가"</b>입니다 — "연봉 컬럼은 아무도 못 본다"는 View로 충분하지만, "각자 자기 부서 것만 본다"는 RLS가 맞습니다. RLS의 장점은 <b>애플리케이션이 조건을 빠뜨려도 DB가 강제</b>한다는 것이고, 대가는 <b>실행계획에 조건이 붙어 인덱스 설계가 필요</b>하다는 것입니다.</div></details>
+<details><summary>ORM을 쓰면 SQL Injection은 신경 안 써도 되나요?</summary><div class="fa">아닙니다. ORM이 <b>자동으로 만들어 주는 쿼리</b>는 파라미터 바인딩을 쓰므로 안전하지만, <b>raw SQL을 문자열로 조립하는 순간</b> 그대로 뚫립니다. 그리고 <b>바인딩이 안 되는 자리</b>(정렬 컬럼, 테이블명, <code>LIMIT</code> 일부)를 동적으로 만들 때가 진짜 위험 지점입니다 — 여기는 <b>반드시 화이트리스트</b>로 검사해야 합니다. 정리하면 <b>"ORM은 기본값을 안전하게 만들어 줄 뿐, 우회로를 막아 주지는 않는다"</b>입니다.</div></details>
+<details><summary>비밀번호를 DB에 저장할 때는 어떻게 하나요?</summary><div class="fa"><b>암호화가 아니라 해시</b>입니다 — 암호화는 되돌릴 수 있지만 비밀번호는 <b>되돌릴 필요가 없고 되돌려서도 안 됩니다.</b> 그리고 일반 해시(SHA-256)가 아니라 <b>느리게 설계된 전용 해시</b>(bcrypt, scrypt, Argon2)를 <b>솔트와 함께</b> 씁니다 — 빠른 해시는 무차별 대입에 취약합니다. <b>이 처리는 대개 애플리케이션에서 합니다</b>(DB에 평문이 도착하지 않게). 참고로 PostgreSQL 자체의 롤 비밀번호는 <code>scram-sha-256</code>으로 저장됩니다.</div></details>
+<details><summary>감사 로그는 어디까지 남겨야 하나요?</summary><div class="fa">전부 남기면 <b>로그가 데이터보다 커지고</b> 성능도 나빠집니다. 우선순위를 정하세요 — ① <b>권한 변경</b>(<code>GRANT</code>/<code>REVOKE</code>/롤 생성)은 무조건, ② <b>민감 테이블의 변경</b>(개인정보·금액), ③ <b>실패한 접근 시도</b>(이게 침해 탐지의 핵심인데 자주 빠집니다), ④ 대량 조회(<b>데이터 유출은 SELECT로 일어납니다</b>). 그리고 <b>보관 기간과 접근 권한</b>을 함께 정해야 합니다 — 감사 로그 자체가 개인정보를 담고 있어서, <b>그 로그를 아무나 볼 수 있으면 감사가 아니라 유출 통로</b>가 됩니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>보안 다섯 층을 순서대로 말할 수 있는가? 인증과 인가의 차이는?</li>
+<li>PostgreSQL에서 User와 Role의 관계는? 속성과 권한은 어떻게 다른가?</li>
+<li><code>GRANT ... ON ALL TABLES</code>의 함정과 해결책은? 그 해결책의 제약은?</li>
+<li>VIEW 기반 보안과 RLS는 각각 무엇을 자르는가?</li>
+<li>RLS에서 정책이 적용되지 않는 두 경우는?</li>
+<li>SQL Injection의 원인 한 줄과 방어 한 줄은? 바인딩이 안 되는 자리는 어떻게 하는가?</li>
+<li>저장 시 암호화(TDE)가 막아 주지 <b>못하는</b> 것은?</li>
+</ul></div>
 </section>
 
 
