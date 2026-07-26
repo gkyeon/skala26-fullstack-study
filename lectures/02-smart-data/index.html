@@ -1563,32 +1563,287 @@ CREATE INDEX idx_enroll_course ON enrollments (course_id, student_id);</code></p
     <span class="day-badge day1">Day 1</span>
     <h2><span class="num">5.</span> 스키마 전략 &amp; RDBMS 비교</h2>
   </div>
-  <p class="subtitle">멀티 프로젝트 설계 · MySQL · PostgreSQL · Oracle · Cloud DB</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: MySQL·PostgreSQL·Oracle·SQL Server는 각자 장단점 있는 자동차 브랜드 같은 거예요. 이 교재는 <b>PostgreSQL</b> 기준으로 진행됩니다.</div></div>
-  <h4>멀티테넌시 3가지 패턴 (스키마 기반 멀티 프로젝트 설계)</h4>
-<ul class="b">
-<li><b>Silo Model</b>: 테넌트별 완전 독립 DB — 보안 최강, 운영비용 최대</li>
-<li><b>Pool Model</b>: 단일 DB + tenant_id 컬럼 — 운영 단순, 데이터 혼재</li>
-<li><b>Bridge Model(PostgreSQL 권장)</b>: 단일 인스턴스 + 테넌트별 스키마 분리 — 물리적 자원 효율, 스키마 단위 접근제어/버전관리, 프로젝트별 독립 인덱스/파티셔닝 전략 가능</li>
+  <p class="subtitle">스키마(네임스페이스)와 멀티 테넌시 3패턴 · 주요 RDBMS 5종 비교 · ANSI SQL 표준과 벤더 방언 · Cloud DB</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>스키마</b>는 테이블을 묶는 '폴더'예요. 프로젝트마다 폴더를 나눠 두면 이름이 겹쳐도 되고 실수로 남의 테이블을 건드릴 일도 줄어요. 뒷부분은 <b>"어떤 DB 제품을 왜 고르나"</b>와 <b>"내가 쓰는 SQL이 표준인가 그 제품만의 방언인가"</b>를 구분하는 감각을 잡는 내용입니다.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p>지금까지는 "테이블을 어떻게 설계하는가"였다. 이 장은 그 위층, <b>테이블들을 어디에 담고 무엇으로 돌릴 것인가</b>다. 두 질문에 답한다.</p>
+  <ul>
+  <li><b>담는 그릇</b> — 프로젝트가 여럿이고 공통 테이블도 있을 때 어떻게 묶을 것인가? (스키마 전략)</li>
+  <li><b>돌리는 엔진</b> — PostgreSQL, MySQL, Oracle 중 무엇을? 무엇이 다른가? (RDBMS 비교)</li>
+  </ul>
+  <p>두 번째는 취업 관점에서도 실용적이다. 면접의 "왜 PostgreSQL을 쓰셨나요?"에 <b>"실습에서 써서요"는 답이 되지 않는다.</b></p></div>
+
+  <h3>1) 스키마란 — 논리적 네임스페이스</h3>
+<p><b>테이블/뷰/함수 등 DB 객체를 그룹화하는 논리적 네임스페이스</b>다. 폴더와 비슷하다. 파일이 많아지면 폴더로 묶듯, 테이블이 많아지면 스키마로 묶는다. 그리고 폴더처럼 <b>같은 이름의 테이블이 서로 다른 스키마에 있어도 충돌하지 않는다.</b> <code>prj_alpha.orders</code>와 <code>prj_beta.orders</code>는 별개의 테이블이다.</p>
+<div class="callout myth"><span class="ctitle">⚠️ "스키마"라는 단어가 두 가지 뜻으로 쓰인다</span>
+<ul>
+<li><b>넓은 뜻</b>: 데이터베이스의 구조 전체. "스키마를 설계한다", "스키마 변경"이라고 할 때의 스키마.</li>
+<li><b>좁은 뜻</b>: 위에서 정의한 네임스페이스. <code>CREATE SCHEMA app;</code>의 스키마.</li>
 </ul>
-<h4>주요 RDBMS 비교</h4>
+<p>이 절은 좁은 뜻이다. 문맥으로 구분하는 수밖에 없다.</p></div>
+<h4>더 헷갈리는 것 — DBMS마다 "데이터베이스"와 "스키마"의 관계가 다르다</h4>
 <table class="t"><thead><tr>
-<th>DBMS</th>
-<th>특징</th>
-<th>장점</th>
-<th>단점</th>
+<th style="width:16%">DBMS</th><th style="width:48%">계층 구조</th><th>비고</th>
 </tr></thead><tbody>
-<tr><td>MySQL/MariaDB</td><td>LAMP스택 핵심, InnoDB(트랜잭션/FK/MVCC)</td><td>배우기 쉬움, 운영부담 적음</td><td>대규모 확장성 한계, 고급기능 부족</td></tr>
-<tr><td>PostgreSQL</td><td>표준SQL 호환 최고, JSONB/PostGIS/사용자정의함수</td><td>복잡쿼리·GIS·JSON 강점, 오픈소스+엔터프라이즈급</td><td>운영 난이도·학습곡선 있음</td></tr>
-<tr><td>Oracle</td><td>RAC(고가용성), Data Guard(재해복구)</td><td>금융/공공/글로벌 신뢰도, 복잡 트랜잭션 안정</td><td>비용 매우 비쌈, 폐쇄적</td></tr>
-<tr><td>SQL Server</td><td>MS 생태계 통합, OLAP/BI 강점</td><td>PowerBI 등 완벽 연계</td><td>Windows 종속적</td></tr>
+<tr><td><b>PostgreSQL</b></td><td>서버(cluster) → 여러 database → 각 database 안에 여러 schema → 테이블</td><td>3단계. 다른 database의 테이블은 그냥 조회할 수 없다</td></tr>
+<tr><td><b>MySQL / MariaDB</b></td><td>서버 → 여러 database(= schema) → 테이블</td><td><b>database와 schema가 같은 말이다</b></td></tr>
+<tr><td><b>Oracle</b></td><td>인스턴스 → database → schema(= user)</td><td><b>스키마 = 사용자.</b> 사용자를 만들면 동명의 스키마가 생긴다</td></tr>
+<tr><td><b>SQL Server</b></td><td>인스턴스 → 여러 database → schema(기본 <code>dbo</code>) → 테이블</td><td>PostgreSQL과 비슷한 3단계</td></tr>
 </tbody></table>
-<h4>[참고] ANSI SQL:2016</h4>
+<div class="note">MySQL에서 <code>CREATE DATABASE</code>와 <code>CREATE SCHEMA</code>가 완전히 같은 명령인 반면, PostgreSQL에서는 전혀 다른 명령이다. <b>이 차이를 모르면 다른 DBMS 문서를 읽을 때 계속 막힌다.</b></div>
+<div class="sqlbox norun"><div class="sqlhead">구조 예시 — DB 인스턴스는 하나, 안을 스키마로 나눈다</div><pre><code>maindb / global        (공통: users, products, exchange_rates)
+maindb / prj_alpha     (프로젝트 A: orders, promotions)
+maindb / prj_beta      (프로젝트 B: inventory, suppliers)</code></pre></div>
+<p>공통으로 쓰는 회원·상품·환율은 <code>global</code>에 두고, 프로젝트별 테이블은 각자 스키마에 둔다. 프로젝트 A와 B가 각각 <code>orders</code>라는 테이블을 갖고 싶어도 이름이 겹치지 않는다.</p>
+
+  <h3>2) 멀티 테넌시 3가지 패턴</h3>
+<p><b>멀티 테넌시(Multi-tenancy)</b>는 한 시스템으로 여러 고객사(테넌트)를 서비스하는 구조다. SaaS가 전형적이다. 고객사 A와 B의 데이터를 어떻게 분리할 것인가에 세 가지 답이 있다.</p>
+<table class="t"><thead><tr>
+<th style="width:16%">패턴</th><th style="width:34%">방식</th><th style="width:22%">보안</th><th>운영 비용</th>
+</tr></thead><tbody>
+<tr><td><b>Silo Model</b></td><td>테넌트별 완전 독립 DB 인스턴스</td><td>최강</td><td>최대</td></tr>
+<tr><td><b>Pool Model</b></td><td>단일 DB + <code>tenant_id</code> 컬럼으로 구분</td><td>약함 (데이터 혼재)</td><td>단순</td></tr>
+<tr><td><b>Bridge Model</b></td><td>단일 DB 인스턴스 + <b>테넌트별 스키마 분리</b></td><td>중간</td><td>중간</td></tr>
+</tbody></table>
 <ul class="b">
-<li>ANSI SQL:2016(=ISO/IEC 9075:2016) — 모든 DBMS가 따라야 할 공통 규격</li>
-<li>ANSI SQL로 작성하면 이식성(Portability) 좋음: SELECT/JOIN/GROUP BY/HAVING/CASE WHEN</li>
-<li>Non-ANSI 예: LIMIT(MySQL) vs TOP(SQL Server) — DB마다 문법 다름</li>
-<li>이식성 중요하면 ANSI SQL+호환함수 통일, DB고정 배치/리포트면 고유함수 사용해도 OK. ORM(JPA 등)이 차이를 자동 흡수</li>
+<li><b>Silo</b>: 고객사마다 DB 서버를 따로 띄운다. 물리적으로 격리되므로 한 고객사의 부하나 사고가 다른 고객사에 영향을 주지 않는다. 대신 고객사가 100곳이면 DB 100개를 운영해야 한다.</li>
+<li><b>Pool</b>: 모든 데이터를 한 테이블에 넣고 <code>WHERE tenant_id = ?</code>로 구분한다. 가장 단순하고 자원 효율이 좋지만, <b>쿼리에서 <code>tenant_id</code> 조건을 한 번이라도 빠뜨리면 다른 고객사의 데이터가 노출된다.</b> 사고가 나면 크게 난다.</li>
+<li><b>Bridge</b>: PostgreSQL에서 권장되는 절충안. DB는 하나지만 스키마를 나누고, 스키마 단위로 접근 권한을 준다. <b>쿼리에 조건을 안 걸어도 애초에 다른 스키마가 안 보이므로</b> Pool보다 안전하고, Silo보다 자원 효율이 좋다.</li>
 </ul>
+<div class="callout prof"><span class="ctitle">🎓 실무 이야기 — 한 DB에 다 넣으면 오타 하나로 재무를 날린다</span>
+<p>하나의 데이터베이스에 임무 관리, 예산 관리, 회계, 사용자 관리 테이블이 구분 없이 뒤섞여 있으면 <b>사용자 테이블을 고치려다 오타 하나로 재무 데이터를 날리는 사고</b>가 실제로 자주 난다. 스키마는 그런 사고를 막기 위해 작업 영역을 갈라놓는 장치이며, 회계 프로젝트를 하는 사람은 회계 스키마만 건드리고 다른 스키마는 조회 권한만 받는 식으로 통제한다.</p>
+<p>세 패턴의 실무상 무게 차이는 표보다 크다. <b>Silo</b>는 DB마다 접속·조회·실행 권한을 따로 관리해야 해서 관리용 시스템을 별도로 만들어야 할 정도로 운영 비용이 커진다. <b>Pool</b>은 테이블 하나를 열었을 때 그것이 재무용인지 사용자용인지 구분이 안 되고, 컬럼 하나를 추가할 때 다른 프로젝트로 번지는 영향을 전부 검증해야 해서 반영이 오래 걸린다. <b>그래서 현업에서는 Bridge를 가장 많이 쓴다.</b></p></div>
+<h4>스키마 분리(Bridge)의 주요 장점</h4>
+<ul class="b">
+<li><b>물리적 자원 효율성</b>(단일 인스턴스), 스키마 단위 접근 제어, 버전 관리</li>
+<li><b>성능 최적화</b> — 프로젝트별 독립적인 인덱스/파티셔닝 전략 적용. <code>global</code> 스키마에서 사용자 이력을 파티셔닝하거나 아카이빙해도 프로젝트 스키마들은 전혀 영향을 받지 않는다.</li>
+<li><b>Vector DB 연계 시</b> 프로젝트별 임베딩 저장 스키마 분리 설계 가능 — 제안서 작성 AI라면 도메인(금융/제조/에너지/반도체)별로 스키마를 쪼개고 벡터 DB 연결도 스키마 단위로 건다. PostgreSQL에 <code>pgvector</code>를 얹어 쓰는 구성과 직결된다.</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">따라 치기 — 스키마 만들고 검색 경로 설정하기</div><pre><code>CREATE SCHEMA app;      -- 애플리케이션 스키마
+CREATE SCHEMA audit;    -- 감사 로그 스키마
+
+SET search_path = app, public;   -- 기본 스키마 순서</code></pre></div>
+<ul class="b">
+<li><code>search_path</code> — 스키마 이름을 생략하고 <code>students</code>라고만 썼을 때 <b>어느 스키마에서 찾을지의 순서</b>다. 위처럼 설정하면 <code>app.students</code> → <code>public.students</code> 순으로 찾는다. <b>리눅스의 <code>PATH</code> 환경변수와 같은 개념</b>이다.</li>
+<li>이 설정을 안 하면 매번 <code>app.students</code>처럼 스키마를 붙여 써야 한다.</li>
+<li><code>SET</code>으로 준 값은 <b>현재 세션에만</b> 적용된다. 영구히 하려면 <code>ALTER ROLE myuser SET search_path = app, public;</code>처럼 역할에 걸거나 <code>postgresql.conf</code>를 고친다.</li>
+</ul>
+
+  <h3>3) 주요 RDBMS 특징 비교</h3>
+<table class="t"><thead><tr>
+<th style="width:15%">DBMS</th><th>라이선스</th><th>기본 격리</th><th>JSON 지원</th><th>주요 강점</th><th>활용 시나리오</th>
+</tr></thead><tbody>
+<tr><td><b>MySQL/MariaDB</b></td><td>오픈소스</td><td>Repeatable Read</td><td>JSON (8.0+)</td><td>빠름, 배우기 쉬움</td><td>웹서비스, 스타트업</td></tr>
+<tr><td><b>PostgreSQL</b></td><td>오픈소스</td><td>Read Committed</td><td>JSONB (강력)</td><td>SQL 표준, GIS, AI/ML</td><td>분석, 금융, AI 서비스</td></tr>
+<tr><td><b>Oracle</b></td><td>상용</td><td>Read Committed</td><td>21c+ 지원</td><td>고가용성, 안정성</td><td>은행, 대기업 ERP</td></tr>
+<tr><td><b>SQL Server</b></td><td>상용</td><td>Read Committed</td><td>JSON 함수</td><td>MS 생태계, BI</td><td>ERP, CRM, PowerBI</td></tr>
+<tr><td><b>AWS Aurora</b></td><td>관리형(유료)</td><td>Read Committed</td><td>MySQL/PG 호환</td><td>MySQL 대비 3~5배 빠름</td><td>글로벌 서비스</td></tr>
+<tr><td><b>GCP Cloud SQL</b></td><td>관리형(유료)</td><td>PG/MySQL 기본</td><td>PG/MySQL 호환</td><td>BigQuery 연계</td><td>ML 파이프라인</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ 1장의 격리 수준 표와 겹쳐 보면</div><ul>
+<li><b>MySQL만 기본 격리가 다르다.</b> 같은 코드를 MySQL과 PostgreSQL에 올렸을 때 동작이 미묘하게 달라지는 원인 중 하나다.</li>
+</ul></div>
+
+  <h3>4) MySQL / MariaDB · PostgreSQL</h3>
+<h4>MySQL / MariaDB</h4>
+<ul class="b">
+<li>경량 &amp; 빠른 성능 → 웹 서비스 초기에 많이 사용. <b>LAMP 스택</b>(Linux, Apache, MySQL, PHP/Python)의 핵심 DB</li>
+<li><b>InnoDB 스토리지 엔진</b> → 트랜잭션, FK, MVCC 지원. MariaDB는 MySQL의 <b>오픈소스 분기(Fork)</b></li>
+<li><b>장점</b>: 배우기 쉽고 설치/운영 부담이 적음. WordPress·Drupal 등 전 세계 웹사이트의 기본</li>
+<li><b>단점</b>: 대규모 시스템에서 성능/확장성 한계(수천 TPS 이상), 고급 기능 부족(분산 트랜잭션, 고급 보안)</li>
+</ul>
+<div class="callout deep"><span class="ctitle">🔎 배경 — MariaDB는 왜 생겼는가</span>
+<p>MySQL은 원래 독립 회사(MySQL AB)의 제품이었는데 2008년 Sun이 인수하고 2010년 Oracle이 Sun을 인수하면서 <b>MySQL의 소유주가 Oracle이 되었다.</b> Oracle은 상용 DB의 최강자이므로, 오픈소스 MySQL을 계속 잘 키워 줄지 커뮤니티가 불안해했다. 그래서 원 개발자들이 소스를 갈라 만든 것이 MariaDB다. 이름은 창시자 Monty Widenius의 딸 이름에서 왔다.</p></div>
+<div class="callout prof"><span class="ctitle">🎓 실무 이야기 — 검증은 MariaDB, 성능이 오르면 갈아탄다</span>
+<p>솔루션 개발 시절 검증 단계에서는 MariaDB로 시작했다가 트래픽이 올라간 뒤 PostgreSQL로 넘어갔다. 벤더사가 PostgreSQL을 제안한 이유는 MariaDB보다 안정적이라는 것과 성능이 Oracle에 비견될 만큼 나온다는 것이었다. <b>작게 시작해 검증되면 PostgreSQL로 옮기는 이 경로는 지금도 흔한 선택</b>이다. (TPS = Transactions Per Second, 초당 트랜잭션 수)</p></div>
+<h4>PostgreSQL — "가장 진보한 오픈소스 RDBMS"</h4>
+<ul class="b">
+<li>표준 SQL 호환성이 뛰어나고 <b>ANSI SQL:2016</b>까지 잘 반영 · 확장성(<b>JSONB, PostGIS</b>, 사용자 정의 함수/자료형) · <b>MVCC 기반</b>으로 동시성에 강함</li>
+<li><b>장점</b>: 복잡한 쿼리, 데이터 분석, GIS, JSON 같은 반정형 데이터 처리에 유리. 오픈소스인데도 엔터프라이즈급 기능</li>
+<li><b>단점</b>: 상대적으로 운영 난이도(튜닝, 학습 곡선). <b>단점은 초기 진입 비용에 몰려 있다</b> — 설치·접속까지가 까다롭지만 한 번 성공하면 그 뒤 일상 작업은 금방 익숙해진다.</li>
+<li><b>활용</b>: GIS 기반 서비스(배달앱 경로), 금융/핀테크 도입 확대. <b>pgvector 확장을 설치하면 관계형 DB이면서 벡터 DB처럼 동작</b>한다 — OpenAI가 쓰는 DB도 PostgreSQL이다.</li>
+</ul>
+<div class="callout goal"><span class="ctitle">💡 우리가 PostgreSQL로 실습하는 이유</span>
+<ul>
+<li><b>표준에 가장 가깝다</b> — 여기서 배운 SQL이 다른 DBMS에서도 대체로 통한다. MySQL에서 배우면 MySQL 방언이 섞여 들어온다.</li>
+<li><b>확장이 풍부하다</b> — GIS(PostGIS), 벡터(pgvector), 시계열(TimescaleDB). AI 서비스를 만드는 이 과정의 뒷부분과 직결된다.</li>
+<li><b>무료다</b> — 학습·과제·개인 프로젝트에서 라이선스 걱정이 없다.</li>
+</ul></div>
+<h4>JSON vs JSONB</h4>
+<table class="t"><thead><tr><th style="width:22%"></th><th>JSON</th><th>JSONB</th></tr></thead><tbody>
+<tr><td>저장</td><td>원문 텍스트 그대로</td><td>파싱된 이진 형태</td></tr>
+<tr><td>입력 속도</td><td>빠름</td><td>느림 (파싱 비용)</td></tr>
+<tr><td>조회 속도</td><td>느림 (매번 파싱)</td><td>빠름</td></tr>
+<tr><td>키 순서·공백</td><td>보존</td><td>보존 안 함</td></tr>
+<tr><td>중복 키</td><td>보존</td><td>마지막 것만</td></tr>
+<tr><td>인덱싱</td><td>제한적</td><td><b>GIN 인덱스 가능</b></td></tr>
+</tbody></table>
+<p>실무에서는 <b>거의 항상 <code>JSONB</code></b>를 쓴다. 원문을 글자 그대로 보존해야 하는 특수한 경우(외부 API 응답 원본 보관 등)에만 <code>JSON</code>을 쓴다.</p>
+
+  <h3>5) ANSI SQL 표준</h3>
+<p><b>데이터베이스 언어 SQL의 공식 국제 표준</b> — ISO/IEC 9075:2016 (ANSI SQL:2016). SQL은 1970년대 IBM에서 처음 만들어졌고 이후 국제 표준화 기구가 공식 표준으로 제정했다. <b>ANSI</b>는 미국 표준화 기관, <b>ISO/IEC</b>는 국제 표준화 기관이다.</p>
+<div class="cp"><div class="cphead">✔ 표준을 아는 실익은 딱 하나</div><ul>
+<li><b>내가 쓰는 SQL이 표준인지 방언인지 구분할 줄 알아야 한다.</b> 그래야 DB를 바꿀 때 무엇이 깨질지 예측할 수 있고, 문서를 검색할 때도 정확히 찾을 수 있다.</li>
+<li>ANSI SQL: <code>SELECT</code>, <code>JOIN</code>, <code>GROUP BY</code>, <code>HAVING</code>, <code>CASE WHEN</code> 같은 기본 문법 / Non-ANSI: <code>LIMIT</code>(MySQL) vs <code>TOP</code>(SQL Server)처럼 DB마다 다른 것</li>
+</ul></div>
+<h4>SQL 표준의 역사</h4>
+<table class="t"><thead><tr><th style="width:16%">버전</th><th style="width:12%">연도</th><th>주요 특징</th></tr></thead><tbody>
+<tr><td>SQL-86 / SQL-89</td><td>1986/89</td><td>최초 ANSI 표준 제정 및 소폭 개정</td></tr>
+<tr><td><b>SQL-92</b></td><td>1992</td><td><b>대부분 DBMS의 기본 표준</b> (SELECT, JOIN 등)</td></tr>
+<tr><td>SQL:1999</td><td>1999</td><td>객체지향 확장(UDT), 트리거, RECURSIVE WITH</td></tr>
+<tr><td>SQL:2003</td><td>2003</td><td>XML 지원, <b>윈도우 함수</b>(OVER, RANK, ROW_NUMBER)</td></tr>
+<tr><td>SQL:2008</td><td>2008</td><td>MERGE, TRUNCATE, FETCH FIRST n ROWS 등</td></tr>
+<tr><td>SQL:2011</td><td>2011</td><td>Temporal Table(시간 기반 이력 관리)</td></tr>
+<tr><td>SQL:2016</td><td>2016</td><td>JSON 표준 함수, Polymorphic Table Function 등</td></tr>
+<tr><td>SQL:2023</td><td>2023</td><td>최신 판 (표준 JSON Schema, 함수 확장)</td></tr>
+</tbody></table>
+<ul class="b">
+<li><b>SQL-92가 여전히 기준선이다.</b> "이건 표준인가?"를 물을 때 대부분 SQL-92에 있느냐를 뜻한다. 30년이 넘었는데도 모든 DBMS가 확실히 지원하는 최대공약수가 여기다.</li>
+<li><b>윈도우 함수는 SQL:2003이다.</b> 15장에서 배울 <code>OVER(PARTITION BY ...)</code>가 여기서 표준에 들어왔는데, MySQL은 8.0(2018년)에야 지원했다 — 표준화로부터 15년. <b>표준에 있다는 것과 제품이 구현했다는 것은 다른 문제</b>라는 예다.</li>
+</ul>
+<h4>실제 DBMS 지원 정도</h4>
+<table class="t"><thead><tr>
+<th style="width:24%">기능</th><th>PostgreSQL</th><th>MySQL</th><th>Oracle</th><th>SQL Server</th>
+</tr></thead><tbody>
+<tr><td>JSON 함수 (SQL:2016 스타일)</td><td>부분 지원 (jsonb + 함수)</td><td>부분 지원 (<code>JSON_EXTRACT</code>, 비표준명)</td><td>21c부터 표준 함수 지원</td><td>부분적 (<code>OPENJSON</code>, 비표준명)</td></tr>
+<tr><td>MATCH_RECOGNIZE</td><td>✗</td><td>✗</td><td>O (12c+)</td><td>✗</td></tr>
+<tr><td>Temporal Table</td><td>O (SYSTEM VERSIONING)</td><td>O (8.0.2+)</td><td>O</td><td>O</td></tr>
+<tr><td>MERGE</td><td>O</td><td>O</td><td>O</td><td>O</td></tr>
+</tbody></table>
+<div class="callout myth"><span class="ctitle">⚠️ 표준에 있어도 제품이 구현 안 했으면 못 쓴다</span>
+<p><code>MATCH_RECOGNIZE</code>는 SQL:2016 기능인데 Oracle 말고는 아무도 구현하지 않았다. 반대로 JSON은 다들 구현했지만 <b>함수 이름이 제각각</b>이라 표준 이름으로 쓰면 안 통한다.</p></div>
+
+  <h3>6) ANSI SQL vs 주요 DBMS 문법 비교 — 가장 실용적인 표</h3>
+<h4>상위 N행 · NULL · 시각 · 자동증가</h4>
+<table class="t"><thead><tr>
+<th style="width:14%">기능</th><th>ANSI SQL (표준)</th><th>MySQL/MariaDB</th><th>PostgreSQL</th><th>Oracle</th><th>SQL Server</th>
+</tr></thead><tbody>
+<tr><td>상위 N행</td><td><code>FETCH FIRST n ROWS ONLY</code></td><td><code>LIMIT n</code></td><td>둘 다 지원</td><td><code>FETCH FIRST</code> (12c+)</td><td><code>TOP n</code></td></tr>
+<tr><td>NULL 치환</td><td><code>COALESCE(a, b)</code></td><td>동일</td><td>동일</td><td><code>NVL()</code> (비표준)</td><td><code>ISNULL()</code> (비표준)</td></tr>
+<tr><td>현재 시각</td><td><code>CURRENT_TIMESTAMP</code></td><td><code>NOW()</code></td><td><code>NOW()</code>/<code>CURRENT_TIMESTAMP</code></td><td><code>SYSTIMESTAMP</code></td><td><code>GETDATE()</code>/<code>SYSUTCDATETIME()</code></td></tr>
+<tr><td>자동증가</td><td><code>GENERATED ALWAYS AS IDENTITY</code></td><td><code>AUTO_INCREMENT</code></td><td><code>IDENTITY</code> 또는 <code>SERIAL</code></td><td><code>IDENTITY</code>(12c~)/<code>SEQUENCE</code></td><td><code>IDENTITY(1,1)</code></td></tr>
+<tr><td>조건문</td><td><code>CASE WHEN ... END</code></td><td>동일</td><td>동일</td><td>동일</td><td>동일</td></tr>
+<tr><td>LIMIT+OFFSET</td><td><code>OFFSET n ROWS FETCH FIRST m ROWS ONLY</code></td><td><code>LIMIT m OFFSET n</code></td><td>둘 다 지원</td><td>(12c+)</td><td><code>OFFSET ... FETCH NEXT</code> (2012+)</td></tr>
+</tbody></table>
+<ul class="b">
+<li><b><code>LIMIT</code>은 표준이 아니다.</b> MySQL과 PostgreSQL이 둘 다 지원해서 표준처럼 느껴지지만 아니다. Oracle 11g 이하는 <code>ROWNUM</code>, SQL Server는 <code>TOP</code>이다.</li>
+<li><b><code>COALESCE</code>가 표준이다.</b> <code>NVL</code>(Oracle)·<code>ISNULL</code>(SQL Server)은 방언이니 <b>어느 DB를 쓰든 <code>COALESCE</code>를 쓰는 습관</b>을 들이자.</li>
+<li><b><code>CASE WHEN</code>은 전 DBMS 동일하다.</b> 조건 분기는 벤더 함수(<code>IF</code>, <code>DECODE</code>) 대신 <code>CASE</code>를 쓰면 어디서나 통한다.</li>
+<li><b>현재 시각 함수는 다 다르고 의미도 다르다.</b> SQL Server의 <code>GETDATE()</code>는 로컬 시각, <code>SYSUTCDATETIME()</code>은 UTC다. 마이그레이션에서 자주 사고가 나는 지점.</li>
+</ul>
+<h4>문자 · 날짜 · 불리언 · MERGE</h4>
+<table class="t"><thead><tr>
+<th style="width:14%">기능</th><th>ANSI SQL</th><th>MySQL</th><th>PostgreSQL</th><th>Oracle</th><th>SQL Server</th>
+</tr></thead><tbody>
+<tr><td>문자 길이</td><td><code>CHAR_LENGTH()</code></td><td>동일</td><td>동일</td><td><code>LENGTH()</code></td><td><code>LEN()</code></td></tr>
+<tr><td>날짜 차이</td><td>뺄셈 연산</td><td><code>DATEDIFF()</code></td><td><code>AGE()</code> 또는 뺄셈</td><td><code>MONTHS_BETWEEN()</code></td><td><code>DATEDIFF()</code></td></tr>
+<tr><td>Boolean</td><td><code>BOOLEAN</code></td><td><code>TINYINT(1)</code></td><td><b>진짜 BOOLEAN</b></td><td>없음 (<code>NUMBER(1)</code>)</td><td><code>BIT</code></td></tr>
+<tr><td>부분 문자열</td><td><code>SUBSTRING(s FROM p FOR l)</code></td><td><code>SUBSTRING(s,p,l)</code></td><td>둘 다</td><td><code>SUBSTR()</code></td><td><code>SUBSTRING(s,p,l)</code></td></tr>
+<tr><td>UPSERT</td><td><code>MERGE INTO ... USING</code></td><td><code>ON DUPLICATE KEY UPDATE</code></td><td><code>ON CONFLICT DO UPDATE</code></td><td>표준 MERGE</td><td>MERGE</td></tr>
+<tr><td>트랜잭션</td><td><code>BEGIN/COMMIT/ROLLBACK</code></td><td>동일</td><td>동일</td><td>동일</td><td>동일</td></tr>
+</tbody></table>
+<ul class="b">
+<li><b>Oracle에는 BOOLEAN 타입이 SQL 레벨에 없다</b>(PL/SQL 안에는 있다). <code>NUMBER(1)</code> + <code>CHECK (col IN (0,1))</code>로 흉내 낸다.</li>
+<li><b>UPSERT("있으면 수정, 없으면 삽입")는 벤더마다 완전히 다르다.</b> PostgreSQL의 <code>ON CONFLICT</code>는 표준이 아니지만 매우 편해서 실무에서 많이 쓴다.</li>
+</ul>
+<h4>검색 · JSON · 윈도우 · 임시테이블</h4>
+<table class="t"><thead><tr>
+<th style="width:14%">기능</th><th>ANSI SQL</th><th>MySQL</th><th>PostgreSQL</th><th>Oracle</th><th>SQL Server</th>
+</tr></thead><tbody>
+<tr><td>JSON 접근</td><td><code>JSON_VALUE()</code></td><td><code>JSON_EXTRACT()</code></td><td><code>attrs-&gt;&gt;'key'</code></td><td><code>JSON_VALUE()</code> (21c~)</td><td><code>JSON_VALUE()</code>/<code>OPENJSON()</code></td></tr>
+<tr><td>윈도우 함수</td><td><code>OVER(PARTITION BY ... ORDER BY ...)</code></td><td>동일</td><td>동일</td><td>동일</td><td>동일</td></tr>
+<tr><td>재귀 CTE</td><td><code>WITH RECURSIVE</code></td><td>동일</td><td>동일</td><td>(11gR2+)</td><td>(2005+)</td></tr>
+<tr><td>TEMP TABLE</td><td><code>CREATE TEMPORARY TABLE</code></td><td>동일</td><td>동일</td><td><code>GLOBAL TEMPORARY</code></td><td><code>#temp</code> / <code>##temp</code></td></tr>
+</tbody></table>
+<ul class="b">
+<li><b>윈도우 함수는 문법이 완전히 통일되어 있다.</b> 15장에서 배울 내용이 어느 DBMS에서든 그대로 통한다 — 표준화가 잘 된 드문 예다.</li>
+<li><b>JSON 접근은 가장 안 통일되어 있다.</b> PostgreSQL의 <code>-&gt;&gt;</code> 연산자는 편하지만 완전한 방언이다.</li>
+</ul>
+<div class="callout goal"><span class="ctitle">💡 결론 네 줄 — "그래서 어쩌라는 건가"</span>
+<ul>
+<li><b>이식성이 중요한 프로젝트면 ANSI SQL + 호환 함수로 통일</b></li>
+<li><b>보고서/배치 등 DB가 고정이면 해당 DB 고유 함수를 써도 OK</b></li>
+<li><b>ORM(JPA, SQLAlchemy)은 내부적으로 이런 차이를 자동 흡수</b></li>
+<li><b>쿼리 튜닝할 땐 DB 전용 함수/힌트를 써야 함(성능용)</b></li>
+</ul>
+<p>즉 무조건 표준만 쓰라는 게 아니다. 판단 기준은 <b>"이 SQL이 다른 DB로 옮겨 갈 가능성이 있는가"</b>다.</p></div>
+<div class="callout prof"><span class="ctitle">🎓 실무 이야기 — ORM만 쓰면 튜닝에서 고생한다</span>
+<p>ORM만 써 온 개발자는 쿼리 튜닝 단계에서 크게 고생하는 경우가 많다. ORM이 DBMS별 차이를 알아서 흡수해 주는 만큼 <b>실제로 어떤 SQL이 나가는지 볼 일이 없기 때문</b>이다. ORM을 쓰더라도 나가는 쿼리를 직접 열어 보고 튜닝할 줄 알아야 DB 성능을 끌어낼 수 있다.</p></div>
+
+  <h3>7) Oracle · SQL Server · Cloud DB</h3>
+<h4>Oracle — 대기업 시장의 전통 강자</h4>
+<ul class="b">
+<li><b>RAC (Real Application Clusters)</b>: 여러 서버가 <b>같은 스토리지를 공유하면서 동시에 DB를 서비스</b>한다. 한 대가 죽어도 나머지가 계속 서비스하므로 무중단에 가깝고, 서버를 추가해 성능을 늘릴 수도 있다. 오픈소스로 하려면 애플리케이션 쪽 작업이 상당한데 Oracle은 제품에 내장되어 있다 — <b>은행이 비싼 값을 내고 쓰는 이유</b>.</li>
+<li><b>Data Guard</b>: 주 DB의 변경을 대기 DB로 계속 전송해 두었다가 재해 시 전환. <b>1장의 WAL을 원격지로 보내는 것</b>이라고 보면 정확하다. PostgreSQL의 스트리밍 복제가 같은 원리다. (31장)</li>
+<li><b>장점</b>: 금융·공공기관·글로벌 기업에서 신뢰도 검증 완료, 복잡한 트랜잭션에 적합 / <b>단점</b>: <b>비용이 매우 비쌈</b>, 폐쇄적이고 자기만의 문법·관행이 많음</li>
+</ul>
+<h4>Microsoft SQL Server — MS 생태계와 BI</h4>
+<ul class="b">
+<li>.NET, Visual Studio, Windows Server와 최적화 · <b>OLAP</b>(BI, 데이터 분석) 강점 · <b>SSIS</b>(ETL) / <b>SSAS</b>(다차원 분석 큐브) / <b>SSRS</b>(리포팅)</li>
+<li><b>장점</b>: Windows·Active Directory·PowerBI와 완벽 연계 / <b>단점</b>: Windows 종속적(최근 Linux 지원 확대), 자유도가 떨어짐</li>
+</ul>
+<div class="cp"><div class="cphead">✔ OLTP와 OLAP — 최적화 방향이 정반대</div><ul>
+<li><b>OLTP</b>(Online Transaction Processing): 주문 넣기, 계좌 이체처럼 짧은 트랜잭션을 많이 처리. 지금까지 배운 대부분이 여기.</li>
+<li><b>OLAP</b>(Online Analytical Processing): "작년 지역별 매출 추이"처럼 대량 데이터를 집계·분석. 쿼리 하나가 무겁고 오래 걸린다.</li>
+<li>OLTP는 행 단위로 빠르게 찾고 고치는 게 중요하고, OLAP은 컬럼 전체를 훑어 합산하는 게 중요하다. 그래서 4장에서 본 <b>컬럼 기반 저장(Columnstore)</b>이 OLAP에서 쓰인다. (28장)</li>
+</ul></div>
+<div class="callout prof"><span class="ctitle">🎓 실무 이야기 — 상용 DB가 비싼 건 지원 비용 때문</span>
+<p>상용 DBMS가 비싼 진짜 이유는 라이선스가 아니라 <b>지원 비용</b>이다. SQL Server로 작업할 때 장애가 나면 담당 엔지니어가 현장에 상주하러 왔고, 본인이 모르는 문제는 글로벌 팀에 실시간으로 물어 답을 받아 적용했다. 다만 <b>전화를 건 시점부터 그 사람이 나갈 때까지가 전부 비용으로 청구된다.</b> 오픈소스는 그 비용이 없는 대신 스스로 해결해야 한다.</p></div>
+<h4>Cloud Database (관리형 RDBMS)</h4>
+<table class="t"><thead><tr>
+<th style="width:18%">서비스</th><th style="width:42%">특징</th><th>활용</th>
+</tr></thead><tbody>
+<tr><td><b>AWS RDS</b></td><td>MySQL/PostgreSQL/Oracle/SQL Server 등 다양한 엔진. 자동 백업·장애 복구. 단, <b>직접 서버 제어 불가</b>(루트 접근 제한)</td><td>스타트업~대기업 클라우드 전환</td></tr>
+<tr><td><b>Amazon Aurora</b></td><td>MySQL/PostgreSQL 호환 + AWS 자체 최적화. 스토리지 분산 구조로 MySQL 대비 3~5배</td><td>글로벌 서비스, 빠른 읽기 성능</td></tr>
+<tr><td><b>GCP Cloud SQL</b></td><td>자동 백업/확장. BigQuery·Dataflow 연계가 쉬움</td><td>데이터 분석, ML 파이프라인</td></tr>
+<tr><td><b>Azure Database</b></td><td>SQL Server 기반. Active Directory·PowerBI·Office365와 통합</td><td>MS 기반 ERP/CRM SaaS</td></tr>
+</tbody></table>
+<ul class="b">
+<li><b>"관리형(Managed)"의 뜻</b> — 서버를 빌려 PostgreSQL을 직접 설치·운영하면 백업 스케줄, 버전 업그레이드, 장애 복구, 모니터링을 전부 내가 해야 한다. 관리형은 그걸 클라우드 사업자가 대신 해 준다. <b>대신 자유도를 잃는다</b> — OS에 로그인할 수 없으므로 임의의 확장을 설치하거나 설정 파일을 마음대로 고칠 수 없다.</li>
+<li><b>RDS와 Aurora의 차이</b> — RDS는 <b>기존 DB 엔진을 그대로 관리형으로 제공</b>하는 것이고, Aurora는 <b>AWS가 스토리지 계층을 다시 만든 자체 엔진</b>이다. 1장에서 본 "스토리지 레벨 6방향 복제"가 그 다시 만든 부분이다.</li>
+</ul>
+<div class="note">"MySQL 대비 3~5배 빠름"은 <b>AWS 자체 벤치마크 수치</b>이고 워크로드에 따라 다르다. 리포트에 인용할 때는 출처를 밝히자.</div>
+
+  <h3>8) 주요 포인트 — 한 줄 요약</h3>
+<table class="t"><thead><tr><th style="width:22%">제품</th><th>요약</th></tr></thead><tbody>
+<tr><td><b>MySQL / MariaDB</b></td><td>웹서비스 스타트업 기본 DB · 빠르고 배우기 쉽다</td></tr>
+<tr><td><b>PostgreSQL</b></td><td>최신 오픈소스 RDBMS의 대표주자 · JSON+GIS 처리 강력</td></tr>
+<tr><td><b>Oracle</b></td><td>금융/대기업 시스템, 고성능과 안정성 · 단, 비용 부담 큼</td></tr>
+<tr><td><b>SQL Server</b></td><td>MS 기업 환경에서 최적화, BI/데이터 분석 강점</td></tr>
+<tr><td><b>Cloud DB</b></td><td>관리형 DBMS, 운영 부담 줄이고 글로벌 확장에 최적</td></tr>
+</tbody></table>
+<div class="callout goal"><span class="ctitle">💡 "왜 이 DB를 골랐나"에 답하는 법 — 위 표 한 줄 + 내 프로젝트 조건</span>
+<p>"분석 쿼리가 많고 나중에 임베딩 벡터도 저장할 계획이라 확장이 풍부한 PostgreSQL을 골랐습니다. 표준 SQL 호환성이 좋아서 학습한 문법이 다른 DB에서도 통한다는 점도 고려했습니다."</p></div>
+
+  <h3>9) 함정 / 감점 포인트</h3>
+<ul class="b">
+<li><b><code>LIMIT</code>을 표준이라고 쓰기</b> — 리포트에 "표준 SQL을 사용했다"고 쓰면서 <code>LIMIT</code>을 쓰면 앞뒤가 안 맞는다.</li>
+<li><b><code>NVL</code>, <code>ISNULL</code>을 습관적으로 쓰기</b> — <code>COALESCE</code>로 통일하는 습관이 유리하다.</li>
+<li><b>DB 선택 이유를 "실습에서 써서"로 쓰기</b> — 선택 근거가 한 줄이라도 있으면 인상이 달라진다.</li>
+<li><b>"Aurora는 MySQL보다 3~5배 빠르다"를 단정하기</b> — 벤더 벤치마크임을 밝히자.</li>
+<li><b>스키마와 데이터베이스를 혼용하기</b> — DBMS마다 의미가 다르므로 "PostgreSQL의 스키마(네임스페이스)"처럼 한 번은 명확히 하고 가자.</li>
+<li><b>표준 지원 여부를 확인 없이 단정하기</b> — "SQL:2016 표준이니까 다 된다"가 아니다.</li>
+</ul>
+
+  <h3>10) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>PostgreSQL이 MySQL보다 모든 면에서 나은 것 아닌가요? 왜 아직 MySQL을 쓰나요?</summary><div class="fa">그렇게 단정할 수 없습니다. MySQL이 유리한 지점이 실제로 있습니다. (1) <b>단순 조회가 많은 워크로드에서 가볍고 빠릅니다</b> — 웹 서비스의 대다수 쿼리는 PK 조회와 간단한 JOIN인데, 여기서는 MySQL의 가벼움이 이점입니다. (2) <b>운영 인력을 구하기 쉽습니다</b> — 쓰는 곳이 많아서 경험자와 자료가 풍부합니다. (3) <b>기존 시스템이 MySQL입니다</b> — 잘 돌아가는 시스템을 옮기는 비용이 얻는 이득보다 큰 경우가 대부분입니다. PostgreSQL을 권장한 것은 <b>학습용으로</b> 그렇다는 뜻입니다.</div></details>
+<details><summary>스키마로 나누면 되는데 왜 데이터베이스를 여러 개 만드나요?</summary><div class="fa">격리 수준이 다르기 때문입니다. PostgreSQL에서 <b>다른 database의 테이블은 그냥 JOIN할 수 없습니다</b>(<code>dblink</code>나 <code>postgres_fdw</code> 확장이 필요합니다). 반면 같은 database의 다른 schema는 <code>schema.table</code>로 자유롭게 JOIN됩니다. 그래서 판단 기준은 <b>"이 데이터들이 함께 조회될 일이 있는가"</b>입니다. 함께 볼 일이 있으면 같은 database 안에서 스키마로 나누고, 완전히 무관한 시스템이면 database를 나눕니다. 백업·복구 단위가 database라는 점도 고려 요소입니다.</div></details>
+<details><summary>멀티 테넌시에서 Pool Model이 제일 단순하고 효율적인데 왜 안 쓰나요?</summary><div class="fa">씁니다. 실제로 많은 SaaS가 Pool Model입니다. 문제는 <b>실수의 대가가 크다</b>는 점입니다. 쿼리 어딘가에서 <code>WHERE tenant_id = ?</code>를 한 번 빠뜨리면 A사 화면에 B사 데이터가 뜨고, 이건 서비스 신뢰를 무너뜨리는 사고입니다. 그래서 Pool Model을 쓴다면 애플리케이션 계층에서 테넌트 조건을 자동으로 붙이는 장치(ORM 필터, PostgreSQL의 Row-Level Security 등)를 반드시 갖춥니다. Bridge Model이 권장되는 이유는 <b>그 실수가 원천적으로 불가능</b>하기 때문입니다.</div></details>
+<details><summary>ORM이 방언 차이를 흡수해 준다면 SQL 방언을 굳이 알아야 하나요?</summary><div class="fa">알아야 합니다. 세 가지 이유입니다. 첫째, <b>ORM이 만든 SQL이 느릴 때 원인을 못 찾습니다</b> — N+1 쿼리 문제처럼 ORM 특유의 성능 함정은 생성된 SQL을 봐야 보입니다. 둘째, <b>복잡한 쿼리는 ORM으로 표현이 안 됩니다</b> — 윈도우 함수, 재귀 CTE, 복잡한 집계는 결국 네이티브 SQL로 씁니다. 셋째, <b>튜닝은 방언 영역입니다</b> — 실행계획을 읽고 힌트를 주는 작업은 ORM 바깥의 일입니다.</div></details>
+<details><summary>관리형 DB(RDS)를 쓰면 DBA가 필요 없어지나요?</summary><div class="fa">아닙니다. 관리형이 대신 해 주는 것은 <b>운영 작업</b>(백업 스케줄, 패치, 페일오버 구성)이고, <b>설계와 튜닝</b>은 여전히 사람 몫입니다. 인덱스를 어디에 걸지, 쿼리가 왜 느린지, 스키마를 어떻게 나눌지는 AWS가 해 주지 않습니다. 오히려 관리형에서는 OS 접근이 막혀 있어서 진단 방법이 제한되므로, DB 내부 지표(실행계획, 통계 뷰)를 읽는 능력이 더 중요해집니다. (18~19장, 32장)</div></details>
+<details><summary>표준 SQL만 쓰면 안전한 것 아닌가요? 왜 방언을 쓰나요?</summary><div class="fa">표준만 쓰면 <b>성능과 생산성을 포기해야 하는 경우</b>가 있기 때문입니다. PostgreSQL의 <code>INSERT ... ON CONFLICT DO UPDATE</code>는 비표준이지만 UPSERT를 한 문장으로 안전하게 처리합니다. 표준 <code>MERGE</code>로 같은 걸 하려면 더 장황하고, PostgreSQL은 15 버전에서야 <code>MERGE</code>를 지원했습니다. <code>JSONB</code>의 <code>-&gt;&gt;</code> 연산자도 마찬가지입니다. 판단 기준은 <b>DB를 바꿀 가능성이 있으면 표준으로, 고정이면 방언도 OK</b>. 그리고 방언을 쓸 때는 "여기는 PostgreSQL 전용"이라고 주석을 남겨 두면 나중에 옮길 때 찾기 쉽습니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>스키마(좁은 뜻)란 무엇인가? PostgreSQL과 MySQL에서 database와 schema의 관계는 어떻게 다른가?</li>
+<li>멀티 테넌시 세 패턴의 이름과 트레이드오프를 말할 수 있는가? Bridge가 권장되는 이유는?</li>
+<li><code>search_path</code>는 무엇을 정하는가? 설정하지 않으면 어떻게 되는가?</li>
+<li><code>COALESCE</code>, <code>NVL</code>, <code>ISNULL</code> 중 표준은? <code>LIMIT</code>은 표준인가?</li>
+<li>JSON과 JSONB의 차이를 세 가지 이상 말할 수 있는가?</li>
+<li>OLTP와 OLAP의 차이는? 각각에 유리한 저장 방식은?</li>
+<li>관리형 DB의 장점과 그 대가로 잃는 것은?</li>
+</ul></div>
 </section>
 
 
