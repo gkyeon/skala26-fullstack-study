@@ -728,39 +728,296 @@ COMMIT;
     <span class="day-badge day1">Day 1</span>
     <h2><span class="num">2.</span> 관계형 모델 핵심 개념</h2>
   </div>
-  <p class="subtitle">테이블, 키(PK/FK/UK), 관계(1:1/1:N/N:M), 정규화(1NF~3NF)</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 엑셀 시트 여러 개를 만들고 '학번' 같은 공통 열로 서로 연결(참조)해서 중복 없이 관리하는 방식이에요. <b>PK</b>=주민번호처럼 그 행을 딱 특정하는 값, <b>FK</b>=다른 시트를 가리키는 화살표라고 보면 됩니다.</div></div>
-  <h4>테이블과 키 (PK / FK / UK)</h4>
+  <p class="subtitle">테이블(Relation) · 키(PK/FK/UK)와 FK 옵션 · 관계(1:1/1:N/N:M) · 정규화(1NF~BCNF)와 반정규화</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 엑셀 시트 여러 개를 만들고 '학번' 같은 공통 열로 서로 연결(참조)해서 중복 없이 관리하는 방식이에요. <b>PK</b>=그 행을 딱 특정하는 값, <b>FK</b>=다른 시트를 가리키는 화살표, <b>UK</b>=중복은 안 되지만 비워둘 수는 있는 값. <b>정규화</b>는 '한 표에 여러 주제를 섞어 넣지 말고 주제별로 표를 쪼개기'라고 생각하면 쉬워요.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p>현실의 데이터를 테이블로 바꾸는 규칙을 익힌다. 구체적으로는 다음 세 가지를 스스로 설명할 수 있게 된다.</p>
+  <ul>
+  <li><b>키</b> — PK·FK·UK를 구분해서 쓸 수 있다 (특히 "FK는 어느 쪽 테이블에 두는가")</li>
+  <li><b>관계</b> — 1:1·1:N·N:M을 테이블로 어떻게 표현하는지 안다</li>
+  <li><b>정규화</b> — 1NF~3NF를 "무엇을 제거하는 단계인지"로 설명할 수 있다</li>
+  </ul></div>
+
+  <h3>1) 왜 이게 필요한가 — 현실의 문장을 표로 쪼개는 작업</h3>
+<p>1장에서 DB가 무엇을 해 주는지 봤다. 이제 실제로 데이터를 넣으려면 <b>어떤 모양으로 넣을지</b>를 정해야 한다.</p>
+<p>현실의 데이터는 문장으로 되어 있다. "3학년 홍길동은 컴퓨터공학과 학생이고, 이번 학기에 데이터베이스와 알고리즘을 수강한다." 이걸 그대로 저장할 수는 없다. 표 몇 개로 쪼개야 한다. 이 쪼개는 작업이 <b>관계형 데이터 모델링</b> — <b>현실 세계의 데이터를 관계형 포맷으로 변환하는 과정</b>이다.</p>
+<p>이 "변환"은 단계를 따라가 보면 잡힌다. 개념 수준의 「종목」이 속성을 갖춘 논리 모델로 늘어나고, 다시 컬럼명·타입이 확정된 물리 테이블과 실제 행 데이터로 내려간다. 이 세 단계가 4장의 개념적→논리적→물리적 모델 설계 그대로다.</p>
+<p>이걸 대충 하면 무슨 일이 벌어지는지가 이 장의 후반부(정규화)다. 결론부터 말하면 <b>같은 사실이 여러 곳에 중복 저장되고, 그중 일부만 고쳐져서 데이터가 서로 모순되기 시작한다.</b> 모델링은 그 모순의 여지를 설계 단계에서 없애는 작업이다.</p>
+<div class="callout deep"><span class="ctitle">🔎 출발점은 1970년 논문 하나</span>
+<p>Codd, E. F. (1970). <i>A Relational Model of Data for Large Shared Data Banks.</i> Communications of the ACM, 13(6), 377–387. 지금 우리가 쓰는 테이블·키·JOIN·정규화가 전부 이 논문에서 나왔다.</p></div>
+
+  <h3>2) 테이블 (Table / Relation)</h3>
 <ul class="b">
-<li><b>테이블(Table/Relation)</b>: 행(Row/Tuple)과 열(Column/Attribute)로 구성된 2차원 구조</li>
-<li><b>기본키(PK)</b>: 각 행을 고유 식별, NULL·중복 불가, 자동 인덱스 생성 (예: 학번)</li>
-<li><b>외래키(FK)</b>: 다른 테이블의 PK를 참조, 테이블 간 관계 표현·참조 무결성 보장</li>
-<li><b>고유키(UK)</b>: 중복 불가하지만 NULL은 허용 (예: 이메일, 주민번호)</li>
+<li><b>데이터를 행(Row, Tuple)과 열(Column, Attribute)로 구성한 2차원 구조</b></li>
+<li>각 행(Row): 하나의 레코드(데이터 인스턴스)를 의미</li>
+<li>각 열(Column): 특정 속성(Attribute)을 의미 — 동일한 데이터 타입을 가진 값들이 한 컬럼</li>
 </ul>
-<h4>관계 (Relationship)</h4>
+<p>엑셀 시트와 생김새가 같다. 다만 결정적 차이가 하나 있다. <b>엑셀은 한 열에 숫자와 글자를 섞어 넣을 수 있지만, DB 테이블의 한 컬럼에는 정해진 타입의 값만 들어간다.</b> 이 제약 덕분에 DB는 그 컬럼을 어떻게 정렬하고 비교하고 인덱싱할지 미리 알 수 있다.</p>
+<h4>학생 테이블 예시</h4>
+<table class="t"><thead><tr><th>학번(PK)</th><th>이름</th><th>학과</th><th>학년</th></tr></thead><tbody>
+<tr><td>2024001</td><td>홍길동</td><td>컴퓨터공학</td><td>1</td></tr>
+<tr><td>2024002</td><td>이순신</td><td>경영학</td><td>2</td></tr>
+<tr><td>2024003</td><td>강감찬</td><td>컴퓨터공학</td><td>3</td></tr>
+</tbody></table>
+<h4>이론 용어와 실무 용어 — 같은 것의 다른 이름</h4>
+<table class="t"><thead><tr>
+<th style="width:28%">이론 용어 (Codd)</th><th style="width:36%">실무 용어 (SQL)</th><th>프로그래밍 비유</th>
+</tr></thead><tbody>
+<tr><td>Relation (릴레이션)</td><td>Table (테이블)</td><td>클래스 / 리스트</td></tr>
+<tr><td>Tuple (튜플)</td><td>Row (행), Record (레코드)</td><td>객체 하나</td></tr>
+<tr><td>Attribute (속성)</td><td>Column (열), Field (필드)</td><td>객체의 필드</td></tr>
+<tr><td>Domain (도메인)</td><td>Data Type (자료형)</td><td>타입</td></tr>
+</tbody></table>
+<div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — 테이블은 어제 배운 pandas DataFrame과 같다</span>
+<p>"테이블은 행과 열로 된 2차원 구조인데, 어제 배운 파이썬 판다스랑 연결됩니다. 각 행은 데이터 인스턴스이고 각 열은 특정 속성과 데이터 타입을 갖죠. 엑셀에 쓰던 표가 그대로 DB 테이블로 들어간다고 보시면 돼요. 헤더가 컬럼이 되고, 그 밑의 값들이 밸류가 됩니다."</p>
+<p>파이썬에서 다룬 표와 데이터베이스의 테이블을 같은 그림으로 붙여 놓고 보면, 뒤에 나오는 GROUP BY나 JOIN도 이미 pandas에서 해 본 것과 대응된다.</p></div>
+<div class="callout myth"><span class="ctitle">⚠️ 자주 하는 착각 — "관계형"은 테이블 사이의 관계 때문이 아니다</span>
+<p>"관계형"이라는 이름이 <b>테이블 간의 관계</b> 때문에 붙었다고 오해하기 쉬운데, 원래는 Relation(릴레이션) 즉 <b>테이블 자체</b>를 가리키는 말에서 왔다. 테이블 사이의 연결은 Relationship이고 다른 단어다.</p></div>
+
+  <h3>3) 키 (Key) — PK · FK · UK</h3>
+<p><b>키</b>는 관계형 데이터베이스에서 데이터 무결성과 식별성을 보장하기 위한 제약 조건이다. 기본키·외래키·고유키 세 가지를 구분해서 쓴다.</p>
+<h4>기본키 (PK, Primary Key)</h4>
 <ul class="b">
-<li><b>1:1 관계</b>: 한 레코드가 다른 테이블의 레코드 하나와만 연결 (예: 학생 ↔ 학생증)</li>
-<li><b>1:N 관계</b>: 가장 흔한 관계, 한 레코드가 여러 레코드와 연결 (예: 학생 1명 ↔ 성적 여러개)</li>
-<li><b>N:M 관계</b>: 중간(교차) 테이블로 구현 (예: 학생 ↔ 강좌 → '수강' 테이블)</li>
+<li>각 행을 <b>고유하게 식별</b>할 수 있는 컬럼(혹은 컬럼 조합)</li>
+<li><b>NULL 불가, 중복 불가</b> — 자동으로 인덱스가 생성됨</li>
+<li>예: 학생 테이블의 "학번". PK는 "이 테이블에서 한 행을 콕 집어 가리키는 방법"이다. 이름은 동명이인이 있을 수 있으므로 PK가 될 수 없다.</li>
+<li><code>WHERE id = 5</code>가 빠른 이유는 DB가 PK에 알아서 인덱스를 만들어 두었기 때문이다. (인덱스는 17장)</li>
 </ul>
-<h4>정규화 (Normalization)</h4>
+<div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — 개인정보를 기본키로 쓰지 마라</span>
+<p>"기본키로 주민번호나 이메일 같은 개인정보를 잡지 마세요. PK는 항상 공개돼서 유지되는 값인데 개인정보는 암호화를 해야 하잖아요. 그러면 PK를 암호화하게 되고, 작업할 때마다 복호화했다가 다시 암호화하는 번거로움이 계속 생깁니다. 개인정보는 별도 컬럼을 두고 거기서 암호화하는 게 효율적이에요."</p>
+<p>초심자가 "자연스러운 식별자"라는 이유로 가장 흔히 저지르는 실수다. 개인정보를 PK로 삼으면 그 PK가 FK로 여러 테이블에 퍼지면서 민감정보가 곳곳에 복제되고, 암호화·복호화 비용이 그 값을 참조하는 모든 조인에 따라붙는다. 참고로 <b>학번·사번도 엄밀히는 개인 식별 정보</b>다. 원칙을 엄격히 지킨다면 학번조차 PK에서 빼고 의미 없는 대체키를 따로 두는 편이 낫다.</p></div>
+<h4>외래키 (FK, Foreign Key)</h4>
 <ul class="b">
-<li><b>정규화 목적</b>: 데이터 중복 최소화, 이상현상(Anomaly) 방지, 무결성 향상</li>
-<li>삽입 이상: 불필요한 데이터도 함께 저장해야 함 / 삭제 이상: 삭제 시 다른 중요정보도 삭제됨 / 갱신 이상: 중복 데이터 일부만 수정 시 불일치</li>
-<li>1NF → 2NF(부분종속 제거) → 3NF(이행종속 제거) → BCNF, 보통 3NF 또는 BCNF까지 적용</li>
-<li>과도한 정규화 → JOIN 비용 증가 → 성능 고려 시 반정규화(Denormalization) 전략 도입</li>
+<li>다른 테이블의 <b>기본키를 참조</b>하는 컬럼</li>
+<li>테이블 간 관계(relationship)를 표현하고, <b>참조 무결성</b>을 보장</li>
+<li>예: 성적 테이블의 "학번" → 학생 테이블의 "학번(PK)"을 참조</li>
 </ul>
-<div class="sqlbox"><div class="sqlhead">정규화 전/후 비교</div><pre><code>-- 비정규화 (1NF 위반: 다중값 컬럼)
-CREATE TABLE student_bad (
-  student_id INT PRIMARY KEY, name VARCHAR(50),
-  subjects VARCHAR(200) -- "DB, 네트워크, OS" ← 원자값 아님!
+<p><b>참조 무결성(referential integrity)</b>은 <b>존재하지 않는 것을 가리킬 수 없다</b>는 규칙이다. 성적 테이블에 학번 <code>9999999</code>짜리 행을 넣으려 하면, 학생 테이블에 그런 학번이 없으므로 DB가 INSERT를 거부한다. 이 거부가 FK의 존재 이유다. FK가 없으면 어느 학생 것인지 알 수 없는 유령 성적이 쌓인다.</p>
+<h4>고유키 (UK, Unique Key)</h4>
+<ul class="b">
+<li>중복은 허용하지 않지만, <b>PK와 달리 NULL은 허용</b> 가능</li>
+<li>예: 이메일 주소, 직원코드</li>
+</ul>
+<table class="t"><thead><tr><th style="width:20%">구분</th><th>PK</th><th>UK</th></tr></thead><tbody>
+<tr><td>중복</td><td>불가</td><td>불가</td></tr>
+<tr><td>NULL</td><td><b>불가</b></td><td><b>허용</b></td></tr>
+<tr><td>개수</td><td>테이블당 <b>하나</b></td><td>여러 개 가능</td></tr>
+</tbody></table>
+<p>이메일이 좋은 예다. 이메일은 중복되면 안 되지만(UK), 아직 이메일을 등록 안 한 회원이 있을 수 있으므로 NULL이 허용돼야 한다. 그래서 PK가 아니라 UK다. <b>UK는 SQL의 <code>UNIQUE</code> 제약이다</b> — 같은 것을 층마다 다르게 부를 뿐이다. 모델링에서는 UK(고유키)·대체키, SQL 문법에서는 <code>UNIQUE</code>, 실제 DB 안에서는 자동 생성된 unique 인덱스.</p>
+<div class="sqlbox norun"><div class="sqlhead">PK 하나 + UK 여러 개가 정상적인 모양</div><pre><code>CREATE TABLE member (
+  member_id  SERIAL PRIMARY KEY,   -- PK
+  email      VARCHAR(100) UNIQUE,  -- UK
+  phone      VARCHAR(20)  UNIQUE   -- UK는 여러 개 가능
+);</code></pre></div>
+<p>엄밀히는 "UK 컬럼"보다 <b>"UK 제약"</b>이 맞는 말이다. 여러 컬럼을 묶어서 걸 수 있기 때문이다. <code>UNIQUE (student_id, course_id)</code>는 UK 두 개가 아니라 <b>컬럼 두 개짜리 UK 하나</b>이고, "이 학생이 이 과목을 두 번 신청할 수 없다"는 뜻이다. 컬럼 각각은 얼마든지 중복돼도 된다. 복합 PK도 같은 구조다.</p>
+<div class="callout deep"><span class="ctitle">🔎 심화 — 두 가지 세부 사항</span>
+<ul>
+<li><b>UK 컬럼의 NULL 허용 개수는 DBMS마다 다르다</b> — 표준과 PostgreSQL/MySQL/Oracle은 NULL을 여러 개 허용한다(NULL은 서로 같지 않다고 보므로 중복이 아니다). 반면 SQL Server는 NULL을 하나만 허용한다. PostgreSQL 15부터는 <code>UNIQUE NULLS NOT DISTINCT</code> 옵션으로 SQL Server처럼 바꿀 수도 있다.</li>
+<li><b>후보키(Candidate Key)와 대체키(Alternate Key)</b> — 한 행을 유일하게 식별할 수 있는 컬럼 조합이 여러 개일 때 그것들을 모두 후보키라 하고, 그중 하나를 골라 PK로 삼는다. 선택받지 못한 나머지가 대체키이고, 실무에서는 UK 제약으로 구현된다.</li>
+</ul></div>
+
+  <h3>4) 외래키 제약 조건 옵션 — 부모가 사라질 때 자식은?</h3>
+<p>FK를 걸어 두면 "부모가 사라질 때 자식을 어떻게 할 것인가"를 정해야 한다. 학생이 자퇴했는데 그 학생의 성적 행은 어떻게 되어야 하는가?</p>
+<table class="t"><thead><tr>
+<th style="width:24%">옵션</th><th style="width:36%">동작</th><th>사용 시나리오</th>
+</tr></thead><tbody>
+<tr><td><b>ON DELETE CASCADE</b></td><td>부모 삭제 시 자식도 함께 삭제</td><td>주문 삭제 시 주문 항목도 자동 삭제</td></tr>
+<tr><td><b>ON DELETE SET NULL</b></td><td>부모 삭제 시 자식의 FK를 NULL로</td><td>직원 퇴사 시 담당 고객의 담당자를 NULL로 처리</td></tr>
+<tr><td><b>ON DELETE RESTRICT</b></td><td>자식이 있으면 부모 삭제 차단</td><td>카테고리 삭제 전 상품 먼저 삭제 필요</td></tr>
+<tr><td><b>ON DELETE NO ACTION</b></td><td>RESTRICT와 유사, 제약 체크 시점 차이</td><td>Oracle, SQL Server 기본값</td></tr>
+<tr><td><b>ON UPDATE CASCADE</b></td><td>부모 PK 변경 시 자식 FK도 자동 변경</td><td>자연키(학번) 변경 전파 (대체키 사용 권장)</td></tr>
+</tbody></table>
+<h4>고르는 기준 — "자식이 부모 없이 의미가 있는가"</h4>
+<ul class="b">
+<li>주문항목은 주문 없이는 아무 의미가 없다 → <b>CASCADE</b></li>
+<li>고객은 담당 직원이 없어도 여전히 고객이다 → <b>SET NULL</b></li>
+<li>카테고리를 지우려는데 그 안에 상품이 있다면 실수일 가능성이 높다 → <b>RESTRICT</b></li>
+</ul>
+<div class="callout deep"><span class="ctitle">🔎 RESTRICT와 NO ACTION의 차이는 "금지 여부"가 아니라 "체크 시점"</span>
+<p>RESTRICT는 그 DELETE 문이 실행되는 즉시 검사하고, NO ACTION은 트랜잭션이 커밋(또는 문장이 끝)될 때까지 검사를 미룰 수 있다. 미룰 수 있다는 게 왜 유용하냐면, 부모를 지우고 곧바로 자식도 지우는 식으로 <b>한 트랜잭션 안에서 결국 정리되는 경우</b> NO ACTION은 통과시켜 주기 때문이다. 실무에서는 거의 같게 취급해도 무방하다.</p></div>
+<div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — 삭제는 자식부터 치우고 부모를 지운다</span>
+<p>"ON DELETE RESTRICT는 자식이 있으면 부모를 못 지우게 막는 건데, 실무에서 제일 많이 씁니다. 그래서 상품 카테고리 밑에 상품이 있으면, 상품을 다 지운 다음에 카테고리를 지우게 하는 거죠."</p>
+<p>옵션에만 기대지 않고 삭제 순서를 직접 통제하는 것이 실무의 기본이다. 옵션(<code>RESTRICT</code>)은 잘못된 삭제를 막아 주는 안전장치로 두고, 실제 정리 순서는 자식부터 치우고 부모를 지우는 업무 규칙대로 밟는다.</p></div>
+<div class="note">짚어 둘 것 — <b><code>ON UPDATE CASCADE</code>가 필요한 상황 자체가 설계가 잘못되었다는 신호</b>다. 학번처럼 현실의 의미를 담은 값(자연키)을 PK로 쓰면, 학번 체계가 바뀔 때 그 값을 참조하는 모든 테이블이 연쇄 수정되어야 한다. 실무 권장은 <b>의미 없는 일련번호(대체키, surrogate key)를 PK로 쓰고, 학번은 UK로 따로 두는 것</b>이다. 참고로 Oracle은 <code>ON UPDATE</code>를 아예 지원하지 않는다.</div>
+
+  <h3>5) 관계 (Relationship) — 1:1 · 1:N · N:M</h3>
+<h4>1:1 관계 (One-to-One)</h4>
+<ul class="b">
+<li>한 레코드가 다른 테이블의 <b>하나의 레코드와만</b> 연결 — 예: [학생] ↔ [학생증]</li>
+<li>구현은 <b>한쪽 테이블에 FK를 두고 그 FK에 <code>UNIQUE</code>를 건다.</b> UNIQUE가 없으면 1:N이 되어 버린다.</li>
+<li>1:1은 실제로는 드물다. "한 명당 하나"라면 그냥 같은 테이블의 컬럼으로 두면 되기 때문이다. 굳이 쪼개는 경우는 <b>조회 빈도가 크게 다르거나</b>(자주 쓰는 컬럼과 거의 안 쓰는 큰 컬럼 분리), <b>보안 등급이 다를 때</b>(민감정보만 별도 테이블로 빼서 접근 권한을 따로 줌)다.</li>
+</ul>
+<h4>1:N 관계 (One-to-Many) — 가장 흔한 관계</h4>
+<ul class="b">
+<li>한 레코드가 다른 테이블의 <b>여러 레코드와</b> 연결 — 예: [학생] 1명 ↔ [성적] 여러 개</li>
+<li>구현은 <b>"N쪽"에 FK를 둔다.</b> 학생 1명에 성적 여러 개이므로, FK(학번)는 성적 테이블에 있다. 이 방향을 헷갈리면 모델이 통째로 틀어지므로 규칙으로 외워 두자.</li>
+<li>거꾸로 학생 테이블에 성적의 FK를 두면 한 컬럼에 값 여러 개를 넣어야 하는데, 그게 바로 뒤에 나올 <b>1NF 위반</b>이다. 관계형 모델에서 "여러 개"를 표현하는 유일한 방법은 <b>행을 여러 개 만드는 것</b>이다.</li>
+</ul>
+<h4>N:M 관계 (Many-to-Many)</h4>
+<ul class="b">
+<li>여러 레코드가 다른 테이블의 여러 레코드와 연결 — 예: [학생] ↔ [강좌] → "수강" 테이블 필요</li>
+<li>학생 한 명이 여러 강좌를 듣고, 한 강좌를 여러 학생이 듣는다. 이건 어느 쪽에 FK를 둬도 표현이 안 된다. 따라서 <b>연결 자체를 담는 세 번째 테이블</b>(중간 테이블 / 교차 엔티티)을 만든다.</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">N:M은 1:N 두 개로 분해된다</div><pre><code>students          enrollments              courses
+  id (PK)  ◄───   student_id (FK)
+  name            course_id  (FK)   ───►     id (PK)
+                  score                      title
+                  enrolled_at
+                  PK(student_id, course_id)</code></pre></div>
+<ul class="b">
+<li>핵심은 <b>N:M은 물리적으로 존재할 수 없고, 1:N 두 개로 분해된다</b>는 것이다. students → enrollments가 1:N이고, courses → enrollments도 1:N이다. 교차 테이블은 그 둘의 교차점이다.</li>
+<li>교차 테이블의 또 다른 이점은 <b>관계 자체에 속성을 붙일 수 있다</b>는 점이다. "이 학생이 이 강좌를 언제 신청했고 점수가 몇 점인가"는 학생의 속성도 강좌의 속성도 아니라 <b>관계의 속성</b>이다. 교차 테이블에 <code>enrolled_at</code>, <code>score</code>가 들어가는 이유다. (4장에서 다시 다룸)</li>
+</ul>
+<div class="sqlbox"><div class="sqlhead">따라 치기 ① — 교차 테이블이 실제로 어떻게 쓰이는지 (연습장 실행 가능)</div><pre><code>-- N:M을 1:N 두 개로 풀었기 때문에 이렇게 이어 붙일 수 있다
+SELECT s.name AS 학생, c.title AS 강좌, e.score AS 점수, e.enrolled_at AS 신청일
+FROM students s
+JOIN enrollments e ON e.student_id = s.id   -- students 1 : enrollments N
+JOIN courses     c ON c.id = e.course_id    -- courses  1 : enrollments N
+ORDER BY s.name, c.title;</code></pre></div>
+<div class="note">막히면 여기 — 결과가 비어 있다면 JOIN 조건의 방향(<code>e.student_id = s.id</code>)을 확인하자. FK는 언제나 <b>N쪽 테이블</b>인 <code>enrollments</code>에 있다.</div>
+
+  <h3>6) 정규화 (Normalization)</h3>
+<h4>왜 필요한가 — 이상 현상 세 가지</h4>
+<ul class="b">
+<li><b>삽입 이상 (Insertion Anomaly)</b> — 일부 데이터 저장 시 불필요한 데이터도 함께 저장해야 함</li>
+<li><b>삭제 이상 (Deletion Anomaly)</b> — 데이터 삭제 시 다른 중요 정보까지 삭제됨</li>
+<li><b>갱신 이상 (Update Anomaly)</b> — 중복 저장된 데이터 중 일부만 수정 → 불일치 발생</li>
+</ul>
+<p>말로만 보면 안 와닿으니 예로 보자. 학생과 학과를 한 테이블에 몰아넣었다고 하자.</p>
+<table class="t"><thead><tr><th>학번</th><th>이름</th><th>학과코드</th><th>학과명</th><th>학과사무실</th></tr></thead><tbody>
+<tr><td>2024001</td><td>홍길동</td><td>CS</td><td>컴퓨터공학</td><td>공학관 301</td></tr>
+<tr><td>2024002</td><td>이순신</td><td>BA</td><td>경영학</td><td>상경관 105</td></tr>
+<tr><td>2024003</td><td>강감찬</td><td>CS</td><td>컴퓨터공학</td><td>공학관 301</td></tr>
+</tbody></table>
+<ul class="b">
+<li><b>삽입 이상</b>: 새 학과 "인공지능(AI)"이 신설됐는데 아직 소속 학생이 없다. <b>학생 없이는 학과를 등록할 수 없다.</b> 학번이 PK인데 넣을 학번이 없기 때문이다.</li>
+<li><b>삭제 이상</b>: 경영학과 학생이 이순신 한 명뿐인데 그가 자퇴했다. 그 행을 지우면 <b>경영학과라는 학과가 존재했다는 사실 자체가 사라진다.</b></li>
+<li><b>갱신 이상</b>: 컴퓨터공학과 사무실이 공학관 405로 이사했다. 2개 행을 고쳐야 하는데 하나만 고치면, <b>같은 학과의 사무실이 두 개가 된다.</b></li>
+</ul>
+<div class="cp"><div class="cphead">✔ 세 이상 현상의 뿌리는 하나다</div><ul>
+<li><b>"학과에 대한 사실"과 "학생에 대한 사실"이 한 테이블에 섞여 있다.</b> 정규화는 이걸 분리하는 작업이고, 학과 테이블을 따로 만들면 셋 다 사라진다.</li>
+</ul></div>
+<h4>정규화 단계</h4>
+<table class="t"><thead><tr>
+<th style="width:12%">정규형</th><th style="width:26%">조건</th><th style="width:26%">제거 대상</th><th>예시</th>
+</tr></thead><tbody>
+<tr><td><b>1NF</b></td><td>각 컬럼은 원자값(Atomic Value)만</td><td>반복 그룹, 다중값 속성</td><td>"과목 = DB, 네트워크" → 별도 행으로 분리</td></tr>
+<tr><td><b>2NF</b></td><td>1NF + 부분 함수 종속 제거</td><td>복합키 일부에만 종속된 속성</td><td>(학번+과목코드)가 PK인데 학생이름은 학번에만 종속</td></tr>
+<tr><td><b>3NF</b></td><td>2NF + 이행적 종속 제거</td><td>비-키 속성이 다른 비-키 속성에 종속</td><td>학번→학과코드→학과명 이행 종속 제거</td></tr>
+<tr><td><b>BCNF</b></td><td>3NF + 결정자는 반드시 후보키</td><td>비후보키 결정자 제거</td><td>모든 함수 종속의 결정자가 후보키여야 함</td></tr>
+</tbody></table>
+<ul class="b">
+<li><b>1NF</b> — 한 칸에 값이 여러 개면 애초에 종속을 따질 수 없다. 칸을 원자값으로 만든다.</li>
+<li><b>2NF</b> — PK가 (학번, 과목코드) 복합키인데 학생이름은 학번만 알면 정해진다. <b>PK의 일부</b>에만 종속된 것을 떼어낸다. (<b>부분 종속</b>)</li>
+<li><b>3NF</b> — 학번 → 학과코드 → 학과명. 학과명은 PK(학번)에 직접 종속된 게 아니라 학과코드를 <b>거쳐서</b> 종속된다. 이 우회 경로를 떼어낸다. (<b>이행 종속</b>)</li>
+<li><b>BCNF</b> — 결정자인데 후보키가 아닌 것을 떼어낸다. 3NF까지 왔는데도 남는 드문 경우를 처리한다.</li>
+</ul>
+<h4>용어 정리 — 함수 종속과 결정자</h4>
+<ul class="b">
+<li><b>함수 종속 (Functional Dependency)</b>: "A를 알면 B가 하나로 정해진다"는 관계. <code>A → B</code>로 쓰고 "B는 A에 종속된다"고 읽는다. 학번을 알면 이름이 하나로 정해지므로 <code>학번 → 이름</code>이다. 반대로 이름을 안다고 학번이 정해지지는 않는다.</li>
+<li><b>결정자 (Determinant)</b>: 화살표 왼쪽. <code>학번 → 이름</code>에서 학번이 결정자다.</li>
+<li>즉 <b>정규화란 "모든 컬럼이 오직 PK 전체에만 종속되도록 테이블을 쪼개는 것"</b>이고, 각 단계는 그걸 깨는 서로 다른 유형을 하나씩 없앤다.</li>
+</ul>
+<div class="callout goal"><span class="ctitle">💡 한 줄로 외우기</span>
+<p><b>모든 컬럼은 키에, 오직 키에만, 키 전체에 의존해야 한다.</b><br>(the key, the whole key, and nothing but the key)<br>— "the whole key"가 2NF(부분 종속 제거), "nothing but the key"가 3NF(이행 종속 제거)다.</p></div>
+<div class="callout deep"><span class="ctitle">🔎 심화 — 두 가지 실전 감각</span>
+<ul>
+<li><b>2NF는 PK가 복합키일 때만 문제가 된다.</b> PK가 단일 컬럼이면 "PK의 일부"라는 게 존재하지 않으므로 1NF를 만족하면 자동으로 2NF다. 실무에서 대체키(일련번호) 단일 PK를 주로 쓰는 것도 2NF 문제를 원천적으로 없애는 효과가 있다.</li>
+<li><b>BCNF와 3NF가 갈리는 경우는 드물다.</b> 후보키가 여러 개이고 그것들이 서로 겹칠 때만 차이가 생긴다.</li>
+</ul></div>
+<h4>정규화 전/후 비교 — SQL</h4>
+<div class="sqlbox norun"><div class="sqlhead">비정규화 (1NF 위반: 다중값 컬럼)</div><pre><code>CREATE TABLE student_bad (
+  student_id INT PRIMARY KEY,
+  name       VARCHAR(50),
+  subjects   VARCHAR(200)   -- "DB, 네트워크, OS" ← 원자값 아님!
+);</code></pre></div>
+<p><code>subjects</code>에 콤마로 이어 붙인 문자열을 넣은 것이 1NF 위반이다. 왜 나쁜가 — "네트워크를 듣는 학생을 모두 찾아라"를 하려면 <code>LIKE '%네트워크%'</code>로 문자열을 뒤져야 하는데, 인덱스를 못 쓰고, "네트워크보안"까지 걸리는 오탐이 생기고, 과목이 하나 추가되면 문자열 전체를 다시 조립해야 한다.</p>
+<div class="sqlbox norun"><div class="sqlhead">1NF + 2NF + 3NF 적용 후 (분리된 테이블)</div><pre><code>CREATE TABLE students (
+  id       INT PRIMARY KEY,
+  name     VARCHAR(50) NOT NULL,
+  major_id INT REFERENCES majors(id)   -- 3NF: 학과명 분리
 );
--- 1NF+2NF+3NF 적용 후 (분리된 테이블)
-CREATE TABLE students ( id INT PRIMARY KEY, name VARCHAR(50) NOT NULL,
-  major_id INT REFERENCES majors(id) ); -- 3NF: 학과명 분리
-CREATE TABLE majors ( id INT PRIMARY KEY, code VARCHAR(20) UNIQUE, name VARCHAR(100) );
-CREATE TABLE enrollments ( -- 1NF: 과목분리 + 2NF 교차테이블
-  student_id INT REFERENCES students(id), course_id INT REFERENCES courses(id),
-  score DECIMAL(5,2), PRIMARY KEY (student_id, course_id) );</code></pre></div>
+
+CREATE TABLE majors (
+  id   INT PRIMARY KEY,
+  code VARCHAR(20) UNIQUE,
+  name VARCHAR(100)                    -- major_id → name (이행종속 제거)
+);
+
+CREATE TABLE enrollments (
+  -- 1NF: 과목 분리 + 2NF 교차테이블
+  student_id INT REFERENCES students(id),
+  course_id  INT REFERENCES courses(id),
+  score      DECIMAL(5,2),
+  PRIMARY KEY (student_id, course_id)   -- 복합 PK
+);</code></pre></div>
+<ul class="b">
+<li><code>REFERENCES majors(id)</code> — FK를 선언하는 축약 문법. 컬럼 정의 뒤에 바로 붙이는 이 형태를 <b>컬럼 레벨 제약</b>이라 하고, <code>FOREIGN KEY (major_id) REFERENCES majors(id)</code>라고 따로 쓰는 <b>테이블 레벨 제약</b>과 결과는 같다. 복합키를 참조할 때는 테이블 레벨로만 쓸 수 있다.</li>
+<li><code>PRIMARY KEY (student_id, course_id)</code> — 두 컬럼을 묶어 PK로 삼는 <b>복합 PK</b>. 이게 있으면 같은 학생이 같은 강좌를 두 번 신청하는 것이 자동으로 막힌다. <b>별도 중복 체크 코드가 필요 없다는 것이 제약조건의 힘</b>이다.</li>
+<li><code>DECIMAL(5,2)</code> — 전체 5자리, 소수점 아래 2자리(즉 <code>999.99</code>까지). 점수·금액에 <code>FLOAT</code>이 아니라 <code>DECIMAL</code>/<code>NUMERIC</code>을 쓰는 이유는 4장에서 다룬다.</li>
+</ul>
+<h4>단계별 분리 예시 — 2NF → 3NF</h4>
+<p>처음 테이블은 이렇다. (사번이 PK)</p>
+<table class="t"><thead><tr><th>사번(PK)</th><th>직위</th><th>직위코드</th><th>전공코드</th><th>연락처</th><th>근무지</th><th>자격증</th><th>회사코드</th></tr></thead><tbody>
+<tr><td>20-243679</td><td>중사</td><td>SG2</td><td>SNIPER</td><td>010-XXX-XXXX</td><td>미국</td><td>스쿠버</td><td>UDT</td></tr>
+<tr><td>23-023456</td><td>병장</td><td>SG0</td><td>MEDIC</td><td>010-XXX-XXXX</td><td>한국</td><td>응급구조사</td><td>특수전여단</td></tr>
+<tr><td>22-138907</td><td>하사</td><td>SG1</td><td>DEMOLITION</td><td>010-XXX-XXXX</td><td>캐나다</td><td>화공기사</td><td>특전사령부</td></tr>
+<tr><td>21-135987</td><td>중사</td><td>SG2</td><td>SNIPER</td><td>010-XXX-XXXX</td><td>한국</td><td>고공강하</td><td>특수전여단</td></tr>
+</tbody></table>
+<ul class="b">
+<li><b>2NF</b> — 식별자(PK)에 <b>부분 종속</b>된 내용을 분리한다. <code>전공코드 → 역할상세</code>를 전공정보 테이블로 뺀다. 분리된 테이블에서 기존 테이블로 다시 찾아갈 수 있는 기준 열이 <b>외래키</b>다.</li>
+<li><b>3NF</b> — 식별자가 아닌 것에 종속된 내용을 분리한다. 직위코드→직위명, 회사코드→회사명도 각각 직위정보·회사정보 테이블로 나간다. <b>비-키 속성(직위코드)이 또 다른 비-키 속성(직위명)을 결정하고 있으면</b> 그건 별도 테이블로 나가야 한다.</li>
+<li>결과적으로 <b>인사정보 / 전공정보 / 직위정보 / 회사정보</b> 네 테이블로 나뉘고, 이것으로 관계형 데이터 모델링이 완성된다.</li>
+</ul>
+<h4>반정규화 (Denormalization)</h4>
+<ul class="b">
+<li>정규화는 중복을 없애는 대신 <b>테이블 개수를 늘린다.</b> 학생 정보 하나 보려고 students, majors, enrollments, courses를 다 JOIN해야 하면 조회가 느려진다.</li>
+<li>그래서 성능이 문제가 되는 지점에 한해 <b>의도적으로 중복을 다시 넣는 것</b>이 반정규화다.</li>
+<li><b>주의 — 순서가 전부다.</b> 정규화를 먼저 하고, 성능 문제가 <b>실제로 측정된 다음에</b> 반정규화한다. 처음부터 "JOIN이 느릴 것 같으니까" 중복을 넣는 것은 반정규화가 아니라 그냥 설계 실수다.</li>
+</ul>
+<div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — 실무 정규화는 3NF까지</span>
+<p>"보통 1·2·3정규화에 BCNF까지 하는데, 실무에서는 3정규화까지만 해도 크게 무리는 없어요. 다만 과도하게 정규화를 하면 한 줄 데이터를 찾으려고 테이블을 열 개 이상 조인해야 해서 조회 시간이 과하게 늘어납니다."</p>
+<p>"정규화가 과도해서 조인 부하가 커지면 반정규화를 합니다. 여러 테이블을 조인하는 대신, 한 테이블에 필요한 데이터를 넣어 두고 그것만 가져오면 성능이 빨라지는 거죠." — BCNF는 개념으로 알아 두되 실제 설계의 목표선은 3NF다. 설계는 한 번 하고 끝나는 것이 아니라, 운영하면서 더 쪼갤지 다시 합칠지를 계속 판단해야 한다. (반정규화는 22장에서 다시 다룬다.)</p></div>
+
+  <h3>7) 모델링과 SQL의 관계</h3>
+<ul class="b">
+<li>완료된 데이터 모델링을 토대로 DBMS에 테이블을 생성하고 데이터를 입력/조회/삭제/수정한다 ⇒ <b>SQL(Structured Query Language)</b> 언어 사용</li>
+<li>모델링 없이 바로 테이블을 생성할 수는 있으나, 데이터 양이 많아지거나 복잡해지면 데이터 중복 및 오류 등 품질 문제가 발생한다</li>
+</ul>
+<div class="sqlbox norun"><div class="sqlhead">앞에서 분리한 전공정보 테이블을 실제 SQL로</div><pre><code>CREATE TABLE 전공정보 (
+    전공코드 Varchar(10) Primary Key,
+    역할상세 Varchar(40)
+);
+
+INSERT INTO 전공정보 (전공코드, 역할상세)
+VALUES ('SNIPER', '저격');</code></pre></div>
+<ul class="b">
+<li>테이블명·컬럼명에 한글을 쓰는 것은 문법상 가능하지만 <b>권장하지 않는다.</b> DBMS·클라이언트·드라이버마다 인코딩 처리가 달라 깨질 수 있다. <code>majors</code>, <code>major_code</code> 같은 <b>영문 소문자 스네이크케이스</b>로 간다.</li>
+<li><code>Varchar(10)</code>처럼 대소문자를 섞어 써도 SQL 키워드는 대소문자를 구분하지 않으므로 동작에는 문제가 없다. 관례는 <b>키워드 대문자, 식별자 소문자</b>다.</li>
+</ul>
+<div class="cp"><div class="cphead">✔ 여기가 2장과 6장을 잇는 지점</div><ul>
+<li><b>모델링(무엇을 어떻게 나눌지)이 끝나야 DDL(그걸 실제로 만드는 SQL)을 쓸 수 있다.</b> 순서를 뒤집어서 일단 테이블부터 만들고 나중에 고치려 하면, 이미 들어간 데이터 때문에 고치기가 훨씬 어려워진다.</li>
+</ul></div>
+
+  <h3>8) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>PK를 여러 개 만들면 안 되나요? 학번도 유일하고 이메일도 유일한데요.</summary><div class="fa">안 됩니다. PK는 테이블당 하나입니다. 다만 이건 제약이 아니라 정의에 가깝습니다. PK는 "이 테이블에서 행을 가리키는 <b>대표</b> 방법"을 하나로 못 박아 두는 것이고, 그래야 다른 테이블이 FK로 참조할 때 무엇을 가리킬지가 명확해집니다. 유일해야 하는 컬럼이 더 있다면 <code>UNIQUE</code> 제약(UK)으로 얼마든지 추가할 수 있습니다. <b>PK 하나 + UK 여러 개</b>가 정상적인 모양입니다. 참고로 <code>PRIMARY KEY (student_id, course_id)</code>처럼 여러 컬럼을 묶은 PK 하나는 가능합니다 — 이건 PK가 여러 개인 게 아니라 컬럼이 여러 개인 PK 하나입니다.</div></details>
+<details><summary>NULL이 허용되니까 UK가 PK보다 유연한 것 아닌가요? 그냥 다 UK로 쓰면 안 되나요?</summary><div class="fa">권장하지 않습니다. PK가 하는 일이 "유일성 보장" 하나가 아니기 때문입니다. PK는 (1) 유일성 보장, (2) NULL 금지, (3) 자동 인덱스 생성, (4) <b>다른 테이블의 FK가 참조할 대상 지정</b> 네 가지를 합니다. 특히 (4)가 중요합니다. FK가 NULL이 있을 수 있는 컬럼을 참조하면 "무엇을 가리키는지 모르는 참조"가 생겨 참조 무결성이 흐려집니다. 표준은 FK가 PK 또는 UNIQUE 컬럼을 참조하도록 하되, 실무에서는 PK를 참조하는 것이 기본입니다.</div></details>
+<details><summary>1:1 관계면 그냥 한 테이블로 합치면 되지 않나요?</summary><div class="fa">대부분의 경우 맞습니다. 실제로 1:1이 보이면 "합칠 수 있는데 왜 나눴지?"를 먼저 의심하는 게 좋습니다. 나누는 게 정당한 경우는 이유가 따로 있을 때입니다. (1) 한쪽 컬럼이 아주 크고 거의 조회되지 않을 때(프로필 사진 바이너리 등) — 매번 읽어 오는 데이터 양을 줄이려고, (2) 보안 등급이 다를 때 — 주민등록번호만 별도 테이블로 빼서 접근 권한을 다르게 주려고, (3) 한쪽이 선택적일 때 — 회원 중 일부만 사업자 정보를 갖는 경우, 합치면 NULL 컬럼이 잔뜩 생깁니다. 이런 이유가 없으면 합치는 게 맞습니다.</div></details>
+<details><summary>3NF까지 하면 되는데 왜 BCNF를 배우나요?</summary><div class="fa">3NF로 못 잡는 경우가 존재하기 때문입니다. 3NF는 "비-키 속성이 다른 비-키 속성에 종속되는 것"을 막는데, <b>결정자가 키의 일부인 경우</b>는 걸러내지 못합니다. 후보키가 여러 개이고 서로 겹칠 때 이런 상황이 생깁니다. BCNF는 "모든 결정자는 후보키여야 한다"는 한 줄로 이 구멍까지 막습니다. 다만 실무에서 이런 스키마가 나오는 일은 드물어서, 이름과 한 줄 정의만 알아 두고 실제 설계는 3NF를 목표로 잡으면 충분합니다.</div></details>
+<details><summary><code>subjects VARCHAR(200)</code>에 "DB, 네트워크, OS"를 넣는 게 왜 그렇게 나쁜가요? 파이썬에서 split(',')으로 나누면 되잖아요.</summary><div class="fa">애플리케이션에서 나눌 수 있다는 것과 DB가 그 값을 다룰 수 있다는 것은 다른 문제입니다. 구체적으로 네 가지가 막힙니다. (1) <b>검색</b>: "네트워크 수강생 찾기"가 <code>LIKE '%네트워크%'</code>가 되어 인덱스를 못 쓰고, "네트워크보안"까지 잡히는 오탐이 생깁니다. (2) <b>집계</b>: "과목별 수강 인원"을 SQL로 셀 수 없습니다. (3) <b>무결성</b>: 존재하지 않는 과목명 오타를 DB가 막아 줄 수 없습니다 — FK를 걸 대상이 없으니까요. (4) <b>수정</b>: 과목 하나를 빼려면 문자열을 읽어서 파싱하고 다시 조립해 UPDATE해야 하는데, 그 사이에 다른 사람이 같은 작업을 하면 한쪽이 날아갑니다. 별도 행으로 분리하면 넷 다 SQL 한 줄로 해결됩니다.</div></details>
+<details><summary>FK를 걸면 성능이 느려진다던데, 그냥 안 걸고 애플리케이션에서 체크하면 안 되나요?</summary><div class="fa">INSERT/UPDATE/DELETE 때 부모 존재 여부를 확인하는 비용이 있는 건 사실입니다. 하지만 애플리케이션 체크로 대체하는 것은 위험합니다. (1) <b>애플리케이션이 하나가 아닙니다</b> — 배치 스크립트, 관리자 도구, 데이터 마이그레이션에서 직접 INSERT하면 그 체크를 안 거칩니다. (2) <b>동시성 문제가 있습니다</b> — "부모가 있는지 SELECT로 확인 → INSERT" 사이에 다른 트랜잭션이 부모를 지울 수 있습니다. DB 안에서 하는 FK 체크는 이 틈이 없습니다. 실무에서 FK를 빼는 경우가 없지는 않지만(초대용량 테이블, 샤딩 환경), 그건 다른 방법으로 무결성을 보장할 준비가 되어 있을 때의 선택이지 기본값이 아닙니다.</div></details>
+<details><summary>정규화를 하면 항상 좋은가요?</summary><div class="fa">아닙니다. 정규화는 <b>중복을 테이블 개수와 맞바꾸는 것</b>이고, 테이블이 늘어나면 JOIN이 늘어납니다. 한 줄의 데이터를 얻으려고 열 개 넘는 테이블을 조인하게 되면 그 자체가 부하가 됩니다. 그래서 실무 목표선은 3NF이고, 그 뒤에 성능이 실제로 문제가 된 지점만 골라 반정규화합니다. 중요한 건 <b>순서</b>입니다 — 먼저 정규화하고, 측정하고, 그 다음에 되돌립니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>PK와 UK의 차이를 두 가지 이상 댈 수 있는가?</li>
+<li>1:N 관계에서 FK는 어느 쪽 테이블에 두는가? 그 이유는?</li>
+<li>N:M 관계를 물리적으로 구현하려면 무엇이 필요한가? 왜 직접 연결할 수 없는가?</li>
+<li>삽입/삭제/갱신 이상을 각각 구체적인 상황으로 설명할 수 있는가?</li>
+<li><code>학번 → 학과코드 → 학과명</code>에서 어떤 종속이 문제이고 몇 번째 정규형에서 제거되는가?</li>
+<li>ON DELETE CASCADE와 RESTRICT 중 어느 것을 고를지는 무엇으로 판단하는가?</li>
+</ul></div>
 </section>
 
 
