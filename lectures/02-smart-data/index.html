@@ -5646,26 +5646,110 @@ CONTEXT:  SQL statement "UPDATE node SET cnt = cnt + 1 WHERE id = NEW.id"
     <span class="day-badge day4">Day 4</span>
     <h2><span class="num">26.</span> Cloud DB 개요</h2>
   </div>
-  <p class="subtitle">On-Prem vs DBaaS · AWS RDS &amp; Aurora · GCP Cloud SQL · Azure Database</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 직접 서버를 관리하지 않고 AWS·GCP·Azure가 대신 관리해주는 DB 서비스들을 소개해요.</div></div>
-  <h4>DBaaS 할 일 vs 우리가 할 일</h4>
-<ul class="b">
-<li>DBaaS가 해주는 것: 하드웨어/스토리지관리, 장애디스크교체, 백업스케줄링, 모니터링, 고가용성(Multi-AZ) 토폴로지</li>
-<li>우리가 해야 하는 것(책임 면제 아님!): 스키마/인덱스/쿼리 최적화, DB파라미터 전략, 보안정책(권한/암호화/네트워크), 비용/성능 SLO 설계</li>
-</ul>
-<h4>AWS/GCP/Azure 관리형 RDBMS</h4>
+  <p class="subtitle">IaaS/PaaS/SaaS와 Region·AZ · On-Prem vs DBaaS vs Cloud-Native · DBaaS가 할 일 vs 우리가 할 일 · RDS vs Aurora · 선택 프레임워크</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">이 장의 결론을 한 줄로 하면 — <b>"관리형 DB는 느린 쿼리를 빠르게 만들어 주지 않는다."</b> 클라우드가 대신해 주는 것은 <b>인프라 운영</b>(백업·패치·장애조치)이고, 성능의 대부분을 결정하는 <b>설계와 쿼리는 여전히 개발자 몫</b>입니다. 오히려 클라우드에서는 그게 <b>매달 청구서로 돌아와요.</b></div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p>1~25장은 "DB 안에서" 무엇을 하는가였다. 이 장은 <b>그 DB를 어디에 두고 누가 운영하는가</b>다. 실무에서 이 판단은 대개 <b>"뭐가 더 좋은가"가 아니라 "무엇을 포기할 수 있는가"</b>로 갈린다.</p></div>
+
+  <h3>1) 클라우드 용어 최소한</h3>
 <table class="t"><thead><tr>
-<th>서비스</th>
-<th>특징</th>
+<th style="width:16%">구분</th><th style="width:22%">뜻</th><th style="width:30%">DB로 치면</th><th>내가 관리하는 것</th>
 </tr></thead><tbody>
-<tr><td>AWS RDS</td><td>다양한 엔진, 자동백업/장애복구, 루트접근 제한</td></tr>
-<tr><td>Amazon Aurora</td><td>MySQL/PG호환+AWS최적화, MySQL대비 3~5배 빠름(스토리지 분산), 6방향 복제</td></tr>
-<tr><td>GCP Cloud SQL</td><td>자동백업/확장, BigQuery/Dataflow 연계 쉬움, IAM DB Auth, 최대 64TB</td></tr>
-<tr><td>Azure Database</td><td>Flexible Server(Zonal HA), SLA 99.99%, Entra ID 인증 연동</td></tr>
+<tr><td><b>On-Premise</b></td><td>내 건물, 내 서버</td><td>전산실의 PostgreSQL</td><td>건물·전기·서버·OS·DB·데이터 <b>전부</b></td></tr>
+<tr><td><b>IaaS</b></td><td>가상 서버만 빌림</td><td><b>EC2에 직접 설치한 PostgreSQL</b></td><td>OS·DB·데이터</td></tr>
+<tr><td><b>PaaS</b></td><td>실행 환경까지 제공</td><td><b>RDS / Cloud SQL</b></td><td>DB 스키마·쿼리·데이터</td></tr>
+<tr><td><b>SaaS</b></td><td>완성된 소프트웨어</td><td>Google Sheets, Salesforce</td><td>데이터 입력만</td></tr>
 </tbody></table>
-<h4>Cloud DB 선택 의사결정 프레임워크 (4단계)</h4>
+<div class="callout myth"><span class="ctitle">⚠️ "EC2에 PostgreSQL을 설치하는 것"은 클라우드 DB가 아니다</span>
+<p>서버가 클라우드에 있을 뿐 <b>백업·패치·장애조치는 여전히 내 일</b>이다. 이걸 <b>self-managed</b>라고 부르고 <b>운영 부담은 온프레미스와 사실상 같다.</b> "클라우드로 옮겼는데 왜 편해지지 않느냐"는 하소연의 절반이 여기서 나온다. <b>DBaaS(Database as a Service)는 PaaS의 한 종류</b>이고 RDS·Cloud SQL·Azure Database가 여기 속한다.</p></div>
+<div class="cp"><div class="cphead">✔ Region과 AZ — 고가용성 설계의 기준</div><ul>
+<li><b>Region</b> — 지리적으로 떨어진 대규모 거점(서울, 도쿄, 버지니아). 리전끼리는 수천 km 떨어져 통신에 <b>수십~수백 ms</b>.</li>
+<li><b>AZ(Availability Zone)</b> — <b>한 리전 안에서 전력·냉각·네트워크가 물리적으로 분리된 데이터센터 묶음.</b> 서로 수 km~수십 km 떨어져 있고 전용선으로 이어져 지연이 <b>1ms 안팎</b>.</li>
+<li>그래서 고가용성 설계의 기준은 <b>"AZ 하나가 통째로 사라져도 서비스가 계속되는가"</b>(= <b>Multi-AZ</b>)이고, 리전 하나가 사라지는 것까지 대비하는 것이 <b>멀티리전</b>이다.</li>
+<li><b>책임 공유 모델</b> — 사업자는 <b>Security OF the cloud</b>(데이터센터·하드웨어·서비스 내부), 고객은 <b>Security IN the cloud</b>(데이터·권한 설계·네트워크 경계·암호화 키·스키마/쿼리).</li>
+</ul></div>
+
+  <h3>2) On-Prem vs DBaaS vs Cloud-Native</h3>
+<table class="t"><thead><tr>
+<th style="width:14%">구분</th><th>On-Prem</th><th>DBaaS (RDS/Cloud SQL)</th><th>Cloud-Native (Aurora/Spanner)</th>
+</tr></thead><tbody>
+<tr><td><b>프로비저닝</b></td><td>구매·설치·랙 (몇 주)</td><td>콘솔에서 몇 분</td><td>스토리지·복제 구조 전용화</td></tr>
+<tr><td><b>확장성</b></td><td>수직 확장 (느림)</td><td>수직 + 수평(리드 리플리카)</td><td>설계부터 분산, 글로벌</td></tr>
+<tr><td><b>고가용성</b></td><td>DBA가 직접 RAC/AG 구성</td><td><b>Multi-AZ</b> 자동 장애 조치</td><td>스토리지 레벨 6중 복제</td></tr>
+<tr><td><b>운영/패치</b></td><td>DBA·시스템팀 책임</td><td>백업·패치 자동화</td><td>더 높은 자동화</td></tr>
+<tr><td><b>비용</b></td><td>CAPEX(선투자) + OPEX</td><td>OPEX(사용량 기반)</td><td>OPEX + egress + 전용 기능</td></tr>
+<tr><td><b>커스터마이징</b></td><td>OS·확장 자유</td><td>슈퍼유저·확장 제한</td><td>제한이 더 클 수 있음</td></tr>
+</tbody></table>
+<div class="callout deep"><span class="ctitle">🔎 확장성 — "수평 확장"이라는 말의 함정</span>
+<p><b>관계형 DB에서 "수평 확장"은 대개 읽기에만 해당한다.</b> 복제본을 10대 붙여도 <b>쓰기는 여전히 마스터 한 대</b>가 받는다. 쓰기까지 수평 확장하려면 22장의 <b>샤딩</b>이 필요하고 그건 애플리케이션 구조를 바꾸는 일이다. <b>Spanner·CockroachDB 같은 분산 SQL이 특별한 이유가 여기 있다 — 쓰기까지 수평 확장한다</b>(27장).</p>
+<div class="sqlbox norun"><div class="sqlhead">읽기 복제본의 구조 — WAL을 흘려보내 재생시킨다</div><pre><code>[Primary]  ── WAL 스트리밍 ──▶ [Replica 1]   읽기 전용
+   ▲                        ──▶ [Replica 2]   읽기 전용
+   │
+쓰기(INSERT/UPDATE/DELETE)는 오직 Primary로</code></pre></div>
+<p>PostgreSQL의 복제는 <b>WAL을 복제본에 흘려보내 재생</b>시키는 방식이다(1장·22장의 그 WAL). <code>wal_level = replica</code>면 복제본을 붙일 수 있고, 논리 복제(CDC)까지 하려면 <code>logical</code>로 올린다.</p></div>
+<div class="note">프로비저닝의 차이가 만드는 진짜 결과 — On-Prem은 서버를 <b>구매</b>해야 하므로 <b>"3년 뒤에 얼마나 클지"를 지금 예측해서 그만큼 사 둔다.</b> 결과적으로 평소에는 자원이 남아돌고(돈 낭비), 예상이 틀리면 못 버틴다(장애). DBaaS는 <code>--multi-az</code> 플래그 <b>하나가 동기 복제 대기 인스턴스 + 자동 장애조치를 통째로 켠다</b> — On-Prem에서 같은 것을 구성하려면 DBA가 며칠을 쓴다.</div>
+
+  <h3>3) DBaaS가 할 일 vs 우리가 할 일 — 이 장에서 가장 중요한 표</h3>
+<table class="t"><thead><tr><th style="width:44%">DBaaS가 해 주는 것</th><th>우리(고객)가 해야 하는 것</th></tr></thead><tbody>
+<tr><td>하드웨어/스토리지 관리, 장애 디스크 교체</td><td><b>스키마/인덱스/쿼리 최적화 (핵심! 책임 면제 아님)</b></td></tr>
+<tr><td>백업/스냅샷 스케줄링, 보관/복구 기능</td><td>DB 파라미터 전략 (초기/운영 프로파일)</td></tr>
+<tr><td>모니터링 지표/알림 제공</td><td>보안정책 설계 (권한/암호화/<b>네트워크 경계</b>)</td></tr>
+<tr><td>엔진 소규모 패치(마이너)</td><td>비용/성능 <b>SLO</b> 설계와 관측(옵서버빌리티)</td></tr>
+<tr><td>고가용성 토폴로지(Multi-AZ, 자동 장애조치)</td><td><b>메이저 버전 Upgrade</b>와 호환성 검증</td></tr>
+</tbody></table>
+<div class="callout myth"><span class="ctitle">⚠️ 관리형 DB는 느린 쿼리를 빠르게 만들어 주지 않는다</span>
+<p><code>WHERE DATE(created_at) = '2026-07-22'</code>는 <b>RDS에서도 인덱스를 못 탄다</b>(19장). 3NF 위반으로 갱신 이상이 생기는 스키마는 <b>Aurora에서도 똑같이 생긴다</b>(22장). N+1 쿼리는 <b>Spanner에서도 N+1</b>이다.</p>
+<p>클라우드가 해 주는 것은 <b>인프라 운영</b>이고 성능의 대부분을 결정하는 <b>설계와 쿼리는 여전히 개발자 몫</b>이다. 오히려 클라우드에서는 이게 <b>돈으로 직결된다</b> — 느린 쿼리 때문에 인스턴스 등급을 올리면 매달 청구서가 늘어난다. <b>온프레미스에서는 이미 산 서버라 티가 안 나던 비용이 클라우드에서는 매달 보인다.</b></p></div>
 <ul class="b">
-<li>1단계 규제/컴플라이언스(데이터주권, GDPR — 제약있으면 On-Prem) → 2단계 팀 역량(DBA있으면 On-Prem 가능, 작으면 DBaaS) → 3단계 워크로드 특성(안정적=고정인스턴스, 급변=서버리스) → 4단계 비용총합(TCO: CAPEX+OPEX vs Egress/IOPS 등 숨은비용)</li>
+<li><b>네트워크 경계가 가장 자주 사고가 난다.</b> DB 인스턴스를 인터넷에 노출시키지 않고 사설 네트워크(VPC) 안에만 두고 애플리케이션 서버에서만 접근하도록 잠근다 — <b>"퍼블릭 액세스 = 예"로 만들어 둔 DB는 몇 시간 안에 스캔에 걸린다.</b></li>
+<li><b>SLO vs SLA</b> — <b>SLA는 사업자가 고객에게 약속하는 것</b>, <b>SLO는 우리 팀이 스스로에게 세우는 목표</b>("주문 조회 p95 200ms 이하", "월 DB 비용 300만 원 이하"). DBaaS는 지표를 <b>제공</b>하지만 <b>어떤 지표에 어떤 임계치로 알림을 걸지는 우리가 정한다.</b></li>
+<li><b>메이저 업그레이드는 자동이 아니다.</b> 마이너 패치(17.4→17.5)는 자동이지만 <b>16→17은 우리가 결정하고 실행</b>한다(동작이 바뀔 수 있어 사업자가 함부로 못 올린다). 각 버전에는 <b>EOL</b>이 있어 미루기만 하면 강제 업그레이드를 당하거나 보안 패치를 못 받는다 — <b>"관리형이니까 알아서 되겠지"가 통하지 않는 대표 항목.</b></li>
+<li><b>호환은 100%가 아니다.</b> Aurora처럼 "MySQL/PostgreSQL 호환"을 표방하는 엔진으로 옮길 때 <b>5장에서 배운 표준 SQL과 벤더 방언의 구분이 값을 한다</b> — 표준으로 짠 쿼리는 대개 그냥 돌지만 벤더 전용 함수는 하나하나 확인해야 한다.</li>
 </ul>
+
+  <h3>4) AWS RDS vs Aurora</h3>
+<table class="t"><thead><tr><th style="width:18%">항목</th><th>AWS RDS</th><th>Amazon Aurora</th></tr></thead><tbody>
+<tr><td><b>아키텍처</b></td><td>엔진 원본 그대로 관리형</td><td>Compute/스토리지 분리, <b>3AZ 6중 복제</b></td></tr>
+<tr><td><b>스토리지</b></td><td>EBS 기반 (사전 할당)</td><td>10GB 단위 <b>자동 확장</b></td></tr>
+<tr><td><b>읽기 확장</b></td><td>읽기 복제본 추가</td><td>리더 엔드포인트, Serverless v2</td></tr>
+<tr><td><b>특화 기능</b></td><td>Blue/Green 배포, <b>RDS Proxy</b></td><td>Backtrack, Parallel Query, Serverless v2</td></tr>
+<tr><td><b>선택 기준</b></td><td><b>엔진 호환성 최우선</b>, 중소규모</td><td>읽기 부하↑, 고가용성, 빠른 장애조치</td></tr>
+</tbody></table>
+<div class="callout deep"><span class="ctitle">🔎 두 제품의 성격 차이 — 한 줄로</span>
+<p><b>RDS = "우리가 아는 그 PostgreSQL/MySQL"</b>이다. 엔진 코드가 원본과 같으므로 확장·기능·동작이 로컬과 같다고 기대할 수 있고, 스토리지는 EBS를 붙여 쓴다 — <b>일반적인 서버 구조를 그대로 관리형으로 감싼 것</b>. 그래서 "엔진 호환성 최우선"이 선택 기준에 온다.</p>
+<p><b>Aurora = "인터페이스만 같고 안은 다시 만든 것"</b>이다. 컴퓨트와 스토리지를 분리해 스토리지 계층이 6중 복제와 자동 확장을 스스로 한다. 그래서 <b>① 스토리지 사전 할당이 필요 없고, ② 복제본 추가가 싸고 빠르며</b>(데이터를 복사하지 않고 같은 스토리지를 본다), <b>③ 장애조치가 빠르다</b>(스토리지가 살아 있으니 인스턴스만 새로 붙이면 된다).</p>
+<ul>
+<li><b>RDS Proxy</b> = <b>pgBouncer가 관리형 서비스로 제공되는 것</b>. 커넥션 풀링을 대신 해 주고 장애조치 시 연결을 유지한다 — Lambda처럼 연결이 폭발하는 구조에서 특히 필요하다.</li>
+<li><b>Backtrack</b> = DB를 <b>몇 분 전 상태로 되감는</b> 기능. PITR이 "백업으로부터 새 인스턴스를 만드는 것"이라면 이건 <b>같은 인스턴스의 시계를 되감는 것</b>이라 훨씬 빠르다(단 <b>Aurora MySQL 호환 전용</b>).</li>
+<li><b>비용 구조가 다르다</b> — RDS는 "인스턴스 + 할당 스토리지", Aurora는 "인스턴스 + 실사용 스토리지 + <b>I/O 요청 건수</b>". <b>I/O가 매우 많은 워크로드에서는 Aurora가 예상보다 비싸질 수 있다</b> — 벤치마크 성능만 보고 고르면 청구서에서 놀란다.</li>
+</ul></div>
+<div class="note">이 장의 수치는 <b>스냅샷</b>이다 — Aurora 스토리지 상한(128TB → 256TiB), Global Database 보조 리전 수 같은 값은 계속 바뀐다. <b>실제 설계에서는 반드시 공식 문서를 본다.</b> 그리고 5장에서 짚은 대로 "3~5배 빠름", "수십ms" 같은 표현은 <b>벤더 벤치마크이고 조건에 따라 달라지는 값</b>이다.</div>
+
+  <h3>5) Cloud DB 선택 의사결정 프레임워크</h3>
+<table class="t"><thead><tr><th style="width:26%">단계</th><th>질문과 결론</th></tr></thead><tbody>
+<tr><td><b>1. 규제/컴플라이언스</b></td><td>데이터 외부 반출 금지? 국내 보관 의무? → <b>On-Prem 우선</b> 또는 국내 리전 필수. <b>이 단계에서 결정되면 나머지는 볼 필요가 없다</b></td></tr>
+<tr><td><b>2. 팀 역량</b></td><td>DBA가 없거나 운영 경험이 부족? → <b>DBaaS 가중치 ↑.</b> "직접 운영하면 싸다"는 <b>사람 인건비를 빼고 계산했을 때만</b> 맞다</td></tr>
+<tr><td><b>3. 워크로드 특성</b></td><td>트래픽 변동이 큼 → <b>서버리스/자동 스케일</b>(27장) · 읽기가 압도적 → <b>읽기 복제본</b> · 글로벌 사용자 + 강일관성 → <b>Spanner/다지역</b></td></tr>
+<tr><td><b>4. 비용 총합(TCO)</b></td><td>인스턴스 요금만이 아니라 <b>스토리지·I/O·백업·<span style="white-space:nowrap">egress(데이터 유출 전송료)</span>·인건비</b>까지. <b>egress는 특히 잊기 쉽다</b></td></tr>
+</tbody></table>
+
+  <h3>6) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>클라우드로 옮기면 DBA가 필요 없어지나요?</summary><div class="fa">아닙니다. 없어지는 것은 <b>운영 작업</b>(백업 스케줄, 패치, 페일오버 구성, 디스크 교체)이고, <b>설계와 튜닝은 그대로 남습니다.</b> 오히려 관리형에서는 <b>OS 접근이 막혀 있어 진단 방법이 제한되므로</b> DB 내부 지표(실행계획, 통계 뷰, 대기 이벤트)를 읽는 능력이 <b>더</b> 중요해집니다. 역할이 "서버를 돌보는 사람"에서 <b>"데이터 모델과 쿼리를 책임지는 사람"</b>으로 옮겨간다고 보는 편이 정확합니다.</div></details>
+<details><summary>RDS와 Aurora 중 뭘 골라야 하나요?</summary><div class="fa">기본값은 <b>RDS</b>입니다 — 엔진이 원본과 같아 예측 가능하고 비용 구조가 단순합니다. Aurora로 넘어갈 이유는 셋입니다. ① <b>읽기 부하가 커서 복제본을 여러 대 붙여야 한다</b>(Aurora는 복제본이 싸고 빠릅니다), ② <b>장애조치 시간이 중요하다</b>, ③ <b>스토리지가 얼마나 커질지 예측이 어렵다</b>. 반대로 <b>I/O가 매우 많은데 예산이 빠듯하면</b> Aurora의 I/O 과금을 먼저 계산해 보세요. 그리고 <b>특정 확장(extension)이 꼭 필요하면</b> Aurora에서 지원하는지부터 확인해야 합니다.</div></details>
+<details><summary>EC2에 직접 설치하는 게 더 싸지 않나요?</summary><div class="fa">인스턴스 요금만 보면 쌉니다. 그런데 <b>TCO로 계산하면 대개 뒤집힙니다.</b> 빠지는 항목이 이렇습니다 — 백업 스크립트 작성·검증, 복구 훈련, 마이너 패치 적용, 장애조치 구성과 테스트, 모니터링 구축, 그리고 <b>새벽에 장애가 났을 때 일어나는 사람의 시간.</b> 이 비용은 청구서에 안 찍히지만 실재합니다. <b>직접 설치가 정당한 경우</b>는 (1) 관리형이 지원 안 하는 확장·설정이 반드시 필요하거나, (2) 이미 숙련된 DBA 조직이 있거나, (3) 규제상 통제권이 필요할 때입니다.</div></details>
+<details><summary>Multi-AZ를 켜면 성능이 두 배가 되나요?</summary><div class="fa">아닙니다. <b>Multi-AZ는 성능이 아니라 가용성을 위한 것</b>입니다. RDS의 Multi-AZ 대기 인스턴스는 <b>조회에 쓰이지 않고</b> 그냥 대기합니다(동기 복제를 받으며 대기하다가 장애 시 승격). 오히려 <b>동기 복제 때문에 쓰기 지연이 조금 늘어납니다.</b> 읽기 부하를 나누려면 <b>읽기 복제본(Read Replica)을 따로</b> 추가해야 하고, 그건 비동기 복제라 <b>복제 지연</b>이 생깁니다. 둘은 목적이 다른 기능입니다.</div></details>
+<details><summary>클라우드 DB를 쓰면 데이터가 안전한가요?</summary><div class="fa">사업자가 책임지는 부분만 안전합니다(<b>책임 공유 모델</b>). 실제 사고의 대부분은 <b>고객 책임 영역</b>에서 납니다 — 퍼블릭 액세스를 열어 둔 인스턴스, 과도한 권한을 가진 애플리케이션 계정, 암호화되지 않은 연결, 스냅샷을 공개로 설정한 실수. 그리고 <b>백업이 자동이라고 복구가 되는 것은 아닙니다</b> — 복구를 실제로 해 본 적이 없으면 그건 백업이 아니라 <b>백업이라고 믿는 파일</b>입니다(31장).</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>IaaS와 PaaS의 차이를 DB로 설명할 수 있는가? "EC2에 설치한 PostgreSQL"은 어느 쪽인가?</li>
+<li>Region과 AZ의 차이는? Multi-AZ가 대비하는 것은 무엇인가?</li>
+<li>DBaaS가 해 주지 <b>않는</b> 것 다섯 가지는?</li>
+<li>관계형 DB에서 "수평 확장"이 대개 읽기에만 해당하는 이유는?</li>
+<li>RDS와 Aurora의 아키텍처 차이 한 줄은? Aurora가 얻는 세 가지는?</li>
+<li>Cloud DB 선택의 1단계가 규제인 이유는?</li>
+</ul></div>
 </section>
 
 
