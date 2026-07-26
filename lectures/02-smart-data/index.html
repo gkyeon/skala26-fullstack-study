@@ -4673,25 +4673,188 @@ CREATE TABLE sales_2025 PARTITION OF sales
     <span class="day-badge day3">Day 3</span>
     <h2><span class="num">20.</span> MVCC &amp; 트랜잭션 격리 수준</h2>
   </div>
-  <p class="subtitle">다중버전 동시성 제어 · Isolation Level · DBMS별 실습</p><div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 여러 사람이 동시에 DB를 봐도 서로 안 꼬이게 하는 방법이에요. 핵심은 '수정해도 옛날 버전을 잠깐 남겨둔다(다중버전)'는 것.</div></div>
-  <h4>MVCC(Multi-Version Concurrency Control) 심화</h4>
-<ul class="b">
-<li>데이터 수정 시 In-place 덮어쓰기 대신 새 버전 레코드 생성. 각 트랜잭션은 시작시점 스냅샷 보유 → 읽기가 쓰기를 차단하지 않음</li>
-<li><b>PostgreSQL</b>: 각 행에 xmin/xmax 시스템컬럼, UPDATE=새버전 INSERT+구버전 xmax 갱신. Dead tuple은 VACUUM이 회수. 장수 트랜잭션은 VACUUM 차단→Table Bloat 주의</li>
-<li><b>MySQL InnoDB</b>: Undo Log(변경전 데이터 별도 저장), Read View(TX시작시 스냅샷), Purge Thread(불필요 undo 자동정리)</li>
+  <p class="subtitle">MVCC의 원리(xmin/xmax) · Dead Tuple과 VACUUM · 이상 현상 4종 · RC / RR / Serializable · Write Skew와 SSI</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>MVCC</b>는 "행을 덮어쓰지 않고 <b>새 버전을 하나 더 만드는</b>" 방식이에요. 그래야 먼저 시작한 사람이 옛 버전을 계속 읽을 수 있어서 <b>읽기가 쓰기를 막지 않습니다.</b> 대가는 <b>쓰레기(dead tuple)가 쌓이는 것</b>이고, 그걸 치우는 청소부가 <b>VACUUM</b>이에요. <b>격리 수준</b>은 "남의 작업이 나에게 얼마나 보이게 할지"를 고르는 다이얼입니다.</div></div>
+  <div class="callout goal"><span class="ctitle">🎯 이 장의 목표</span>
+  <p>1장에서 ACID의 I(격리성)를 등급으로 나눈다고 배웠다. 이 장은 그 등급이 <b>내부적으로 어떻게 구현되는지</b>와 <b>각 등급이 정확히 무엇을 막고 무엇을 못 막는지</b>를 다룬다. 핵심 질문 하나 — <b>"Repeatable Read면 충분한가?"</b> 답은 아니고, 그 이유가 <b>Write Skew</b>다.</p></div>
+
+  <h3>1) MVCC — 읽기가 쓰기를 막지 않게 하는 방법</h3>
+<p>동시성을 처리하는 고전적 방법은 <b>읽는 사람도 락을 잡는 것</b>이다. 정확하긴 한데 <b>읽기와 쓰기가 서로를 계속 막는다</b> — 리포트 쿼리 하나가 30초 돌면 그동안 그 테이블에 쓰기가 안 된다.</p>
+<div class="callout goal"><span class="ctitle">💡 MVCC는 발상을 뒤집는다 — 행을 덮어쓰지 않고 새 버전을 만든다</span>
+<ul>
+<li>데이터 수정 시 in-place 덮어쓰기 대신 <b>새 버전 레코드 생성</b></li>
+<li>각 트랜잭션은 시작 시점의 <b>스냅샷(Snapshot)</b>을 가짐</li>
+<li><b>읽기 작업이 쓰기 작업을 차단하지 않음</b> → Reader-Writer 경합 감소</li>
 </ul>
-<div class="sqlbox"><div class="sqlhead">Isolation Level 실습 — RC vs RR vs Serializable</div><pre><code>-- Read Committed(기본): 커밋된 최신 데이터 읽음 → Non-Repeatable Read 발생 가능
-BEGIN ISOLATION LEVEL READ COMMITTED;
-SELECT balance FROM bank WHERE name='Alice'; -- 1000
--- (다른 세션이 800으로 UPDATE+COMMIT)
-SELECT balance FROM bank WHERE name='Alice'; -- 800 (바뀜!)
--- Repeatable Read: 트랜잭션 내 항상 같은 값(스냅샷 유지)
-BEGIN ISOLATION LEVEL REPEATABLE READ;
-SELECT balance ...; -- 1000
--- (다른 세션 UPDATE+COMMIT 해도)
-SELECT balance ...; -- 여전히 1000
--- Serializable: 가장 엄격, 충돌 시 강제 실패
--- ERROR: could not serialize access due to concurrent update (에러코드 40001, 앱에서 재시도 필요)</code></pre></div>
+<p><b>주의</b>: MVCC가 없애는 것은 <b>읽기와 쓰기 사이의</b> 경합이다. <b>쓰기와 쓰기 사이의 경합은 그대로 남는다</b> — 같은 행을 두 트랜잭션이 동시에 UPDATE하면 여전히 한쪽이 기다린다(21장). <b>MVCC를 "락이 없어졌다"로 외우면 21장이 통째로 이해가 안 된다.</b></p></div>
+<div class="callout deep"><span class="ctitle">🔎 스냅샷은 사본이 아니라 "트랜잭션 목록"이다</span>
+<p>스냅샷은 데이터를 복사해 둔 사본이 아니라 <b>"어느 트랜잭션들이 그 시점에 이미 커밋돼 있었는가"를 적어 둔 목록</b>이다. 데이터는 한 벌만 있고, 읽을 때 각 행 버전의 생성/삭제 트랜잭션 ID를 이 목록과 대조해 "이 버전이 나에게 보이는가"를 매번 판정한다. <b>그래서 스냅샷을 뜨는 비용이 거의 0이다.</b></p></div>
+<h4>PostgreSQL의 구현 — xmin, xmax</h4>
+<table class="t"><thead><tr><th style="width:16%">시스템 컬럼</th><th>뜻</th></tr></thead><tbody>
+<tr><td><code>xmin</code></td><td>이 행 버전을 <b>만든</b> 트랜잭션 ID</td></tr>
+<tr><td><code>xmax</code></td><td>이 행 버전을 <b>삭제/수정한</b> 트랜잭션 ID (아직 살아 있으면 0)</td></tr>
+<tr><td><code>ctid</code></td><td>이 행 버전의 물리적 위치 <code>(페이지 번호, 페이지 내 순번)</code></td></tr>
+</tbody></table>
+<div class="sqlbox norun"><div class="sqlhead">직접 보기 — UPDATE 한 번에 무슨 일이 일어나나</div><pre><code>INSERT INTO demo VALUES (1, 'A');
+SELECT ctid, xmin, xmax, * FROM demo;
+ ctid  | xmin | xmax | id | val
+ (0,1) | 1071 |    0 |  1 | A
+
+UPDATE demo SET val = 'B' WHERE id = 1;
+SELECT ctid, xmin, xmax, * FROM demo;
+ ctid  | xmin | xmax | id | val
+ (0,2) | 1072 |    0 |  1 | B      ← ctid가 (0,1)→(0,2)!</code></pre></div>
+<ul class="b">
+<li><code>ctid</code>가 바뀐 것은 <b>같은 자리를 고친 게 아니라 새 자리에 새 행을 썼다</b>는 뜻이다. "UPDATE는 <b>새 버전 INSERT + 구 버전 <code>xmax</code> 갱신</b>이고 제자리 수정이 없다"는 말이 바로 이 관찰이다.</li>
+<li>화면에는 새 버전 한 줄만 나오지만 <b><code>(0,1)</code> 자리의 옛 버전은 아직 파일 안에 남아 있다.</b> 그 옛 버전의 <code>xmax</code>에 1072가 찍혀 있다.</li>
+<li><b>가시성 판정 규칙</b>: 어떤 트랜잭션에게 한 행 버전이 보이려면 <b><code>xmin</code>이 내 스냅샷 기준으로 이미 커밋된 트랜잭션이고, 동시에 <code>xmax</code>가 비어 있거나 아직 커밋되지 않은 트랜잭션</b>이어야 한다. <b>이게 스냅샷의 정체다</b> — 별도 저장소도, 복사도 없다.</li>
+</ul>
+
+  <h3>2) 그래서 생기는 문제 — Dead Tuple과 VACUUM</h3>
+<p>옛 버전이 파일에 남는다는 것은 곧 <b>쓰레기가 쌓인다</b>는 뜻이다. 아무도 더는 볼 수 없게 된 옛 버전을 <b>dead tuple</b>이라 부르고, 이걸 회수하는 청소부가 <b>VACUUM</b>이다. 보통은 <b>autovacuum</b>이 알아서 돌지만, 문제는 <b>autovacuum이 일을 못 하게 되는 경우</b>다.</p>
+<div class="callout myth"><span class="ctitle">⚠️ 장수 트랜잭션 하나가 데이터베이스 전체의 청소를 멈춘다</span>
+<p>VACUUM은 <b>"아직도 이 옛 버전을 볼 수 있는 트랜잭션이 하나라도 있으면"</b> 그 버전을 못 지운다. 그런데 몇 시간째 열려 있는 트랜잭션이 하나 있으면 <b>그 스냅샷 이후에 만들어진 모든 옛 버전</b>이 "아직 필요할지도 모르는" 것이 된다.</p>
+<div class="sqlbox norun"><div class="sqlhead">실측 — 10만 행 테이블, 다른 세션이 트랜잭션을 열어 둔 채</div><pre><code>[Session 2] BEGIN ISOLATION LEVEL REPEATABLE READ; SELECT count(*) FROM bloat;  (열어 둔 채 방치)
+
+[Session 1] 14 MB → UPDATE 전 행 → VACUUM bloat;
+ n_live_tup | n_dead_tup
+     100000 |     100000    ← VACUUM을 돌렸는데도 하나도 안 줄었다
+ 27 MB                      ← 14MB 였던 테이블이 27MB
+
+[Session 2] COMMIT;
+[Session 1] VACUUM bloat;
+ n_live_tup | n_dead_tup
+     100000 |          0    ← 이제야 회수됐다
+ 27 MB                      ← 그런데 파일 크기는 그대로다</code></pre></div>
+<p>여기서 두 가지를 배운다. ① <b>긴 트랜잭션 하나가 전체 청소를 멈춘다</b> — 애플리케이션이 트랜잭션을 열어 놓고 외부 API를 호출하거나, 개발자가 psql에서 <code>BEGIN;</code> 치고 점심을 먹으러 가면 이 상태가 된다. ② <b>VACUUM은 공간을 OS에 돌려주지 않는다</b> — dead tuple 자리를 "다시 쓸 수 있는 빈칸"으로 표시할 뿐이고, 파일 자체를 줄이려면 <code>VACUUM FULL</code>(<b>ACCESS EXCLUSIVE 락</b> — 그동안 조회조차 막힌다)이나 무중단 대안인 <code>pg_repack</code>이 필요하다.</p></div>
+<div class="callout deep"><span class="ctitle">🔎 더 무서운 버전 — 트랜잭션 ID 소진(XID wraparound)</span>
+<p>XID는 32비트라 약 40억 번이면 한 바퀴 돈다. VACUUM이 오래된 XID를 "동결(freeze)"해 줘야 하는데, <b>장수 트랜잭션이 그걸 계속 막으면 결국 PostgreSQL이 쓰기를 전면 거부하며 멈춘다.</b> 그래서 운영 DB에서는 <b>가장 오래된 트랜잭션의 나이</b>를 모니터링한다 — <code>SELECT pid, now() - xact_start AS age, state, query FROM pg_stat_activity WHERE xact_start IS NOT NULL ORDER BY age DESC;</code></p></div>
+<h4>PostgreSQL vs MySQL InnoDB — 옛 버전을 어디에 두느냐</h4>
+<table class="t"><thead><tr><th style="width:22%"></th><th>PostgreSQL</th><th>MySQL InnoDB</th></tr></thead><tbody>
+<tr><td>옛 버전 위치</td><td><b>테이블 파일 안</b>에 그대로 남음</td><td><b>별도 undo 공간</b>에 따로 저장</td></tr>
+<tr><td>새 버전 위치</td><td>테이블에 새로 INSERT</td><td>테이블은 최신 값으로 <b>덮어씀</b></td></tr>
+<tr><td>옛 버전 조회</td><td>테이블을 훑다가 만남 (싸다)</td><td>undo log를 <b>거슬러 올라가 복원</b></td></tr>
+<tr><td>청소 주체</td><td><b>VACUUM</b> / autovacuum</td><td><b>Purge Thread</b></td></tr>
+</tbody></table>
+<p><b>트레이드오프가 정확히 뒤집혀 있다.</b> InnoDB는 최신 조회가 빠르고 테이블이 덜 부푸는 대신 옛 버전 읽기가 비싸고, PostgreSQL은 옛 버전 읽기가 싼 대신 <b>테이블이 부풀고 VACUUM에 계속 신경 써야 한다.</b></p>
+<div class="callout prof"><span class="ctitle">🎓 교수님의 코멘트 — MVCC 쓰기 증폭</span>
+<p>PostgreSQL은 UPDATE할 때 기존 행을 지우지 않고 새 데이터를 계속 누적시키므로, <b>쓰기가 많아지면 옛 버전까지 한꺼번에 디스크 공간을 잡아먹고 그것을 정리하는 부하까지 함께 커진다.</b> 그래서 쓰기가 많은 시스템은 <b>DB 설계만으로 못 막고 애플리케이션 레벨에서 쓰기 자체를 줄이는 최적화</b>로 가야 한다. 위 14MB → 27MB 실험이 그 "쓰기 증폭"을 눈으로 본 것이다.</p>
+<p>덧붙여 <b>MVCC의 세 번째 비용은 "인덱스 유지 복잡성"</b>이다 — 새 행 버전을 만들면 <b>그 버전을 가리키는 인덱스 엔트리도 새로 만들어야 한다</b>(값이 안 바뀐 컬럼의 인덱스까지 전부). 인덱스 10개짜리 테이블은 UPDATE 한 번에 인덱스 쓰기가 10번 따라붙는다. 17장에서 "인덱스를 많이 만들면 쓰기가 느려진다"고 한 이유의 절반이 여기 있다. (PostgreSQL은 이를 줄이려고 <b>HOT 업데이트</b>를 쓴다 — 인덱스 컬럼을 안 바꿨고 같은 페이지에 자리가 있으면 인덱스를 건드리지 않는다. 그래서 자주 갱신되는 테이블은 <code>fillfactor</code>를 낮춰 여유를 남긴다.)</p></div>
+
+  <h3>3) 막아야 할 이상 현상 네 가지</h3>
+<ul class="b">
+<li><b>① Dirty Read</b> — <b>아직 커밋되지 않은</b> 남의 변경을 읽어 버린다. 그 트랜잭션이 롤백하면 <b>존재한 적 없는 값을 읽은 셈</b>이 된다.</li>
+<li><b>② Non-Repeatable Read</b> — 같은 행을 두 번 읽었는데 <b>값이 다르다.</b> 남이 그 사이에 UPDATE하고 커밋했기 때문.</li>
+<li><b>③ Phantom Read</b> — 같은 조건으로 두 번 조회했는데 <b>행 개수가 다르다.</b> ②가 "값이 바뀐다"면 ③은 <b>"행이 나타나거나 사라진다"</b>이다.</li>
+<li><b>④ Write Skew (쓰기 왜곡)</b> — <b>표준 3종에는 없지만 실무에서 가장 위험하다.</b> 두 트랜잭션이 <b>각각 다른 행을 쓰는데</b>, 둘 다 같은 조건을 읽고 판단한 탓에 <b>합쳐 놓고 보면 규칙이 깨진다.</b></li>
+</ul>
+<table class="t"><thead><tr>
+<th style="width:24%">격리 수준</th><th>Dirty Read</th><th>Non-Repeatable Read</th><th>Phantom Read</th>
+</tr></thead><tbody>
+<tr><td>Read Uncommitted</td><td>허용</td><td>허용</td><td>허용</td></tr>
+<tr><td>Read Committed</td><td>방지</td><td>허용</td><td>허용</td></tr>
+<tr><td>Repeatable Read</td><td>방지</td><td>방지</td><td><b>허용(표준) / PG·InnoDB는 방지</b></td></tr>
+<tr><td>Serializable</td><td>방지</td><td>방지</td><td>방지</td></tr>
+</tbody></table>
+<div class="callout myth"><span class="ctitle">⚠️ 이 표에서 그대로 외우면 곤란한 두 곳</span>
+<ul>
+<li><b>RR의 Phantom 칸의 "허용"은 표준의 최소 요구치</b>일 뿐 PostgreSQL/InnoDB의 실제 동작이 아니다. 둘 다 <b>실제로는 팬텀을 막는다.</b></li>
+<li>자료에 다섯 번째 행처럼 붙는 <code>Snapshot</code>은 <b>표준 등급이 아니라 SQL Server가 별도로 제공하는 격리 수준의 이름</b>이다. 그리고 <b>Snapshot Isolation은 Write Skew를 막지 못한다</b> — Serializable과 같은 급이 아니다.</li>
+</ul></div>
+<table class="t"><thead><tr><th style="width:24%">격리 수준</th><th>PostgreSQL</th><th>MySQL</th><th>Oracle</th><th>SQL Server</th></tr></thead><tbody>
+<tr><td>Read Uncommitted</td><td>RC로 처리</td><td>지원(비권장)</td><td>미지원</td><td>지원</td></tr>
+<tr><td>Read Committed</td><td><b>기본값</b></td><td>지원</td><td><b>기본값</b></td><td><b>기본값</b></td></tr>
+<tr><td>Repeatable Read</td><td>지원</td><td><b>기본값</b></td><td>미지원</td><td>지원</td></tr>
+<tr><td>Serializable</td><td>지원</td><td>지원</td><td>지원</td><td>지원</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ 여기서 반드시 챙길 것</div><ul>
+<li><b>PostgreSQL과 MySQL의 기본값이 다르다</b>(RC vs RR). <b>같은 애플리케이션 코드가 DB를 바꾸면 다르게 동작한다.</b></li>
+<li><b>PostgreSQL에는 Read Uncommitted가 사실상 없다.</b> MVCC 구조상 커밋 안 된 버전은 애초에 "보일 수 있는 버전"이 아니어서 <b>더티 리드가 원리적으로 불가능</b>하다 — 지원을 안 하는 게 아니라 <b>필요가 없는 것</b>이다. (다만 <code>SHOW transaction_isolation</code>은 요청한 대로 <code>read uncommitted</code>로 표시된다 — <b><code>SHOW</code> 결과만 믿고 판단하면 안 된다.</b>)</li>
+</ul></div>
+
+  <h3>4) Read Committed vs Repeatable Read</h3>
+<ul class="b">
+<li><b>Read Committed</b>는 "커밋된 것만 읽는다"인데, 중요한 것은 <b>언제 기준으로</b>냐다 — 답은 <b>트랜잭션 시작 시점이 아니라 각 SQL 문장이 시작되는 시점</b>이다. <b>문장마다 스냅샷을 새로 뜬다.</b> 그래서 같은 트랜잭션 안에서도 두 번째 SELECT는 새 값을 본다(= Non-Repeatable Read).</li>
+<li>이게 문제가 되는 상황: 리포트 상단에서 <code>SUM(balance)</code>로 총액을 뽑고 하단에서 명세를 뽑는데 그 사이에 누가 이체를 하면 <b>총액과 명세의 합이 안 맞는 리포트</b>가 나온다.</li>
+<li><b>Repeatable Read</b>는 <b>트랜잭션의 첫 번째 SQL 문장이 실행되는 시점</b>에 스냅샷을 고정하고 끝까지 그것만 본다(<code>BEGIN;</code>만 친 시점이 아니다). <b>트랜잭션 안에서는 세상이 멈춰 있고, 커밋한 뒤에야 바깥의 시간이 흐른 것을 본다.</b></li>
+<li><b>PostgreSQL의 RR은 Phantom Read도 막는다</b> — 스냅샷이 고정돼 있으니 <b>나중에 INSERT된 행은 애초에 보이지 않기 때문</b>이다. 즉 PG의 RR은 Dirty/Non-Repeatable/Phantom을 <b>모두</b> 막고, 이 수준을 학술적으로 <b>스냅샷 격리(Snapshot Isolation)</b>라 부른다.</li>
+</ul>
+
+  <h3>5) 그래서 RR은 완벽한가 — Write Skew</h3>
+<div class="callout myth"><span class="ctitle">⚠️ 두 트랜잭션 모두 성공했는데 결과가 틀렸다</span>
+<div class="sqlbox norun"><div class="sqlhead">당직 근무자가 최소 1명은 남아야 하는데…</div><pre><code>-- Session 1                              -- Session 2
+BEGIN ISOLATION LEVEL REPEATABLE READ;    BEGIN ISOLATION LEVEL REPEATABLE READ;
+SELECT count(*) FROM oncall WHERE on_duty;   -- 2 (나 말고도 있네, 빠져도 되겠다)
+                                          SELECT count(*) FROM oncall WHERE on_duty;   -- 2 (같은 판단)
+UPDATE oncall SET on_duty=false WHERE name='Alice';
+                                          UPDATE oncall SET on_duty=false WHERE name='Bob';
+COMMIT;                                   COMMIT;
+
+SELECT * FROM oncall;
+ Alice | f
+ Bob   | f          ← 당직이 0명. 규칙이 깨졌다</code></pre></div>
+<p><b>서로 다른 행을 UPDATE했으므로 쓰기 충돌이 없고, 각자는 자기 스냅샷 안에서 완벽하게 정당한 판단을 했다.</b> 이것이 <b>Write Skew</b>이고, Repeatable Read(= 스냅샷 격리)로는 못 막는다. <b>이 지점이 Serializable이 존재하는 이유다.</b></p></div>
+
+  <h3>6) Serializable — SSI와 재시도</h3>
+<p><b>Serializable</b>은 "동시에 실행됐어도 <b>어떤 순서로든 한 줄로 세워 실행한 결과와 같아야 한다</b>"를 보장하고, 그렇게 설명될 수 없는 조합이 생기면 <b>한쪽을 강제로 실패시킨다.</b> PostgreSQL의 구현이 <b>SSI(Serializable Snapshot Isolation)</b>인데, <b>락을 더 잡는 게 아니라 트랜잭션들 사이의 읽기/쓰기 의존 관계를 추적하다가 "순환"이 생기면 그 고리의 한 트랜잭션(pivot)을 죽인다.</b></p>
+<p>위 Write Skew를 Serializable로 다시 돌리면 Session 2가 <code>ERROR: could not serialize access due to read/write dependencies among transactions</code>로 죽고 <b>당직 1명이 지켜진다.</b> <b>RR에서는 조용히 깨졌던 것이 Serializable에서는 에러로 드러난다.</b></p>
+<table class="t"><thead><tr><th style="width:44%">메시지</th><th style="width:34%">언제</th><th>격리 수준</th></tr></thead><tbody>
+<tr><td><code>... due to <b>concurrent update</b></code></td><td>내 스냅샷보다 새로운 버전이 된 행을 <b>직접 UPDATE/DELETE</b>하려 할 때</td><td>RR, Serializable</td></tr>
+<tr><td><code>... due to <b>read/write dependencies</b></code></td><td>SSI가 트랜잭션 간 의존 <b>순환</b>을 감지했을 때</td><td><b>Serializable 전용</b></td></tr>
+</tbody></table>
+<div class="note">앞의 것은 "네가 고치려는 행이 이미 바뀌었다"이고, 뒤의 것은 "행 자체는 안 겹치는데 <b>읽고-쓴 관계</b>를 따져 보니 순서를 정할 수 없다"이다. <b>Write Skew를 잡아 주는 것은 뒤의 것뿐</b>이라 앞의 메시지만 알고 있으면 SSI가 하는 일을 놓친다. SQLSTATE는 둘 다 <b><code>40001</code></b>이라 재시도 로직에서는 하나로 잡으면 된다. 참고로 <b><code>could not serialize access</code> 에러는 Serializable 전용이 아니다</b> — RR에서도 난다.</div>
+<div class="sqlbox norun"><div class="sqlhead">재시도는 선택이 아니라 필수 — 지수 백오프 + 지터</div><pre><code>MAX_RETRY = 5
+for attempt in range(MAX_RETRY):
+    try:
+        with conn:                       # 정상 종료 시 COMMIT, 예외 시 ROLLBACK
+            cur.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+            cur.execute("UPDATE bank SET balance = balance - %s WHERE name = %s", ...)
+            cur.execute("UPDATE bank SET balance = balance + %s WHERE name = %s", ...)
+        return
+    except psycopg2.errors.SerializationFailure:          # SQLSTATE 40001
+        time.sleep(random.uniform(0.05, 0.2) * (2 ** attempt))   # 지수 백오프 + 지터
+raise RuntimeError("재시도 한도 초과")</code></pre></div>
+<ul class="b">
+<li><b>지수 백오프</b>(<code>2 ** attempt</code>) — 실패할수록 대기를 늘려 충돌하던 트랜잭션들이 다시 똑같이 몰려 부딪히는 것을 막는다. <b>지터</b>(랜덤) — 재시도 시각을 흩뿌린다. 없으면 여러 워커가 정확히 같은 시각에 재시도하며 계속 충돌한다.</li>
+<li><b>재시도는 트랜잭션 전체를 처음부터 다시 실행해야 한다.</b> 실패한 문장 하나만 다시 던지면 안 된다 — 그 트랜잭션은 이미 죽어 있고 읽어 온 값도 무효다.</li>
+<li><b>트랜잭션 안에 외부 API 호출이나 파일 쓰기를 넣지 않는다.</b> 재시도할 때마다 결제 API가 다시 호출되어 <b>이중 결제</b>가 난다.</li>
+</ul>
+
+  <h3>7) 격리 수준별 실무 적용 가이드</h3>
+<table class="t"><thead><tr>
+<th style="width:22%">작업 유형</th><th style="width:24%">권장 격리 수준</th><th>이유 / 주의</th>
+</tr></thead><tbody>
+<tr><td>단순 분석 SELECT</td><td>Read Committed</td><td>빠르고 안정적, 최신 데이터 / Non-Repeatable Read 허용 여부 확인</td></tr>
+<tr><td>보고서, 집계(반복조회)</td><td>Repeatable Read</td><td>같은 트랜잭션 내 일관성 보장</td></tr>
+<tr><td>금융 이체, 재고 차감</td><td>Serializable</td><td>완벽한 무결성 / <b>성능 저하 + 충돌 재시도 필수</b></td></tr>
+<tr><td>캐시 워밍업, 읽기 전용</td><td>Read Committed</td><td>성능 우선</td></tr>
+<tr><td>장바구니, 좌석예약</td><td>Serializable 또는 <code>SELECT FOR UPDATE</code></td><td>동시 접근 충돌 방지 / Deadlock 설계 주의</td></tr>
+</tbody></table>
+<div class="cp"><div class="cphead">✔ 실전 기준</div><ul>
+<li><b>기본값(Read Committed)에서 시작하고, 문제가 확인됐을 때만 올린다.</b> 처음부터 Serializable을 깔면 <b>재시도 폭풍과 성능 저하를 자초</b>한다.</li>
+<li>"보고서" 행의 "Phantom 가능성" 주의는 <b>PostgreSQL에서는 해당하지 않는다</b> — PG의 RR은 팬텀도 막는다. 그 칸은 표준/MySQL 기준으로 읽자.</li>
+<li>마지막 행이 중요하다 — <b><code>Serializable</code>과 <code>SELECT ... FOR UPDATE</code>는 같은 문제를 푸는 두 가지 방식</b>이다. 앞은 "일단 해 보고 충돌하면 죽인다"(<b>낙관적</b>), 뒤는 "미리 잠그고 시작한다"(<b>비관적</b>). <b>이 갈림길이 곧 21장의 주제다.</b></li>
+</ul></div>
+
+  <h3>8) 짚고 넘어가기</h3>
+<div class="faq">
+<details><summary>MVCC를 쓰면 락이 없어지는 것 아닌가요?</summary><div class="fa">아닙니다. MVCC가 없애는 것은 <b>읽기와 쓰기 사이의 경합</b>뿐입니다. <b>쓰기와 쓰기 사이의 경합은 그대로 남습니다</b> — 같은 행을 두 트랜잭션이 UPDATE하면 여전히 한쪽이 상대의 커밋을 기다립니다. MVCC는 "읽는 사람이 기다리지 않게" 만든 것이지 "아무도 기다리지 않게" 만든 것이 아닙니다. 21장의 Row Lock·Deadlock이 통째로 그 남은 영역의 이야기입니다.</div></details>
+<details><summary>테이블 용량이 계속 커지는데 데이터는 안 늘었습니다. 왜죠?</summary><div class="fa"><b>Table Bloat</b>입니다. UPDATE/DELETE가 만든 dead tuple이 회수되지 않고 쌓인 것이고, 원인은 대개 <b>장수 트랜잭션</b>입니다. 확인 순서는 ① <code>pg_stat_user_tables</code>에서 <code>n_dead_tup</code>을 봅니다. ② <code>pg_stat_activity</code>에서 <code>now() - xact_start</code>가 큰 세션을 찾습니다 — <b>애플리케이션이 트랜잭션을 열어 놓고 외부 API를 기다리는 코드</b>나 <b>psql에서 <code>BEGIN;</code> 치고 방치한 세션</b>이 범인일 때가 많습니다. ③ 그 세션을 정리한 뒤 <code>VACUUM</code>을 돌립니다. 다만 <b>VACUUM은 파일 크기를 줄여 주지 않는다</b>는 점을 기억하세요 — 파일까지 줄이려면 <code>VACUUM FULL</code>(락!)이나 <code>pg_repack</code>입니다.</div></details>
+<details><summary>PostgreSQL의 RR이 팬텀도 막는다면 Serializable은 왜 필요한가요?</summary><div class="fa"><b>Write Skew</b> 때문입니다. 표준이 정의한 이상 현상 3종은 RR로 다 막히지만, <b>"서로 다른 행을 쓰는데 같은 조건을 읽고 판단해서 합쳐 놓으면 규칙이 깨지는"</b> 경우는 이름조차 표준에 없습니다. 당직 최소 1명, 계좌 잔액 합계 제약, 좌석 중복 배정이 전형적인 예입니다. <b>RR에서는 두 트랜잭션이 모두 성공하고 규칙만 조용히 깨집니다.</b> Serializable(SSI)은 그 순환을 감지해 한쪽을 죽여서 <b>조용한 오류를 시끄러운 에러로 바꿔 줍니다.</b></div></details>
+<details><summary>Serializable을 쓰면 성능이 얼마나 나빠지나요?</summary><div class="fa">PostgreSQL의 SSI는 <b>락을 더 잡지 않으므로</b> 흔히 상상하는 "전부 줄 세우기"와는 다릅니다. 비용은 두 가지입니다 — ① <b>읽기/쓰기 의존 관계를 추적하는 오버헤드</b>(SIREAD 락이라 부르지만 대기를 유발하지 않습니다), ② <b>충돌 시 트랜잭션이 죽고 재시도</b>. 그래서 실제 부담은 <b>충돌 빈도에 달려 있습니다</b> — 경합이 적으면 거의 공짜에 가깝고, 같은 행에 몰리면 재시도가 폭증합니다. 판단은 "Serializable이 느리다"가 아니라 <b>"이 워크로드의 충돌률이 얼마인가"</b>로 하고, 무엇보다 <b>재시도 코드가 없으면 쓰면 안 됩니다.</b></div></details>
+<details><summary>MySQL은 기본이 RR이니까 PostgreSQL보다 안전한 건가요?</summary><div class="fa">등급 이름만 보면 그렇지만 <b>단정할 수 없습니다.</b> 두 DBMS의 구현이 다르기 때문입니다. PostgreSQL의 RC도 <b>문장 단위로는 일관된 스냅샷</b>을 보고, PG에서 RR을 켜면 <b>표준 RR보다 강한 스냅샷 격리</b>가 됩니다. 반대로 InnoDB의 RR은 갭 락으로 팬텀을 막는 <b>다른 방식</b>이라 잠금 대기와 데드락 양상이 다릅니다. <b>등급 이름은 표준이 정한 라벨이고, 실제 보장은 그 DBMS가 어떻게 구현했는지로 결정됩니다.</b> 그리고 실무에서 더 중요한 것은 "기본값이 다르다"는 사실 자체입니다 — <b>같은 코드를 옮기면 동작이 달라집니다.</b></div></details>
+<details><summary>격리 수준을 어디에 설정하나요?</summary><div class="fa">세 위치가 있습니다. ① <b>트랜잭션 단위</b> — <code>BEGIN ISOLATION LEVEL REPEATABLE READ;</code> 또는 <code>BEGIN;</code> 직후 <code>SET TRANSACTION ISOLATION LEVEL ...</code>(<b>반드시 트랜잭션의 첫 문장</b>이어야 합니다). ② <b>세션 단위</b> — <code>SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL ...</code>. ③ <b>서버 기본값</b> — <code>postgresql.conf</code>의 <code>default_transaction_isolation</code>. 실무 권장은 <b>①</b>입니다 — 필요한 트랜잭션에만 올리는 것이 안전하고, 서버 전역을 올리면 그 DB의 모든 쿼리가 영향을 받습니다.</div></details>
+</div>
+
+<div class="cp"><div class="cphead">✔ 스스로 점검</div><ul>
+<li>MVCC에서 UPDATE는 실제로 무슨 일을 하는가? <code>ctid</code>로 어떻게 확인하는가?</li>
+<li>한 행 버전이 나에게 보이는 조건을 <code>xmin</code>/<code>xmax</code>로 말할 수 있는가?</li>
+<li>장수 트랜잭션이 왜 VACUUM을 막는가? Table Bloat와 어떻게 이어지는가?</li>
+<li>VACUUM은 파일 크기를 줄여 주는가?</li>
+<li>Read Committed는 언제 기준으로 스냅샷을 뜨는가? RR과 무엇이 다른가?</li>
+<li>Write Skew를 예로 설명할 수 있는가? 어느 격리 수준이 막아 주는가?</li>
+<li>SQLSTATE 40001을 받으면 애플리케이션은 무엇을 해야 하는가? 재시도 시 주의점 두 가지는?</li>
+</ul></div>
 </section>
 
 
