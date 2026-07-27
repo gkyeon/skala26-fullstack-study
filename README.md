@@ -13,7 +13,8 @@ site/
 ├── lectures/
 │   ├── 00-python-basics/index.html        # 강의 0: Python 기초 (완료)
 │   ├── 01-python-data-analysis/index.html # 강의 1: 데이터 분석을 위한 Python 이해 (완료)
-│   └── 02-smart-data/index.html           # 강의 2: 스마트 데이터 이해 및 활용 (완료)
+│   ├── 02-smart-data/index.html           # 강의 2: 스마트 데이터 이해 및 활용 (완료)
+│   └── 03-basic-statistics/index.html     # 강의 3: 데이터 분석 개요 및 기초통계 (완료)
 ├── template/
 │   └── lecture-template.html              # 새 강의 만들 때 복사해서 쓰는 뼈대
 └── README.md                              # 이 파일

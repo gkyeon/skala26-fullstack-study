@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKALA | 데이터 분석 개요 및 기초통계 - 복습노트</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#161925; --panel2:#1c2030; --border:#2a2f42;
+    --text:#e6e8ef; --muted:#9aa0b4; --accent:#7c9dff; --accent2:#4fd1c5;
+    --code-bg:#10131c; --code-text:#c9e6ff;
+    --day1:#7c9dff; --day2:#4fd1c5; --day3:#f6ad55; --day4:#f687b3;
+    --warn:#f6ad55;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6;
+  }
+  .layout{display:flex; min-height:100vh;}
+  .sidebar{
+    width:280px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--border);
+    position:sticky; top:0; height:100vh; overflow-y:auto; padding:20px 14px;
+  }
+  .sidebar h1{font-size:15px; margin:0 6px 4px; color:var(--text); font-weight:700;}
+  .sidebar .sub{font-size:11.5px; color:var(--muted); margin:0 6px 16px;}
+  .search{
+    width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:13px; margin-bottom:14px;
+  }
+  .search:focus{outline:none; border-color:var(--accent);}
+  .day-group{margin-bottom:10px;}
+  .day-title{
+    font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
+    padding:8px 6px 4px; font-weight:700;
+  }
+  .day-title.d1{color:var(--day1);} .day-title.d2{color:var(--day2);}
+  .navlink{
+    display:block; padding:6px 8px; border-radius:6px; color:var(--muted); text-decoration:none;
+    font-size:13px; margin:1px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .navlink:hover{background:var(--panel2); color:var(--text);}
+  .navlink.active{background:rgba(124,157,255,.15); color:var(--accent); font-weight:600;}
+  main{flex:1; padding:32px 40px 120px; max-width:980px;}
+  .page-head{margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border);}
+  .page-head h1{font-size:26px; margin:0 0 8px;}
+  .page-head p{color:var(--muted); font-size:14px; margin:0;}
+  .badges{margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;}
+  .badges span{font-size:11.5px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted);}
+  .sec{margin-bottom:56px; padding-top:8px; scroll-margin-top:20px;}
+  .sec-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .day-badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; color:#0b0d14;}
+  .day-badge.day1{background:var(--day1);} .day-badge.day2{background:var(--day2);}
+  .sec h2{font-size:21px; margin:0; display:flex; gap:8px; align-items:baseline;}
+  .sec h2 .num{color:var(--muted); font-weight:500;}
+  .subtitle{color:var(--muted); font-size:13.5px; margin:6px 0 18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .sec h3{font-size:16px; margin:22px 0 8px; color:var(--text);}
+  .sec h4{font-size:13.5px; margin:14px 0 6px; color:var(--accent2); font-weight:700;}
+  .b{margin:4px 0 14px; padding-left:20px;}
+  .b li{margin:4px 0; font-size:14px;}
+  .b li::marker{color:var(--accent);}
+  p{font-size:14px; margin:8px 0;}
+  .cp{
+    background:rgba(79,209,197,.07); border:1px solid rgba(79,209,197,.3); border-radius:10px;
+    padding:10px 14px; margin:14px 0;
+  }
+  .cphead{color:var(--accent2); font-size:12.5px; font-weight:700; margin-bottom:6px;}
+  .cp ul{margin:0; padding-left:18px;}
+  .cp li{font-size:13px; margin:3px 0; color:#d5f5f0;}
+  table.t{border-collapse:collapse; width:100%; margin:12px 0; font-size:13px;}
+  table.t th{
+    background:var(--panel2); text-align:left; padding:8px 10px; border:1px solid var(--border);
+    color:var(--accent2); font-size:12px;
+  }
+  table.t td{padding:8px 10px; border:1px solid var(--border); color:var(--text); vertical-align:top;}
+  .note{
+    font-size:12.5px; color:var(--warn); background:rgba(246,173,85,.08);
+    border-left:3px solid var(--warn); padding:8px 12px; margin:12px 0; border-radius:4px;
+  }
+  .divider{border:none; border-top:1px solid var(--border); margin:40px 0;}
+  .day-header{
+    margin:60px 0 24px; padding:14px 0; border-bottom:2px solid var(--border);
+  }
+  .day-header h1{font-size:22px; margin:0 0 4px;}
+  .day-header p{color:var(--muted); font-size:13px; margin:0;}
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-thumb{background:#333850; border-radius:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  .top-btn{
+    position:fixed; bottom:24px; right:24px; background:var(--accent); color:#0b0d14;
+    border:none; border-radius:999px; width:44px; height:44px; font-size:18px; cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,.4); display:none;
+  }
+  @media (max-width:900px){
+    .sidebar{position:fixed; z-index:20; transform:translateX(-100%); transition:transform .2s;}
+    .sidebar.open{transform:translateX(0);}
+    main{padding:20px;}
+  }
+
+  /* ===== Readability upgrade ===== */
+  body{ font-size:15px; }
+  main{ padding:36px 48px 160px; max-width:900px; }
+  .sec{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:22px 26px 26px; margin-bottom:28px; box-shadow:0 1px 0 rgba(255,255,255,.02) inset;
+  }
+  .sec-head{margin-bottom:2px;}
+  .sec h2{font-size:20px;}
+  .subtitle{font-size:13.5px; line-height:1.55; margin-bottom:16px;}
+  p, .b li, .cp li, table.t td{font-size:14.5px; line-height:1.75;}
+  .b{padding-left:22px;}
+  .b li{margin:6px 0;}
+  h4{letter-spacing:.01em;}
+  .day-header{
+    background:linear-gradient(180deg, rgba(124,157,255,.08), transparent);
+    border-radius:12px; padding:20px 22px; border-bottom:none; border:1px solid var(--border);
+  }
+  .day-header h1{font-size:23px;}
+
+  /* ===== Light theme ===== */
+  body.light{
+    --bg:#f7f8fc; --panel:#ffffff; --panel2:#f0f2f9; --border:#e2e5f0;
+    --text:#20232e; --muted:#6b7180; --accent:#3f5fd6; --accent2:#0f9488;
+    --code-bg:#f4f6fb; --code-text:#1d3b6b; --warn:#b45309;
+  }
+  body.light .sec{box-shadow:0 1px 3px rgba(20,25,50,.06);}
+  body.light .cp{background:rgba(15,148,136,.07); border-color:rgba(15,148,136,.28);}
+  body.light .cp li{color:#0d4b45;}
+  body.light table.t th{background:#eef1fa;}
+  body.light .day-header{background:linear-gradient(180deg, rgba(63,95,214,.06), transparent);}
+
+  /* ===== Top toolbar ===== */
+  .toolbar{display:flex; gap:8px; margin-bottom:14px;}
+  .theme-btn{
+    flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:12.5px; cursor:pointer;
+  }
+  .theme-btn:hover{border-color:var(--accent);}
+
+  /* ===== Width upgrade (full monitor) ===== */
+  main{ max-width: 1180px; padding:40px 56px 160px; }
+  @media (min-width:1500px){ main{ max-width: 1320px; } }
+  @media (min-width:1800px){ main{ max-width: 1440px; } }
+  .sidebar{ width:300px; }
+
+  /* ===== TL;DR beginner box ===== */
+  .tldr{
+    display:flex; gap:12px; align-items:flex-start; background:rgba(124,157,255,.09);
+    border:1px solid rgba(124,157,255,.35); border-radius:12px; padding:14px 16px; margin:14px 0 18px;
+  }
+  .tldr .icon{font-size:18px; line-height:1.4;}
+  .tldr .txt{font-size:14px; line-height:1.7; color:var(--text);}
+  .tldr .txt b{color:var(--accent);}
+  body.light .tldr{background:rgba(63,95,214,.06); border-color:rgba(63,95,214,.25);}
+
+  /* ===== Callout boxes (목표 / 심화 / 착각 / 교수님) ===== */
+  .callout{
+    border:1px solid var(--border); background:var(--panel2); border-radius:11px;
+    padding:12px 15px; margin:14px 0;
+  }
+  .callout .ctitle{display:block; font-size:12.5px; font-weight:800; margin-bottom:6px; letter-spacing:.02em;}
+  .callout p{margin:5px 0; font-size:14px; line-height:1.75;}
+  .callout ul{margin:6px 0 2px; padding-left:20px;}
+  .callout li{font-size:14px; line-height:1.7; margin:4px 0;}
+  .callout.goal{background:rgba(79,209,197,.07); border-color:rgba(79,209,197,.3);}
+  .callout.goal .ctitle{color:var(--accent2);}
+  .callout.deep{background:rgba(124,157,255,.07); border-color:rgba(124,157,255,.32);}
+  .callout.deep .ctitle{color:var(--accent);}
+  .callout.myth{background:rgba(246,173,85,.08); border-color:rgba(246,173,85,.32);}
+  .callout.myth .ctitle{color:var(--warn);}
+  .callout.prof{background:rgba(246,135,179,.08); border-color:rgba(246,135,179,.32);}
+  .callout.prof .ctitle{color:var(--day4);}
+  body.light .callout.prof{background:rgba(214,51,132,.06); border-color:rgba(214,51,132,.25);}
+  body.light .callout.prof .ctitle{color:#be3a80;}
+
+  /* ===== 짚고 넘어가기 (Q&A) ===== */
+  .faq{margin:12px 0 4px;}
+  .faq details{
+    border:1px solid var(--border); border-radius:10px; background:var(--panel2); margin:8px 0;
+  }
+  .faq summary{
+    cursor:pointer; padding:11px 15px; font-size:14px; font-weight:600; color:var(--text);
+    list-style:none; line-height:1.6;
+  }
+  .faq summary::-webkit-details-marker{display:none;}
+  .faq summary::before{content:"Q. "; color:var(--accent); font-weight:800;}
+  .faq summary:hover{color:var(--accent);}
+  .faq details[open] summary{border-bottom:1px solid var(--border);}
+  .faq .fa{padding:11px 15px 13px; font-size:14px; line-height:1.85;}
+  .faq .fa::before{content:"A. "; color:var(--accent2); font-weight:800;}
+
+  /* ===== Inline code in prose ===== */
+  p code, .b li code, table.t td code, .callout code, .faq code{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:.88em; color:var(--code-text);
+  }
+
+  /* ===== Formula box (수식 표현 전용) ===== */
+  .formula{
+    background:var(--panel2); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin:14px 0; text-align:center;
+  }
+  .formula .expr{
+    font-family:"Palatino Linotype","Iowan Old Style",Georgia,"Times New Roman",serif;
+    font-style:italic; font-size:17px; color:var(--text); line-height:2; letter-spacing:.02em;
+  }
+  .formula .expr b{font-style:normal; color:var(--accent);}
+  .formula .cap{font-size:12px; color:var(--muted); margin-top:6px; font-style:normal; font-family:inherit;}
+  body.light .formula{background:#eef1fb;}
+
+  /* ===== Quiz blocks ===== */
+  .quiz-wrap{
+    margin:36px 0 60px; background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:24px 28px 28px;
+  }
+  .quiz-wrap h2{font-size:19px; margin:0 0 4px; display:flex; align-items:center; gap:8px;}
+  .quiz-wrap > p{color:var(--muted); font-size:13px; margin:0 0 18px;}
+  .quiz-score{
+    display:inline-block; background:var(--panel2); border:1px solid var(--border); border-radius:999px;
+    padding:4px 14px; font-size:12.5px; color:var(--accent2); font-weight:700; margin-bottom:16px;
+  }
+  .quiz-q{
+    border-top:1px dashed var(--border); padding:16px 0;
+  }
+  .quiz-q:first-of-type{border-top:none;}
+  .quiz-qtext{font-size:14.5px; margin:0 0 10px; font-weight:600;}
+  .quiz-qtext .qtype{
+    font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:5px; margin-right:8px;
+    background:var(--panel2); color:var(--muted); vertical-align:middle;
+  }
+  .quiz-opts{display:flex; flex-wrap:wrap; gap:8px;}
+  .quiz-opt{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:8px 14px; font-size:13px; cursor:pointer; text-align:left;
+  }
+  .quiz-opt:hover{border-color:var(--accent);}
+  .quiz-opt.correct{background:rgba(79,209,197,.18); border-color:var(--accent2); color:var(--accent2); font-weight:700;}
+  .quiz-opt.incorrect{background:rgba(246,135,179,.15); border-color:#f687b3; color:#f687b3;}
+  .quiz-opt[disabled]{cursor:default;}
+  .quiz-short{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .quiz-short input{
+    flex:1; min-width:180px; padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--code-bg); color:var(--text); font-size:13px;
+  }
+  .quiz-check{
+    background:var(--accent); color:#0b0d14; border:none; border-radius:7px; padding:8px 16px;
+    font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+  .quiz-feedback{font-size:12.5px; margin-top:8px; font-weight:600;}
+  .quiz-feedback.ok{color:var(--accent2);}
+  .quiz-feedback.no{color:#f687b3;}
+  .quiz-exp{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-weight:400; font-size:12.5px;
+    line-height:1.6; color:var(--text); background:var(--panel2); border:1px solid var(--border);
+  }
+
+  /* ===== Site topbar (links back to course home) ===== */
+  .site-topbar{
+    display:flex; align-items:center; gap:10px; padding:9px 18px; background:var(--panel2);
+    border-bottom:1px solid var(--border); font-size:12.5px; position:sticky; top:0; z-index:30;
+  }
+  .site-topbar a{color:var(--muted); text-decoration:none;}
+  .site-topbar a:hover{color:var(--accent);}
+  .site-topbar .crumb-sep{color:var(--border);}
+  .site-topbar .crumb-cur{color:var(--text); font-weight:600;}
+</style>
+</head>
+
+<body class="light">
+<div class="site-topbar">
+  <a href="../../index.html">🏠 Full-stack 학습 홈</a>
+  <span class="crumb-sep">/</span>
+  <span class="crumb-cur">데이터 분석 개요 및 기초통계</span>
+</div>
+<div class="layout">
+  <nav class="sidebar" id="sidebar">
+    <h1>SKALA 데이터 분석 기초통계</h1>
+    <p class="sub">개요 및 기초통계 · 복습노트</p>
+    <div class="toolbar">
+      <button class="theme-btn" id="themeBtn">🌙 다크 모드</button>
+    </div>
+    <input class="search" id="searchBox" type="text" placeholder="검색 (예: 상관계수, 회귀, 정규분포...)">
+    <div class="day-group"><div class="day-title d1">Day 1 — 기초통계</div>
+<a class="navlink" href="#s1" data-sec="1">1. Intro</a>
+<a class="navlink" href="#s2" data-sec="2">2. 데이터와 변수 이해</a>
+<a class="navlink" href="#s3" data-sec="3">3. 기술 통계</a>
+<a class="navlink" href="#s4" data-sec="4">4. 추론 통계</a>
+<a class="navlink" href="#s5" data-sec="5">5. 가설 검정</a>
+<a class="navlink" href="#quiz-day1" style="color:var(--accent2);">✅ Day1 퀴즈</a>
+</div>
+<div class="day-group"><div class="day-title d2">Day 2 — 상관·회귀분석</div>
+<a class="navlink" href="#s6" data-sec="6">6. 상관관계 분석</a>
+<a class="navlink" href="#s7" data-sec="7">7. 회귀 분석</a>
+<a class="navlink" href="#s8" data-sec="8">8. 선형모형 가정</a>
+<a class="navlink" href="#quiz-day2" style="color:var(--accent2);">✅ Day2 퀴즈</a>
+</div>
+  </nav>
+  <main>
+    <div class="page-head">
+      <h1>데이터 분석 개요 및 기초통계 — 복습노트</h1>
+      <p>Full-stack Engineering(AI캠퍼스) · 2일 과정 · 기초통계부터 상관/회귀분석까지 전체 8개 세션 요약</p>
+      <div class="badges">
+        <span>기초통계</span><span>추론통계·가설검정</span><span>상관분석</span>
+        <span>회귀분석</span><span>정규분포·CLT</span><span>🖥 Day별 퀴즈 포함</span>
+      </div>
+    </div>
+    <div class="day-header" id="day1"><h1>Day 1 — 기초통계</h1><p>통계학이란 무엇인가부터 변수 이해, 기술통계, 추론통계, 가설검정까지</p></div>
+
+<section class="sec" id="s1" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">1.</span> Intro</h2>
+  </div>
+  <p class="subtitle">왜 통계를 배워야 하는가 · 잘못된 통계의 예 · 나의 skill set · 통계학이란</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 통계학은 <b>불확실한 세상에서 합리적으로 판단하는 언어</b>예요. 우리는 매일 신문·광고·뉴스에서 통계를 접하지만, 통계를 잘못 읽으면 속거나 잘못된 결론을 내리기 쉬워요. 이번 장은 "왜 이걸 배워야 하는가"에 대한 동기부여 파트입니다.</div></div>
+
+  <h3>1) 왜 통계를 배워야 할까?</h3>
+  <p>우리말을 안 익히면 살 수 없고, 영어를 안 배우면 불편하듯이 <b>통계학은 하나의 언어</b>다. 경제·경영·사회과학·인문과학·법학·의학·공학 등 수많은 분야에서 쓰이는 소통(Communication)의 수단이며, 신문·방송·광고·스포츠 등 어디서나 접할 수 있다. 우리는 통계 속에 묻혀 산다고 해도 과언이 아니다. 통계를 잘 모르면 때로는 괴롭고, 때로는 속고 살기 십상이다.</p>
+
+  <h3>2) 잘못된 통계의 예</h3>
+  <ul class="b">
+  <li><b>"딸만 셋 낳았으니 이제는 아들 낳을 차례다"</b> / <b>"주사위를 던져서 6이 나왔다면 다음엔 6이 나오지 않을 것이다"</b> — 도박사의 오류(Gambler's Fallacy). 독립적인 사건인데도 과거 결과가 미래 확률에 영향을 준다고 착각하는 경우.</li>
+  <li><b>"과거 데이터를 보면 주식시장이 올라간 이후에는 반드시 하락해야 한다"</b> — 역시 독립사건에 대한 잘못된 패턴 추론.</li>
+  <li><b>"분산투자 원칙을 지키며 1개월만에 500% 수익률을 기록했다"</b> — 극단적인 한 사례를 일반화하는 오류.</li>
+  <li><b>"수능 성적과 입학 후 학점의 상관관계는 낮다. 따라서 수능은 성취를 예측하는 데 도움이 안 된다"</b> — 전체를 뭉쳐 보면 상관이 낮아 보이지만, 학과별로 나눠 보면 각 학과 내에서는 상관관계가 뚜렷할 수 있다. (심슨의 역설 예고편 — 4장에서 자세히)</li>
+  <li><b>"아동학대, 친부모 80% 계부모 10%미만"</b>(조선일보 보도) — 보건복지부 신고 접수 4,111건 중 2,478건이 실제 아동학대였고 가해자의 80%가 친부모였다는 통계인데, 이는 자녀와 함께 사는 시간이 절대적으로 많은 쪽이 친부모이기 때문일 수 있다는 점을 놓치면 오독하게 된다.</li>
+  <li><b>"'속도의 유혹', 곧은 길서 사고 더 많아요"</b>(중앙일보 보도) — 직선도로 교통사고가 전체의 90%라는 통계를 "직선도로가 위험하다"로 단순 해석하면 안 된다. 뻥 뚫린 느낌에 가속페달을 세게 밟게 되는 심리적 기제까지 함께 봐야 하는, 해석이 필요한 통계다.</li>
+  </ul>
+  <div class="note">⚠️ 여섯 사례의 공통점: 숫자 자체는 틀리지 않았다. 문제는 그 숫자를 <b>어떤 맥락에서, 어떻게 해석하느냐</b>다. 통계학을 배운다는 것은 계산법을 외우는 것이 아니라 이 해석의 함정을 피하는 감각을 기르는 것이다.</div>
+
+  <h3>3) 나의 skill set은? 어디에 속할 것인가?</h3>
+  <p>Data Science는 <b>Computer Science/IT ∩ Math and Statistics ∩ Domain/Business Knowledge</b>의 교집합이다(벤다이어그램). 세 원 중 둘만 겹치면 다른 이름이 붙는다.</p>
+  <ul class="b">
+  <li><b>Machine Learning</b> = CS/IT ∩ Math/Stat (도메인 지식 없이도 가능한 알고리즘 영역)</li>
+  <li><b>Software Development</b> = CS/IT ∩ Domain (통계 없이도 가능한 개발 영역)</li>
+  <li><b>Traditional Research</b> = Math/Stat ∩ Domain (개발 없이도 가능한 전통적 연구 영역)</li>
+  <li><b>Data Science</b> = 세 영역의 교집합</li>
+  </ul>
+  <p>Biz→Tech 방향의 역할 스펙트럼: <b>데이터 기획자</b>(데이터 생성·소멸·수집·결합·활용관리) → <b>분석 기획자</b>(분석방향 설계, Storyteller) → <b>데이터 분석가</b>(분석 및 모델링 실행) → <b>데이터 아키텍트</b>(DB모델링, Table설계) → <b>데이터 엔지니어</b>(Data Lake, DW, Dashboard 구축관리) → <b>알고리즘 개발자</b>(모델개발 및 Application 구현).</p>
+
+  <h3>4) 통계학이란?</h3>
+  <div class="callout goal"><span class="ctitle">🎯 정의</span>
+  <p>통계학은 <b>불확실성을 다루는 학문</b>이다. 확실한 결과를 얻을 수 없는 현실의 많은 경우, 통계학은 그 불확실성을 수학적·확률적 방법으로 모델링하고 추론하는 방법론을 제공한다. 통계학을 통해 우리는 불확실한 데이터를 바탕으로 합리적이고 신뢰할 수 있는 결정을 내릴 수 있다.</p>
+  <p>자료로 가득 찬 세상에서 통계학은 자료를 정리하고 분석하여 유용한 정보를 얻기 위한 언어이자 도구다.</p></div>
+  <p><b>예시</b>: 신약의 효과를 알아보려고 실험을 진행하지만, 실험에 포함된 표본은 전체 인구의 일부에 불과하기에 불확실성이 존재한다. 통계학은 이 불확실성을 수학적으로 모델링하고, 그 범위를 추정하는 방법을 제공한다.</p>
+</section>
+
+<section class="sec" id="s2" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">2.</span> 데이터와 변수 이해</h2>
+  </div>
+  <p class="subtitle">척도에 의한 분류 · 형태에 의한 분류 · 기능에 의한 분류 · 통계기법 선택</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 변수마다 <b>"할 수 있는 계산"이 다르다</b>는 게 이 장의 핵심이에요. 성별의 평균은 의미가 없지만 매출액의 평균은 의미가 있죠. 변수를 세 가지 다른 잣대(척도/형태/기능)로 나눠 보는 법을 익히면, "이 데이터엔 어떤 통계기법을 써야 하지?"라는 질문에 스스로 답할 수 있게 됩니다.</div></div>
+
+  <h3>1) 왜 변수를 먼저 이해해야 할까?</h3>
+  <p>좋은 통계 분석은 데이터를 이해하는 것에서 시작한다. 평균을 계산해도 의미가 있는 것은 무엇일까?</p>
+  <ul class="b">
+  <li>성별의 평균을 계산할 수 있을까? → 평균에 의미가 없다. 성별이 1.6이라는 것은 무엇을 의미하는가?</li>
+  <li>고객등급(A, B, C)의 평균은 의미가 있을까? → 기술적으로 계산은 되지만, A와 B의 차이와 B와 C의 차이가 동일하다고 볼 수 있는가?</li>
+  <li>매출액은 평균과 표준편차를 계산할 수 있을까? → ok.</li>
+  </ul>
+  <p>데이터의 특성에 따라 사용할 수 있는 분석 방법이 달라진다. 데이터의 종류를 이해해야 적절한 통계 기법을 선택할 수 있다.</p>
+
+  <h3>2) 변수(Variable)란?</h3>
+  <p><b>Concept</b>: 관측 대상의 특성을 숫자나 값으로 표현한 것. 관찰 대상(개체)에 따라 서로 다른 값을 가질 수 있는 속성 또는 특성이다.</p>
+  <p><b>예시</b>(대학교 남학생 데이터): 학생 A(키170, 성별남, 시험점수85), B(키165, 성별여, 시험점수92), C(키180, 성별남, 시험점수77) → 여기서 키·성별·시험점수가 Variable이다.</p>
+
+  <h3>3) 척도에 의한 분류</h3>
+  <p>변수의 척도(Scale of Measurement)는 변수의 값을 어떻게 표현하고 비교할 수 있는지를 나타내는 기준이다.</p>
+  <h4>범주형(Categorical)</h4>
+  <ul class="b">
+  <li><b>명목척도(Nominal)</b> — 대상을 구분·분류하기 위한 척도. 순서가 없고, 크기를 비교할 수 없으며, 평균을 계산해도 의미가 없다. Ex) 성별, 혈액형, 지역. 빈도·최빈값을 사용한다.</li>
+  <li><b>서열척도(Ordinal)</b> — 순서는 있지만 값 사이의 간격은 일정하지 않은 척도. 크고 작음을 비교할 수 있고 순위를 알 수 있지만, 평균은 일반적으로 해석하지 않는다. Ex) 고객등급(A/B/C), 서비스만족도(1~5점). 중앙값·순위비교를 사용한다.</li>
+  </ul>
+  <h4>연속형(Continuous)</h4>
+  <ul class="b">
+  <li><b>구간척도(Interval)</b> — 값 사이의 간격은 동일하지만 절대적인 0이 존재하지 않는 척도. 차이(간격)를 비교할 수 있고 평균·표준편차를 계산할 수 있지만, 비율(두 배, 절반)의 의미는 없다. Ex) 섭씨온도(°C), IQ.</li>
+  <li><b>비율척도(Ratio)</b> — 절대적인 0을 가지며 모든 산술 연산이 가능한 척도. 순서·간격·절대 0이 모두 있어 비율 비교(두 배, 절반)까지 가능하다. Ex) 매출액, 키, 나이.</li>
+  </ul>
+  <table class="t"><thead><tr><th>척도</th><th>구분</th><th>순서</th><th>간격</th><th>절대적 0</th></tr></thead>
+  <tbody>
+  <tr><td>명목</td><td>O</td><td>X</td><td>X</td><td>X</td></tr>
+  <tr><td>서열</td><td>O</td><td>O</td><td>X</td><td>X</td></tr>
+  <tr><td>구간</td><td>O</td><td>O</td><td>O</td><td>X</td></tr>
+  <tr><td>비율</td><td>O</td><td>O</td><td>O</td><td>O</td></tr>
+  </tbody></table>
+  <p>척도가 하나씩 올라갈수록 정보량이 증가한다. 명목척도는 구분만 가능하고, 서열척도는 구분+순서, 구간척도는 구분+순서+간격, 비율척도는 여기에 절대적 0까지 있어 비율 비교까지 가능하다.</p>
+
+  <h3>4) 형태에 의한 분류</h3>
+  <p>데이터의 형태(Data Type)에 따른 분류로, 실무에서 자주 사용하는 변수 분류다.</p>
+  <ul class="b">
+  <li><b>범주형(Categorical)</b> — 값이 숫자의 크기가 아니라 '범주(그룹)'를 나타내는 변수. 같은 그룹끼리 분류하는 것이 목적. Ex) 성별, 혈액형, 등번호.</li>
+  <li><b>수치형(Numerical) — 이산형(Discrete)</b> — 셀 수 있는(Count) 값으로 이루어진 변수. 정수값을 가지며 소수점 값은 일반적으로 존재하지 않는다. Ex) 판매건수, 불량개수, 자녀수.</li>
+  <li><b>수치형(Numerical) — 연속형(Continuous)</b> — 측정(Measure)하여 얻는 값으로, 소수점 값을 가질 수 있고 두 값 사이에 무수히 많은 값이 존재할 수 있다. Ex) 키, 시간, 거리, 매출액.</li>
+  </ul>
+
+  <h3>5) 기능에 의한 분류</h3>
+  <p>데이터 분석에서 어떤 기능을 하는가에 따른 분류다.</p>
+  <ul class="b">
+  <li><b>종속변수(Dependent Variable, Target, Y변수)</b> — 독립변수의 영향을 받는 결과 변수. Ex) 시험점수, 매출액, 제품불량률.</li>
+  <li><b>독립변수(Independent Variable, Input, X변수)</b> — 결과에 영향을 주는 원인(설명) 변수. Ex) 공부시간, 광고비, 생산온도.</li>
+  <li><b>통제변수(Control Variable)</b> — 결과에 영향을 줄 수 있지만, 종속변수에 미치는 영향을 정확히 파악하기 위해 일정하게 유지하거나 함께 고려하는 변수. Ex) IQ, 수면시간, 사교육 여부.</li>
+  </ul>
+  <div class="callout myth"><span class="ctitle">⚠️ 통제변수는 왜 필요한가</span>
+  <p>학생 A는 하루 6시간 공부해서 95점, 학생 B는 하루 2시간 공부해서 95점을 받았다. 그렇다면 공부시간은 시험점수에 효과가 없는 것일까? 학생 A가 잠을 거의 못 잤을 수도 있고, 학생 B가 IQ가 높거나 사교육을 받았을 수도 있다. 공정한 비교를 위해서는 다른 영향을 주는 변수들(IQ, 수면시간 등)을 함께 통제해야 한다.</p></div>
+
+  <h3>6) 종합 예시 — 서로 다른 분류 기준(관점)에 따른 변수 분류</h3>
+  <p>광고비가 매출에 미치는 영향을 분석하는 상황:</p>
+  <table class="t"><thead><tr><th>변수</th><th>척도</th><th>데이터 타입</th><th>역할</th></tr></thead>
+  <tbody>
+  <tr><td>광고비</td><td>비율척도</td><td>수치형</td><td>독립변수</td></tr>
+  <tr><td>매출액</td><td>비율척도</td><td>수치형</td><td>종속변수</td></tr>
+  <tr><td>지역</td><td>명목척도</td><td>범주형</td><td>통제변수</td></tr>
+  <tr><td>매장 규모</td><td>비율척도</td><td>수치형</td><td>통제변수</td></tr>
+  </tbody></table>
+  <p>같은 변수도 세 가지 기준(척도/형태/기능)으로 동시에 설명할 수 있다. 어떤 수준으로 측정·비교할 수 있는가는 어떤 통계 분석이 가능한지를, 데이터가 어떤 형태인가는 어떻게 처리할지를, 분석에서 어떤 역할을 하는가는 무엇을 예측·설명할지를 결정한다.</p>
+
+  <h3>7) 데이터 유형에 따른 통계 기법 선택</h3>
+  <p>데이터를 이해하면 어떤 통계 기법을 사용해야 할지가 보인다.</p>
+  <ul class="b">
+  <li>성별에 따라 급여가 다른가? → 범주형 vs 연속형 → <b>t-test</b></li>
+  <li>광고비가 증가하면 매출도 증가하는가? → 연속형 vs 연속형 → <b>상관분석, 회귀분석</b></li>
+  <li>혈액형과 질병은 관련이 있는가? → 범주형 vs 범주형 → <b>카이제곱 검정</b></li>
+  </ul>
+  <div class="cp"><div class="cphead">✔ [참고] 통계기법 선택 흐름</div><ul>
+  <li><b>단일변량 요약</b>이 목적이면 → 기술통계(평균/표준편차/분산)</li>
+  <li><b>변수 간 관계 탐색</b>이 목적이면 → 빈도표라면 카이제곱검정·상관계수, 측정값이라면 단순/다중회귀</li>
+  <li><b>그룹 간 차이 검정</b>이 목적이면 → One-sample t-test, 독립표본/대응표본 t-test, ANOVA</li>
+  </ul></div>
+</section>
+
+<section class="sec" id="s3" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">3.</span> 기술 통계</h2>
+  </div>
+  <p class="subtitle">Descriptive Statistics · 중심화 · 퍼짐 · 변이계수 · 분포형태(왜도/첨도)</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 기술통계는 <b>"데이터를 한 줄로 요약해서 보여주는 것"</b>이에요. 대표값(평균/중앙값/최빈값)으로 "어디에 몰려 있는지", 산포(분산/표준편차/IQR)로 "얼마나 흩어져 있는지"를 봅니다. 평균만 보고 판단하면 위험하다는 게 이 장의 핵심 메시지예요.</div></div>
+
+  <h3>1) 기술 통계학이란?</h3>
+  <p>기술 통계학(Descriptive Statistics)은 수집된 자료들이 가지고 있는 정보를 손쉽게 파악할 수 있도록 표현하는 방법을 다루는 학문분야다. 주어진 데이터 집합을 요약·정리하는 데 초점을 맞춘다. 중심 경향과 분포 등을 계산하여 데이터를 요약(평균, 중앙값 등)하고, 분포나 관계를 시각화(히스토그램, 박스플롯)한다.</p>
+  <p>구성요소: <b>중심화</b>(평균/중앙값/최빈값), <b>퍼짐</b>(표준편차/사분위수/IQR/범위/최대/최소), <b>분포형태</b>(왜도/첨도)</p>
+
+  <h3>2) 중심화(Central Tendency)</h3>
+  <p>데이터의 대표값을 나타내는 통계량. 데이터를 대표하는 하나의 값을 통해 중심 위치를 요약한다.</p>
+  <table class="t"><thead><tr><th>통계량</th><th>의미</th><th>특징</th><th>When to Use</th></tr></thead>
+  <tbody>
+  <tr><td>평균(Mean)</td><td>모든 값을 더해 개수로 나눈 값</td><td>가장 많이 사용되지만 이상치에 민감</td><td>데이터가 정규분포에 가깝고 이상치가 적은 경우</td></tr>
+  <tr><td>중앙값(Median)</td><td>크기순 정렬 시 가운데 값</td><td>이상치의 영향을 거의 받지 않음</td><td>소득, 집값처럼 극단값이 존재하는 경우</td></tr>
+  <tr><td>최빈값(Mode)</td><td>가장 많이 나타나는 값</td><td>범주형 데이터에서도 활용 가능</td><td>제품 종류, 선호도 등 범주형 데이터 분석</td></tr>
+  </tbody></table>
+  <div class="formula"><div class="expr">x = {10, 12, 13, 15, 16} → 평균 = 66/5 = <b>13.2</b>, 중앙값 = <b>13</b>(3번째 값)<br>x = {10, 12, 13, 15, <b>100</b>} → 평균 = 150/5 = <b>30</b>, 중앙값 = <b>13</b>(동일)</div><div class="cap">이상치 하나만으로 평균은 크게 변하지만 중앙값은 거의 변하지 않는다</div></div>
+  <p>평균만 보고 데이터를 판단하면 오류가 발생할 수 있다. 이상치가 존재하는 경우에는 중앙값을 함께 확인하여 대표값의 왜곡 여부를 검토하는 것이 중요하다.</p>
+  <div class="callout deep"><span class="ctitle">🔎 실제 사례 — 통계청 24년 가계금융복지조사, 연령대별 순자산</span>
+  <table class="t"><thead><tr><th>구분</th><th>순자산 평균</th><th>중앙값</th></tr></thead>
+  <tbody>
+  <tr><td>29세 이하</td><td>1억 386만원</td><td>5,090만원</td></tr>
+  <tr><td>30-39세</td><td>2억 5,402만원</td><td>1억 5,950만원</td></tr>
+  <tr><td>40-49세</td><td>4억 5,064만원</td><td>2억 9,032만원</td></tr>
+  <tr><td>50-59세</td><td>5억 1,131만원</td><td>3억 454만원</td></tr>
+  <tr><td>60세 이상</td><td>5억 1,922만원</td><td>2억 5,200만원</td></tr>
+  </tbody></table>
+  <p>SNS에는 10억 부자가 넘쳐나지만, 현실적인 순자산 수준은 중앙값을 함께 봐야 파악할 수 있다. 소수의 초고자산가가 평균을 끌어올려 평균이 중앙값보다 훨씬 높게 나온다. 가구소득도 마찬가지로 중위소득(23년 5,681만원)이 평균소득(23년 7,185만원)보다 낮다 — 소득분포가 오른쪽으로 긴 꼬리를 가진 비대칭 분포이기 때문이다.</p></div>
+  <div class="note">📈 시계열 데이터의 이동평균(Moving Average): 급격한 변동을 완화해 추세 파악에 유리하지만, 실제 변화보다 늦게 반응하는 지연(Lag)이 생기고, 짧은 윈도우일수록 이상치에 민감하며, 윈도우 크기를 너무 크게 잡으면 흐름이 무뎌지고 너무 작으면 잡음이 그대로 반영된다.</div>
+
+  <h3>3) 퍼짐(Dispersion)</h3>
+  <p>산포, 데이터가 얼마나 흩어져 있는지를 나타내는 통계량. 평균이 같더라도 산포가 다르면 데이터의 특성과 변동성은 크게 달라질 수 있다.</p>
+  <table class="t"><thead><tr><th>통계량</th><th>의미</th><th>특징</th><th>When to Use</th></tr></thead>
+  <tbody>
+  <tr><td>분산(Variance)</td><td>평균으로부터 떨어진 정도의 제곱 평균</td><td>변동성을 수치화</td><td>통계 분석 및 머신러닝 알고리즘에서 선호</td></tr>
+  <tr><td>표준편차(SD)</td><td>분산의 제곱근</td><td>가장 널리 쓰는 산포 지표</td><td>변동성의 표준적인 비교</td></tr>
+  <tr><td>범위(Range)</td><td>최댓값 - 최솟값</td><td>계산이 간단하지만 이상치에 민감</td><td>전체 데이터의 폭을 빠르게 확인할 때</td></tr>
+  <tr><td>사분위수 범위(IQR)</td><td>Q3 - Q1</td><td>이상치의 영향을 적게 받음</td><td>이상치가 포함된 데이터를 분석할 때</td></tr>
+  </tbody></table>
+  <div class="formula"><div class="expr">분산 = Σ(xᵢ - μ)² / n &nbsp;&nbsp;·&nbsp;&nbsp; 표준편차 = √분산</div></div>
+  <p><b>예시</b>: A={48,49,50,51,52}, 평균 50, 편차{-2,-1,0,1,2}, 편차제곱합=10, 분산=10/5=2, 표준편차=√2≈1.41 (산포 작음)<br>
+  B={20,35,50,65,80}, 평균 50, 편차{-30,-15,0,15,30}, 편차제곱합=2250, 분산=2250/5=450, 표준편차=√450≈21.21 (산포 큼)</p>
+  <p>평균만으로는 데이터의 특성을 충분히 설명할 수 없다. 산포를 함께 확인해야 데이터의 변동성과 안정성을 올바르게 이해할 수 있다.</p>
+
+  <h4>사분위수(Quartile)와 IQR</h4>
+  <p>사분위수는 데이터를 4등분하여 위치와 퍼짐을 함께 보는 지표다. 크기순 정렬 후 25%, 50%, 75% 지점의 값을 의미한다.</p>
+  <p><b>예시</b> 데이터 {2,4,6,7,8,9,10,12,14,16,20}: Q1(하위25%)=6, Q2(중앙값,50%)=9, Q3(하위75%)=14.</p>
+  <p>n이 홀수일 때는 중앙값을 제외한 나머지 절반에서 Q1, Q3를 계산하고, n이 짝수일 때는 중앙값이 가운데 두 값의 평균이 되며 Q1·Q3도 각각 하위/상위 절반의 중앙값으로 계산한다.</p>
+  <div class="formula"><div class="expr">IQR = Q3 − Q1</div><div class="cap">최솟값 --- Q1(25%) -- Q2(50%,중앙 50%구간) -- Q3(75%) --- 최댓값</div></div>
+  <p>IQR이 클수록 중앙 50% 데이터의 퍼짐이 크고(변동성 큼), 작을수록 촘촘히 모여 있다(변동성 작음). IQR은 이상치에 상대적으로 덜 민감한 강건한(Robust) 산포 지표다.</p>
+  <div class="cp"><div class="cphead">✔ 박스플롯(Boxplot) 읽는 법</div><ul>
+  <li>박스 안 선 = 중앙값(median, 50%), 박스의 아래/위 변 = Q1(25%) / Q3(75%), 박스 높이 = IQR</li>
+  <li>Lower whisker = Q1 − 1.5×IQR (실제 min값이 더 크면 그 min값으로 대체)</li>
+  <li>Upper whisker = Q3 + 1.5×IQR (실제 max값이 더 작으면 그 max값으로 대체)</li>
+  <li>whisker 바깥의 점은 이상치(outlier)로 표시된다</li>
+  </ul></div>
+
+  <h4>변이계수(Coefficient of Variation, CV) — 상대적인 퍼짐의 측정</h4>
+  <p>평균이 다를 때 퍼짐(변동성)은 어떻게 비교할 것인가? 표준편차만 보면 표준편차가 큰 쪽이 더 불안정해 보이지만, 평균 자체가 다르다면 착시일 수 있다.</p>
+  <div class="formula"><div class="expr">CV = (σ / μ) × 100%</div></div>
+  <p><b>예시</b>: 공정A(평균10, 표준편차2), 공정B(평균100, 표준편차5). 표준편차만 보면 B(5)가 A(2)보다 커 보이지만, CV<sub>A</sub>=2/10×100%=<b>20%</b>, CV<sub>B</sub>=5/100×100%=<b>5%</b> → 실제로는 평균 대비 A가 더 변동성이 크다.</p>
+  <p>CV가 작으면 데이터가 비교적 일정하고, CV가 크면 퍼짐(변동성)이 크다는 뜻이다. 단, 평균이 0에 가깝거나 음수인 데이터에는 사용이 적절치 않다(평균1, 표준편차10이면 CV가 1000%로 지나치게 민감해진다).</p>
+
+  <h3>4) 분포형태(Distribution Shape)</h3>
+  <h4>왜도(Skewness) — 어느 방향으로 치우쳐 있는가</h4>
+  <p><b>Concept</b>: 데이터 분포의 비대칭 정도를 나타내는 통계량. 0에 가까울수록 좌우 대칭이며, 정규분포의 왜도는 0이다.</p>
+  <p><b>Interpretation</b>: 왜도=0 → 대칭 분포 / 왜도&gt;0 → 큰 값(이상치)이 오른쪽에 존재(Positive Skew, 오른쪽 꼬리가 긺) / 왜도&lt;0 → 작은 값이 왼쪽에 치우침(Negative Skew, 왼쪽 꼬리가 긺).</p>
+  <h4>첨도(Kurtosis) — 평균 주변에 얼마나 집중되어 있는가</h4>
+  <p><b>Concept</b>: 분포의 뾰족함과 꼬리의 두꺼운 정도를 나타내는 통계량. 정규분포의 첨도는 수식상 3이며, 비교의 편의를 위해 3을 뺀 초과첨도(Excess Kurtosis)를 많이 사용한다.</p>
+  <div class="formula"><div class="expr">Kurtosis = E[(X − μ)⁴] / σ⁴</div></div>
+  <p><b>Interpretation</b>: 첨도가 높으면 뾰족하고 꼬리가 두꺼워 이상치 발생 가능성이 높고(Positive Kurtosis), 첨도가 낮으면 데이터가 비교적 고르게 분포한다(Negative Kurtosis). 첨도는 가운데의 뾰족함만이 아니라 꼬리가 두꺼운 정도까지 함께 보는 지표다.</p>
+</section>
+
+<section class="sec" id="s4" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">4.</span> 추론 통계</h2>
+  </div>
+  <p class="subtitle">모집단·표본 · 자유도 · 자료수집 · 표본선정 · 확률변수 · 정규분포 · CLT</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 우리는 모집단 전체를 다 조사할 수 없어서 <b>표본을 뽑아 전체를 추측</b>해요. 이 장에서 배우는 정규분포·68-95-99.7법칙·중심극한정리는 전부 "표본으로 모집단을 추측할 때 얼마나 믿을 수 있는가"를 수치화하기 위한 도구예요.</div></div>
+
+  <h3>1) 추론 통계학이란?</h3>
+  <p>추론 통계학(Inferential Statistics)은 수집된 자료를 바탕으로 알아내고자 했던 모집단에 대한 추정, 예측, 가설검정 등 결론을 도출하는 방법을 다루는 학문분야다. 통계학의 대부분 내용이 여기에 해당한다.</p>
+
+  <h3>2) 모집단 vs 표본</h3>
+  <ul class="b">
+  <li><b>모집단(Population)</b> — 확률변수 X가 취할 수 있는 모든 값 혹은 대상으로 삼는 대상의 특성 전체</li>
+  <li><b>모수(Parameter)</b> — 관심의 대상이 되는 특성</li>
+  <li><b>표본(Sample)</b> — 모집단의 부분 집합</li>
+  <li><b>통계량(Statistics)</b> — 표본을 대표하는 값</li>
+  <li><b>추론(Inference)</b> — 표본 데이터를 바탕으로 모집단에 대한 특성을 추정하는 과정</li>
+  </ul>
+  <div class="cp"><div class="cphead">✔ 흐름: 모집단[모수] → 표본추출(Sampling) → 표본[통계량] → 추론(Inference) → 모집단</div><ul>
+  <li>물리적·시간적·경제적 제약으로 전체를 조사하지 못해 일부(표본)를 조사한다.</li>
+  <li>예) 서울 시민의 소득 평균 — 모든 시민의 소득을 전수조사하는 대신, 표본으로 평균을 추론하고 분산으로 흩어진 정도를 파악하는 것이 합리적이고 효과적이다.</li>
+  <li>표본을 통해 계산한 통계량은 표본에 따라 달라지며 모수와 차이가 있을 수 있다. 표본 크기가 클수록 통계량은 모수에 근접한다.</li>
+  </ul></div>
+
+  <h3>3) [참고] 자유도(degrees of freedom)란?</h3>
+  <div class="note">📐 3개 숫자의 평균이 5로 주어져 있을 때, 첫 번째 숫자가 3, 두 번째가 7이면 세 번째는 반드시 5가 되어야 한다 — 마지막 숫자는 자유롭게 정할 수 없다. 자유롭게 정할 수 있는 값은 2개, 즉 자유도는 3−1=2. 표본 표준편차 계산에서 n−1을 쓰는 이유는 표본의 편향(bias)을 보정하기 위해서다 — 관측치 1개일 때 편차의 평균은 0/(1−1)=0/0으로 부정형(indeterminate form)이 되어, "얼마나 불확실한지" 자체를 정의할 수 없기 때문이다.</div>
+
+  <h3>4) 자료(Data)의 수집</h3>
+  <p>분석 대상과 동떨어진 자료를 분석한다면 통계학은 잘 위장된 거짓말이 될 수 있다. 어떤 자료가 제대로 된 자료인지 유의해서 살펴봐야 한다.</p>
+  <ul class="b">
+  <li><b>실험(Experiment)</b> — 주로 자연과학·의학 분야, 연구자가 실험대상을 통제하기 용이. Ex) 신약의 효과 시험, 새로운 교육 방법의 효과 측정</li>
+  <li><b>관측(Observation)</b> — 주로 인문·사회과학 분야, 실험이 불가능해 관측을 통해 자료를 확보. 통제가 어려움. Ex) 소득 수준과 소비패턴 연구</li>
+  </ul>
+  <table class="t"><thead><tr><th>자료의 종류</th><th>정의</th><th>예시</th></tr></thead>
+  <tbody>
+  <tr><td>횡단면 자료(Cross-sectional)</td><td>한 시점에서 여러 개체를 관측</td><td>2024년 1월 각 나라의 GDP</td></tr>
+  <tr><td>시계열 자료(Time-series)</td><td>한 개체를 여러 시점에 걸쳐 관측</td><td>24.1.1~24.12.31 일별 기온변화</td></tr>
+  <tr><td>패널 자료(Panel)</td><td>여러 개체를 여러 시점에 걸쳐 관측(횡단면+시계열)</td><td>최근 10개년 각 나라의 경제 지표</td></tr>
+  </tbody></table>
+
+  <h3>5) 표본 선정</h3>
+  <p>표본 선정은 연구 결과의 정확성·신뢰성·일반화 가능성에 직접적인 영향을 준다. <b>대표성(Representativeness)</b> — 표본은 모집단을 대표할 수 있어야 하며, 그렇지 않으면 표본에서 얻은 결론이 모집단에 그대로 적용되지 않을 수 있다.</p>
+  <div class="callout myth"><span class="ctitle">⚠️ Case Study — 1936년 미국 대통령 선거</span>
+  <p>당시 최대 여론조사 기관이었던 다이제스트사는 루즈벨트(민주당) 득표율을 43%로 예측했지만, 실제로는 갤럽의 예측(56%)이 맞았다. 다이제스트사는 대규모 전화번호부·자동차 등록부에서 표본을 추출했는데, 이는 부유하고 교육받은 특정 계층만 반영해 대중의 전반적 의견을 정확히 반영하지 못했다. 여론조사 역사에서 가장 유명한 실수 중 하나다.</p></div>
+  <ul class="b">
+  <li><b>선택 편향(Selection Bias)</b> — 표본 선정 과정에서 특정 집단이 과대/과소 대표되는 경우</li>
+  <li><b>응답 편향(Response Bias)</b> — 설문·실험에서 응답자의 성향에 의해 결과가 왜곡되는 경우</li>
+  <li><b>생존 편향(Survivorship Bias)</b> — 20년 전 주식시장 성과를 연구한다며 "현재 살아있는 기업"만 표본으로 삼으면, 그 기간에 사라진(파산·상장폐지된) 기업은 반영되지 않아 성과가 과장된다</li>
+  <li><b>심슨의 역설(Simpson's Paradox)</b> — 여러 그룹의 자료를 합쳤을 때의 결과와 각 그룹을 구분했을 때의 결과가 다른 현상. 표본 선정뿐 아니라 변수 간 관계 분석에서도 유의해야 하는 개념(1장의 수능-학점 사례가 그 예)</li>
+  </ul>
+
+  <h3>6) 확률변수(Random Variable)</h3>
+  <p><b>Concept</b>: 사전적 분포(Distribution) 하에, 사후적으로 데이터를 집어넣으면 그 분포상에서 하나의 숫자로 확정되는 값. 어떤 실험이나 사건에서 무작위로 결정되는 결과를 수치로 나타내는 변수다.</p>
+  <p><b>왜 필요할까</b>: 불량률 10%인 공정에서 임의로 10개를 뽑아 검사할 때 불량품이 3개 이상일 확률은? 모든 경우의 수를 일일이 따지는 대신, 표본공간의 사건을 실제값으로 사상시키고 그 실제값 위에서 정의된 분포함수를 통해 확률을 구할 수 있다.</p>
+  <ul class="b">
+  <li><b>이산형(Discrete)</b> — 취할 수 있는 값이 유한하거나 셀 수 있는 경우. <b>확률질량함수(PMF)</b>: f(x) = P[X=x]. Ex) 동전을 2번 던져 앞면이 나오는 횟수 X — x=0,1,2일 때 f(x)=1/4, 1/2, 1/4.</li>
+  <li><b>연속형(Continuous)</b> — 취할 수 있는 값이 무한한 경우(실수 구간). 특정 값 하나가 나올 확률은 0이므로, 구간 단위로 확률을 계산한다. <b>확률밀도함수(PDF)</b>: P(a≤X≤b) = ∫[a to b] f(x)dx. Ex) 사람의 키, 온도.</li>
+  </ul>
+
+  <h3>7) 데이터 분포 요약, 히스토그램</h3>
+  <p><b>도수분포표(Frequency Table)</b>: 자료의 분포를 몇 개의 구간으로 나누고, 각 구간에 속하는 자료가 몇 개인지 정리한 표. 개별 데이터를 보는 것보다 전체적인 분포(모양)를 요약해서 볼 수 있다.</p>
+  <table class="t"><thead><tr><th>계급구간(cm)</th><th>도수</th></tr></thead>
+  <tbody>
+  <tr><td>161.5 이상 165.5 미만</td><td>6</td></tr>
+  <tr><td>165.5 이상 169.5 미만</td><td>12</td></tr>
+  <tr><td>169.5 이상 173.5 미만</td><td>18</td></tr>
+  <tr><td>173.5 이상 177.5 미만</td><td>11</td></tr>
+  <tr><td>177.5 이상 181.5 미만</td><td>8</td></tr>
+  <tr><td><b>합계</b></td><td><b>55</b></td></tr>
+  </tbody></table>
+  <p><b>히스토그램(Histogram)</b>은 도수분포표를 시각적으로 표현한 막대 그래프다. X축은 데이터 값(구간), Y축은 빈도(또는 비율)를 나타낸다. 대칭형·오른쪽꼬리형·왼쪽꼬리형·쌍봉형·균일형 등 다양한 형태가 있으며, 형태를 보면 데이터가 어떤 범위에 집중되어 있는지 한눈에 파악할 수 있다.</p>
+
+  <h3>8) 정규분포(Normal Distribution)</h3>
+  <p><b>Definition</b>: 데이터가 평균을 중심으로 좌우 대칭으로 분포하는 확률분포로, 통계학에서 가장 널리 쓰인다. 가우시안 분포(Gaussian Distribution)라고도 하며, N(μ,σ²)로 표기한다.</p>
+  <div class="formula"><div class="expr">f(x) = 1 / (σ√(2π)) · e^(−(x−μ)² / 2σ²)</div><div class="cap">μ: 모집단의 평균, σ: 모집단의 표준편차, σ²: 분산, e: 자연상수(≈2.71828)</div></div>
+  <p>특징: 봉우리가 하나(single-peaked), 종 모양(bell-shaped), 평균을 중심으로 좌우 대칭(평균=중앙값=최빈값), 곡선 아래 면적은 1(전체확률 1).</p>
+
+  <h3>9) 표준정규분포(Standard Normal Distribution)</h3>
+  <p>평균이 0, 표준편차가 1인 정규분포. 다른 정규분포의 값을 표준화하면 확률을 쉽게 구하고 서로 다른 분포끼리 비교할 수 있다.</p>
+  <div class="formula"><div class="expr">z = (x − μ) / σ</div><div class="cap">Z-Score: 각 관측치에서 평균을 빼고 표준편차로 나눈 표준화 값</div></div>
+
+  <h3>10) 68-95-99.7의 법칙</h3>
+  <ul class="b">
+  <li><b>68%</b>의 데이터는 평균 ±1 표준편차 범위 내 (Z-score ±1)</li>
+  <li><b>95%</b>의 데이터는 평균 ±2 표준편차 범위 내 (Z-score ±2)</li>
+  <li><b>99.7%</b>의 데이터는 평균 ±3 표준편차 범위 내 (Z-score ±3)</li>
+  </ul>
+  <p>예) 평균 100, 표준편차 15인 분포에서 68%의 데이터는 85~115, 95%는 70~130, 99.7%는 55~145 사이에 위치한다.</p>
+
+  <h3>11) 표준정규분포표</h3>
+  <p>특정 z-점수에 대한 누적 확률을 보여주는 표. Z=1.23이면 표에서 z=1.2행과 0.03열의 교차점 값 0.8907을 찾을 수 있고, 이는 P(Z≤1.23)=0.8907, 즉 z-점수 1.23 이하 값이 나올 확률이 약 89.07%라는 뜻이다. 음의 z-점수는 대칭성을 이용해, 대칭되는 양의 z-점수 확률을 찾은 뒤 1에서 빼서 구한다.</p>
+  <div class="callout deep"><span class="ctitle">🔎 Practice</span>
+  <p>수학(평균75, 표준편차10)과 영어(평균70, 표준편차8) 모두 정규분포를 따른다. 철수는 두 과목 모두 80점을 받았다. 어느 과목 성적이 더 좋을까?</p>
+  <p>z<sub>수학</sub> = (80−75)/10 = <b>0.5</b>, z<sub>영어</sub> = (80−70)/8 = <b>1.25</b> → 영어의 z-점수가 더 높으므로 영어 성적이 상대적으로 더 좋다.</p></div>
+
+  <h3>12) 기대값, 표준오차, 제곱근의 법칙</h3>
+  <p><b>기대값(Expected Value)</b>: 확률변수가 가질 수 있는 평균적 값 — 확률 분포의 무게 중심. 각 가능한 값에 그 값이 나올 확률을 곱해 모두 더한 것. 예) 동전 던지기 6회 시 앞면이 나올 횟수의 기대값 = 0.5×6 = 3.</p>
+  <p><b>표준오차(Standard Error)</b>: 실현된 값이 기대값과 차이 나는 정도. 표본 평균이 모집단 평균을 얼마나 정확하게 추정하는지 나타낸다. 표준편차가 "각 데이터가 평균과 얼마나 차이 나는가"라면, 표준오차는 "여러 표본으로부터 얻은 표본 통계량이 얼마나 변하는가"다.</p>
+  <div class="formula"><div class="expr">SE = s / √n</div><div class="cap">s: 표본 표준편차, n: 표본 크기 — 제곱근의 법칙(Square Root Law)</div></div>
+  <p>표본 합의 표준오차는 샘플 수(n)에 비례해서 늘어나지 않고 <b>√n에 비례</b>해서 늘어난다. 즉 표본평균의 표준오차는 샘플 수가 증가하는 만큼 비례해서 감소하지 않고 체감한다.</p>
+
+  <h3>13) 대수의 법칙과 중심극한정리(CLT)</h3>
+  <p><b>대수의 법칙(Law of Large Numbers)</b>: 시행횟수가 늘어날수록 표본 평균이 모집단 평균에 더 정확하게 근접한다는 개념. "평균의 법칙"이라고도 불린다. 예) 동전 던지기를 100번, 1,000번, 10,000번 반복할수록 앞면 비율은 0.5에 수렴한다.</p>
+  <p><b>중심극한정리(Central Limit Theorem)</b>: 표본의 크기(n)가 커질수록, 표본 평균의 분포는 <b>원래 모집단의 분포 모양과 상관없이</b> 정규분포에 가까워진다. 동전을 5번, 100번, 1,000번 던질 때 앞면 횟수의 분포는 던지는 횟수가 늘수록 정규분포 곡선에 점점 가까워진다.</p>
+  <div class="note">🎯 대수의 법칙은 "표본 평균이 모평균에 가까워진다"는 것이고, 중심극한정리는 "표본 평균들을 모아 그린 히스토그램의 모양이 정규분포가 된다"는 것 — 서로 다른 이야기다. 원래 데이터가 균등분포든 지수분포든 로그정규분포든 상관없이, 표본 크기가 충분히 크면 그 표본평균의 분포는 정규분포로 수렴한다. 이것이 추론통계 전체를 떠받치는 핵심 원리다.</div>
+  <p>추론통계의 목적은 "표본으로부터 모집단을 추정하는 것"을 넘어, <b>표본의 불확실성을 정량화하여 더 신뢰할 수 있는 의사결정을 내리는 것</b>이다. 관측된 차이가 우연인지 실제 차이인지 판단하는 방법이 다음 장의 가설검정이다.</p>
+</section>
+
+<section class="sec" id="s5" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">5.</span> 가설 검정</h2>
+  </div>
+  <p class="subtitle">모순에 의한 논증법 · 가설검정 5단계 · 단측/양측검정 · P-hacking · t-분포</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 가설검정은 <b>"이 차이가 진짜인지, 그냥 운(우연)인지"</b>를 판단하는 절차예요. 일단 "차이는 없다(귀무가설)"고 가정한 뒤, 실제 관측된 값이 그 가정 하에서 나오기엔 너무 이상하면 "역시 우연이 아니었다"고 결론 내리는 방식(귀류법)입니다.</div></div>
+
+  <h3>1) 가설 검정의 원리</h3>
+  <p><b>Definition</b>: 연구하고자 하는 가설을 통계적으로 증명하는 과정을 "유의성 검정"이라 한다.</p>
+  <ul class="b">
+  <li><b>연역법</b> — 참인 명제로부터 또 다른 참인 명제를 이끌어냄. Ex) 소크라테스는 사람이다(참) → 모든 사람은 죽는다(참) → 소크라테스는 죽는다</li>
+  <li><b>귀납법</b> — 제한적 관찰로부터 공통 명제를 끌어냄. Ex) 이 백조도 저 백조도 흰색이다(관찰) → 모든 백조는 흰색이다</li>
+  <li><b>귀류법</b> — 명제의 부정(반대)이 모순임을 보여 그 명제가 참임을 증명. Ex) "네 말이 맞다고 치자, 근데 이러이러 하니 말이 안 되네. 따라서 네 말은 틀렸다"</li>
+  </ul>
+  <p>통계학에서는 검정하고자 하는 명제가 있을 때 <b>"모순에 의한 논증법"</b>을 사용한다.</p>
+  <div class="cp"><div class="cphead">✔ 모순에 의한 논증법 4단계</div><ul>
+  <li>① 명제의 부정이 참이라고 치자 (우연이 아님을 밝히려면 일단 우연이라고 믿는다)</li>
+  <li>② 자료를 통해 관찰(주어진 자료로 관찰할 통계량을 산출)</li>
+  <li>③ 모순을 이끌어냄 (우연이라고 보기엔 관측치가 너무 심하다)</li>
+  <li>④ 모순을 통해 명제 증명 (우연일 가능성은 극히 작으므로 명제는 실질적이다)</li>
+  </ul></div>
+  <p>수학에서의 모순은 "완전 불가능"을 의미하지만, 통계학에서는 확률이 낮은 "거의 불가능"을 의미한다 — 통계학은 단정하지 않는 확률론적 사고를 한다.</p>
+
+  <h3>2) 가설 검정의 통계적 언어</h3>
+  <p><b>Step1. 가설 설정</b></p>
+  <ul class="b">
+  <li><b>H0 귀무가설(Null Hypothesis)</b> — 관측된 차이는 우연이라는 주장. "無로 돌아간다"</li>
+  <li><b>H1 대립가설(Alternative Hypothesis)</b> — 관측된 차이가 실질적이라는, 연구를 통해 입증하고자 하는 주장</li>
+  </ul>
+  <p>증명하고자 하는 명제를 대립가설로, 이를 부정하는 명제를 귀무가설로 설정한다. 일단 귀무가설이 참이라고 생각한다.</p>
+  <p><b>Step2. 데이터로부터 통계량 계산</b> — 자료에서 얻은 통계량과 귀무가설 하에서 기대되는 값 사이의 차이를 표준오차로 나누어 표준단위로 나타낸 것이 <b>검정 통계량</b>이다.</p>
+  <div class="formula"><div class="expr">z = (x − μ) / σ</div><div class="cap">표본으로부터 얻은 통계량 x, 귀무가설 하에서 기대되는 값 μ, 전형적 오차의 크기 σ</div></div>
+  <p><b>Step3. P-value 산출</b> — 검정 통계량으로부터 얻어지는 확률(면적)을 <b>관측된 유의수준(p-value)</b>이라 부른다. p-value는 <b>귀무가설이 옳다는 가정 하에서, 표본의 통계량이 그 관측치 혹은 그보다 극단적인 값으로 얻어질 확률</b>을 의미한다. p-value가 매우 작다면 귀무가설에 문제가 있을 가능성을 시사한다.</p>
+  <p><b>Step4. 유의수준(α) 설정</b> — 귀무가설을 기각할지 말지 판단하는 기준값. 설정한 유의수준이 클수록 귀무가설을 기각할 가능성이 커지고, 낮을수록 엄격한 연구가 된다.</p>
+  <table class="t"><thead><tr><th>유의수준(α)</th><th>신뢰도</th><th>z값(양측 기준)</th></tr></thead>
+  <tbody>
+  <tr><td>10% (α=0.1)</td><td>90%</td><td>1.645</td></tr>
+  <tr><td>5% (α=0.05)</td><td>95%</td><td>1.96</td></tr>
+  <tr><td>1% (α=0.01)</td><td>99%</td><td>2.575</td></tr>
+  </tbody></table>
+  <p><b>Step5. 판정</b> — P-value가 유의수준보다 작거나 같으면 귀무가설을 <b>기각</b>하고, "결과가 통계적으로 유의하다(statistically significant)"고 말한다. 그렇지 않으면 귀무가설을 <b>기각하지 못한다</b>고 표현한다.</p>
+
+  <h3>3) 단측검정 vs 양측검정</h3>
+  <table class="t"><thead><tr><th>구분</th><th>단측검정(One-tailed)</th><th>양측검정(Two-tailed)</th></tr></thead>
+  <tbody>
+  <tr><td>목적</td><td>특정 방향의 차이를 검정</td><td>차이의 존재 여부를 검정</td></tr>
+  <tr><td>대립가설(H1)</td><td>μ &gt; μ0 또는 μ &lt; μ0</td><td>μ ≠ μ0</td></tr>
+  <tr><td>기각역</td><td>한쪽 꼬리</td><td>양쪽 꼬리</td></tr>
+  <tr><td>활용</td><td>방향성이 명확한 연구</td><td>대부분의 일반적인 연구</td></tr>
+  </tbody></table>
+  <div class="callout myth"><span class="ctitle">⚠️ P-hacking의 유혹</span>
+  <p>"p-value가 더 작게 나오니 단측검정으로 바꾸자", "결과가 좋아 보이니 단측검정으로 바꾸자" — 이것이 바로 P-hacking이다. 단측검정은 '더 유리한 검정'이 아니라 '방향이 사전에 명확하게 정의된 연구'에서만 사용할 수 있다. 데이터를 본 뒤에 선택하면 안 되고, 연구를 시작하기 전에 이론적 근거나 선행연구를 바탕으로 미리 정해두어야 한다. 대부분의 연구는 양측검정을 기본으로 사용한다. (Ex. "새 공정이 불량률을 감소시키는가?"는 방향이 명확해 단측검정 가능. "AI 교육이 시험점수에 영향을 주는가?"는 오르거나 내릴 수 있어 양측검정.)</p></div>
+
+  <h3>4) 가설 검정의 유의사항</h3>
+  <ul class="b">
+  <li>가설검정은 '실질적인 것인가? 단순히 우연인가?'를 판단할 뿐, 그 차이가 왜 발생했는지 중요한 의미가 있는지는 알려주지 않는다.</li>
+  <li>가설검정의 성격은 확률적이지 단정적이지 않다.</li>
+  <li>p-value는 "귀무가설이 맞을 확률"이 <b>아니다</b>. p-value는 귀무가설이 옳다는 가정 하에서 극단적인 관측치를 얻을 확률이다.</li>
+  </ul>
+
+  <h3>5) t-분포(Student's t-distribution)의 의미</h3>
+  <p>표본 크기가 작을 때(특히 n&lt;30) 모평균을 추정하기 위해 표본평균의 분포를 정규분포 대신 근사하는, 불확실성이 큰 작은 표본을 위한 보수적인 분포다. 1908년 윌리엄 고셋(William S. Gosset)이 'Student'라는 필명으로 발표했다. 표본수가 커지면(n→∞) 정규분포와 동일해진다.</p>
+
+  <h3>6) 변수 형태에 따라 검정이 달라진다</h3>
+  <p>가설검정 프로세스는 동일하지만, 데이터 형태에 따라 사용하는 검정분포와 검정통계량은 달라진다.</p>
+  <table class="t"><thead><tr><th>기법</th><th>변수A</th><th>변수B</th><th>검정 분포</th><th>검정 통계량</th><th>적용 예</th></tr></thead>
+  <tbody>
+  <tr><td>카이제곱 검정</td><td>이산형</td><td>이산형</td><td>카이제곱분포</td><td>카이제곱 통계량</td><td>학력과 결혼유무 사이에 관계가 있는가?</td></tr>
+  <tr><td>독립표본 t검정</td><td>이산형(2그룹/독립)</td><td>연속형</td><td>T-분포</td><td>T-통계량</td><td>성별에 따른 결혼비율 차이가 있는가?</td></tr>
+  <tr><td>대응표본 t검정</td><td>이산형(2그룹/Pair)</td><td>연속형</td><td>T-분포</td><td>T-통계량</td><td>특별과외 후 A반 영어성적은 상승했는가?</td></tr>
+  <tr><td>일원 분산분석(ANOVA)</td><td>이산형(3그룹 이상)</td><td>연속형</td><td>F-분포</td><td>F-통계량</td><td>거주지역에 따른 평균 자산액 차이가 있는가?</td></tr>
+  </tbody></table>
+  <div class="cp"><div class="cphead">✔ 검정 통계량은 왜 달라질까 — 데이터 특성에 맞게 "차이"를 숫자로 표현하는 방법이 다르기 때문</div><ul>
+  <li><b>t-검정</b>: 평균 차이(t) = 평균차이 / 평균의 표준오차</li>
+  <li><b>카이제곱 검정</b>: 빈도 차이(χ²) = (관측빈도−기대빈도) / 기대빈도 기반</li>
+  <li><b>ANOVA</b>: 분산 차이(F) = 집단간분산 / 집단내분산</li>
+  <li>가설검정 프로세스(Step1~5)는 동일하지만, 데이터의 형태에 맞는 검정통계량(t, χ², F)을 선택하는 것이 핵심이다.</li>
+  </ul></div>
+</section>
+
+<div class="quiz-wrap" id="quiz-day1">
+  <h2>✅ Day 1 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="1">0 / 7 정답</div>
+  <div class="quiz-q" data-qid="d1q0" data-type="ox" data-answer="true" data-exp="비율척도는 순서·간격이 동일하며 절대적인 0을 가져 두 배, 절반 같은 비율 비교까지 가능해요. 매출액, 키, 나이가 대표적입니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>비율척도(Ratio Scale)는 절대적인 0을 가지며 비율 비교(두 배, 절반)가 가능하다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q1" data-type="ox" data-answer="false" data-exp="이상치가 있는 데이터에서 평균은 이상치에 크게 흔들리지만 중앙값은 거의 흔들리지 않아요. 오히려 이상치가 있을 때는 평균보다 중앙값이 대표값으로 더 안정적입니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>이상치가 존재하는 데이터에서는 평균이 중앙값보다 대표값으로서 항상 더 안정적이다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q2" data-type="ox" data-answer="true" data-exp="중심극한정리(CLT)의 핵심은 표본 크기(n)가 충분히 커지면 원래 모집단 분포의 모양과 무관하게 표본평균의 분포가 정규분포에 수렴한다는 것입니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>중심극한정리(CLT)에 따르면, 표본의 크기가 충분히 크면 원래 모집단의 분포 모양과 상관없이 표본평균의 분포는 정규분포에 가까워진다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q3" data-type="mc" data-answer="p-value는 귀무가설이 참일 확률이다" data-exp="p-value는 '귀무가설이 참일 확률'이 아니라, 귀무가설이 옳다는 가정 하에서 관측치(또는 더 극단적인 값)가 나올 확률이에요. 가장 흔한 오해 중 하나입니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>다음 중 p-value에 대한 설명으로 <b>틀린</b> 것은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="p-value는 귀무가설이 참일 확률이다">p-value는 귀무가설이 참일 확률이다</button>
+      <button class="quiz-opt" data-val="p-value가 유의수준보다 작으면 귀무가설을 기각한다">p-value가 유의수준보다 작으면 귀무가설을 기각한다</button>
+      <button class="quiz-opt" data-val="p-value는 귀무가설이 옳다는 가정 하에서 계산된다">p-value는 귀무가설이 옳다는 가정 하에서 계산된다</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q4" data-type="mc" data-answer="선택 편향(Selection Bias)" data-exp="1936년 미국 대선 여론조사 실패 사례는 전화번호부·자동차 등록부 등에서 표본을 뽑아 특정 계층(부유층)이 과대 대표된 전형적인 선택 편향(Selection Bias) 사례예요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>1936년 미국 대선에서 다이제스트사가 전화번호부·자동차 등록부로 표본을 뽑아 예측에 실패한 사례는 어떤 편향의 대표적 예인가?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="선택 편향(Selection Bias)">선택 편향(Selection Bias)</button>
+      <button class="quiz-opt" data-val="생존 편향(Survivorship Bias)">생존 편향(Survivorship Bias)</button>
+      <button class="quiz-opt" data-val="응답 편향(Response Bias)">응답 편향(Response Bias)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q5" data-type="short" data-accept='["CLT", "clt", "중심극한정리"]' data-exp="Central Limit Theorem, 표본 크기가 커질수록 표본평균의 분포가 정규분포에 수렴한다는 정리예요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>표본 크기가 커질수록 표본평균의 분포가 정규분포에 수렴한다는 정리를 영문 약자로 쓰면?</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q6" data-type="short" data-accept='["귀무가설", "H0", "h0"]' data-exp="관측된 차이가 우연이라는 주장을 귀무가설(Null Hypothesis, H0)이라고 해요. 이를 기각할 수 있는지가 가설검정의 목표입니다.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>"관측된 차이는 우연일 뿐이다"라는 주장을 무엇이라 부르는가? (한글 용어 또는 H0)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+
+<div class="day-header" id="day2"><h1>Day 2 — 상관·회귀분석</h1><p>두 변수의 관계를 수치화하는 상관분석부터, 예측 모형을 만드는 회귀분석과 그 가정까지</p></div>
+
+<section class="sec" id="s6" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">6.</span> 상관관계 분석</h2>
+  </div>
+  <p class="subtitle">산점도 · 상관계수 · 해석 가이드 · 이상치/Averaging Effect/Spurious Correlation · 상관≠인과</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 상관계수(r)는 <b>두 변수가 얼마나 직선에 가깝게 함께 움직이는지</b>를 −1~1 사이 숫자 하나로 요약한 것이에요. 다만 상관계수가 높다고 해서 한 변수가 다른 변수의 "원인"이라는 뜻은 아니라는 게 이 장의 가장 중요한 메시지입니다.</div></div>
+
+  <h3>Intro — 아이스크림과 기온</h3>
+  <p>"올 여름 찜통 더위에 아이스크림 판매 '사상 최대'"(헤럴드경제). 여름이 되면 기온도 오르고 아이스크림 판매도 늘어난다. 기온과 아이스크림 판매량 사이에 관계가 존재할까? 기온이 1도 오르면 아이스크림은 몇 개 더 팔릴까?</p>
+  <p>근속연수와 연봉 / 키와 몸무게 / 공부시간과 시험점수 / 광고비와 매출액 / 운동량과 체지방률 / 담배흡연량과 평균수명 / 가격과 수요 — 많은 경우 두 변수 사이의 관계는 중요하다. 두 변수의 결합분포(Joint Distribution)를 통해 이 관계를 살펴볼 수 있다.</p>
+
+  <h3>1) 두 변수 사이의 관계 살펴보기 — 산점도(Scatter Plot)</h3>
+  <p>두 연속형 변수의 값을 좌표평면에 점으로 나타낸 그래프. 설명변수(x)는 가로축, 피설명변수(y)는 세로축에 표시한다.</p>
+  <ul class="b">
+  <li><b>관계가 약한 경우</b> — 중간고사 150점 받은 학생들의 기말고사 성적이 75~175점 사이 넓게 분포. 한 변수 값으로 다른 변수 값을 예측하는 데 도움이 안 된다.</li>
+  <li><b>관계가 강한 경우</b> — 중간고사 150점 받은 학생들의 기말고사 성적이 125~175점 사이 좁게 분포. 예측에 크게 도움이 된다.</li>
+  </ul>
+  <p>산점도와 68-95-99.7법칙: 가로(x축)로 보면 대략 95%의 점들이 x평균 ±2 SDx 이내, 세로(y축)로 보면 대략 95%의 점들이 y평균 ±2 SDy 이내에 위치한다.</p>
+
+  <h3>2) 상관 분석은 왜 필요할까?</h3>
+  <p>x, y의 평균과 표준편차가 완전히 동일한 두 산점도라도, 점들이 우상향 직선에 가깝게 배열되어 있는지(강한 선형관계) 아니면 넓게 흩어져 있는지(약한 관계)는 완전히 다를 수 있다. 평균과 표준편차는 각 변수의 특성만 설명할 뿐, 두 변수 사이의 관계를 설명하지 못한다.</p>
+  <div class="note">🔑 기술통계는 '각 변수'를 설명하고, 상관분석은 '변수와 변수의 관계'를 설명한다.</div>
+  <p>아래는 x, y 모두 평균3·표준편차1로 동일하지만 상관계수만 다른 6개 산점도를 비교한 것이다. r값이 커질수록 점들이 우상향 직선에 더 가깝게 모여든다.</p>
+  <table class="t"><thead><tr><th>r값</th><th>해석</th></tr></thead>
+  <tbody>
+  <tr><td>r = 0.00</td><td>선형 관계 없음 (점들이 원형으로 흩어짐)</td></tr>
+  <tr><td>r = 0.40</td><td>약한 양(+)의 선형 관계</td></tr>
+  <tr><td>r = 0.60</td><td>보통 양(+)의 선형 관계</td></tr>
+  <tr><td>r = 0.80</td><td>강한 양(+)의 선형 관계</td></tr>
+  <tr><td>r = 0.90</td><td>매우 강한 양(+)의 선형 관계</td></tr>
+  <tr><td>r = 0.95</td><td>거의 완벽한 양(+)의 선형 관계 (직선에 매우 근접)</td></tr>
+  </tbody></table>
+
+  <h3>3) 우리가 알고 있는 상관계수</h3>
+  <p><b>상관계수(Correlation)</b>: −1 ≤ r ≤ 1. 선형적 관계를 수치로 나타낸 값이다.</p>
+  <ul class="b">
+  <li><b>양의 상관관계</b> — 한 변수가 증가하면 다른 변수도 증가</li>
+  <li><b>음의 상관관계</b> — 한 변수가 증가하면 다른 변수는 감소</li>
+  <li><b>0에 가까운 상관계수</b> — 선형 관계가 거의 없음</li>
+  <li><b>완전상관(Perfect Correlation)</b> — r=1 또는 −1, 모든 점이 정확히 하나의 선 위에 위치</li>
+  </ul>
+
+  <h3>4) 수식 속에 들어있는 상관계수의 의미</h3>
+  <div class="formula"><div class="expr">r = [ Σ(xᵢ−x̄)(yᵢ−ȳ) / (n−1) ] / [ √(Σ(xᵢ−x̄)²/(n−1)) · √(Σ(yᵢ−ȳ)²/(n−1)) ]</div><div class="cap">분자 부분 Σ(xᵢ−x̄)(yᵢ−ȳ)/(n−1) = 공분산(Covariance), Cov(X,Y)</div></div>
+  <p>x와 y의 편차를 곱해주는 이유는 두 변수 간 관계가 편차들의 곱에 반영되기 때문이다.</p>
+  <ul class="b">
+  <li>x가 평균보다 클 때 y도 평균보다 크면 두 편차의 곱은 양수 → <b>양의 관계</b></li>
+  <li>x가 평균보다 클 때 y는 평균보다 작으면 두 편차의 곱은 음수 → <b>음의 관계</b></li>
+  <li>x가 크게 커질 때 y도 크게 커지면 편차의 곱도 커짐 → <b>관계의 강도</b> 결정</li>
+  </ul>
+  <p>공분산을 그대로 쓰지 않고 x, y의 표준편차로 나눠주는 이유는, 공분산과 달리 상관계수는 <b>단위와 무관하게 정의</b>되어(단위가 없음) 산출값이 항상 −1과 1 사이로 한정되기 때문이다.</p>
+  <div class="note">📐 [참고] 자유도 — 상관계수 공식의 분모·분자에 모두 n−1이 등장하는 이유도 1장·5장에서 배운 자유도 개념과 같다. 표본으로 모집단의 분산·공분산을 추정할 때 발생하는 편향을 보정하기 위한 장치다.</div>
+
+  <h3>5) 상관계수 해석 가이드</h3>
+  <table class="t"><thead><tr><th>범위</th><th>해석</th></tr></thead>
+  <tbody>
+  <tr><td>0.0 ~ 0.2</td><td>거의 상관 없음</td></tr>
+  <tr><td>0.2 ~ 0.4</td><td>약한 상관</td></tr>
+  <tr><td>0.4 ~ 0.6</td><td>중간 정도 상관</td></tr>
+  <tr><td>0.6 ~ 0.8</td><td>강한 상관</td></tr>
+  <tr><td>0.8 ~ 1.0</td><td>매우 강한 상관</td></tr>
+  </tbody></table>
+  <p>(부호와 무관하게 절댓값 기준의 경험적·관습적 기준이며, 음의 상관도 동일한 강도 구간을 그대로 적용한다.)</p>
+
+  <h3>6) 상관계수 해석의 유의사항</h3>
+  <p>그래프 리뷰 없이 수치를 기계적으로 해석하는 것에 유의해야 한다. 상관계수는 타원형을 띠는 산포도에서 두 변수의 선형관계를 설명하는 데 적합하며, 이상치가 있거나 비선형관계인 경우 유용성이 떨어진다.</p>
+  <div class="callout myth"><span class="ctitle">⚠️ Case Study — 이상치를 포함하고 있을 경우 (키·체중 7명 데이터)</span>
+  <table class="t"><thead><tr><th>ID</th><th>키(cm)</th><th>체중(kg)</th></tr></thead>
+  <tbody>
+  <tr><td>1</td><td>150</td><td>45</td></tr><tr><td>2</td><td>155</td><td>48</td></tr>
+  <tr><td>3</td><td>160</td><td>54</td></tr><tr><td>4</td><td>165</td><td>60</td></tr>
+  <tr><td>5</td><td>170</td><td>65</td></tr><tr><td>6</td><td>175</td><td>70</td></tr>
+  <tr><td>7</td><td><b>210</b></td><td>61</td></tr>
+  </tbody></table>
+  <p>이상값(ID 7) 제거 전: 7개 데이터, 상관계수 ρ=<b>0.339</b>. 제거 후: 6개 데이터, 상관계수 ρ=<b>0.857</b>. 이상치 하나가 상관계수를 크게 왜곡시켰다.</p></div>
+  <div class="callout myth"><span class="ctitle">⚠️ Averaging Effect — 실제 관계를 과장하는 경우</span>
+  <p>평균 자료로 구한 상관계수는 실제 관계를 과장한다. 평균을 구하는 과정에서 개별 데이터의 흩어진 정도(noise)가 줄어들기 때문이다. 예) 개인/가구 단위 데이터(교육수준 vs 소득)의 상관계수는 r=0.34인데, 이를 지역별 평균으로 뭉쳐서 보면 r=0.94로 크게 뛴다 — 동일한 데이터라도 개인 단위로 볼 때와 지역 평균으로 볼 때 상관계수가 크게 달라질 수 있다.</p></div>
+  <div class="callout myth"><span class="ctitle">⚠️ Spurious Correlation(가짜 상관관계)</span>
+  <p>다우존스 지수와 배우 제니퍼 로렌스의 미디어 언급횟수는 상관계수 0.86의 높은 상관관계를 보인다. 그렇다고 영화 개봉으로 그녀의 언급이 늘어날 때 다우존스 투자를 고려해야 할까? 실제로는 인과관계가 없는데 통계 모델에 넣으면 큰 관계가 있는 것처럼 나오는 경우로, Data-driven approach에서 적지 않게 발생한다.</p></div>
+
+  <h3>7) 상관관계 ≠ 인과관계</h3>
+  <p><b>인과관계(Causality)</b>: 한 변수(X)의 변화가 다른 변수(Y)의 변화를 유발하는 관계. 다음 세 요건이 필요하다.</p>
+  <ul class="b">
+  <li><b>시간적 선행성</b> — 원인은 결과보다 먼저 발생</li>
+  <li><b>공변성</b> — X가 변하면 Y도 함께 변함</li>
+  <li><b>교란변수의 배제</b> — X와 Y를 동시에 설명하는 다른 원인(제3의 변수)이 없어야 함</li>
+  </ul>
+  <div class="note">🔑 "Correlation does not imply Causality" (상관은 인과를 의미하지 않는다) — 상관계수가 높더라도 우연일 수 있고, 숨은 교란변수가 존재할 수 있고, 인과의 방향이 반대일 수도 있다. 상관분석은 '함께 변하는가?'를 알려주지만, '왜 변하는가?'는 알려주지 않는다.</div>
+</section>
+
+<section class="sec" id="s7" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">7.</span> 회귀 분석</h2>
+  </div>
+  <p class="subtitle">최소제곱법 · 회귀직선과 상관계수 · 회귀효과 · RMSE·R² · 엑셀 회귀분석 결과 해석 실전</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 회귀분석은 <b>산점도를 가장 잘 대표하는 직선 하나를 찾는 것</b>이에요. "가장 잘 대표한다"는 것은 실제값과 예측값의 차이(잔차)의 제곱합이 가장 작다는 뜻(최소제곱법)이고, 그렇게 찾은 직선의 기울기·R²·p-value를 해석할 줄 알아야 실전에서 쓸 수 있어요.</div></div>
+
+  <h3>1) 회귀분석의 직관적 이해 — Naive Prediction</h3>
+  <p>키가 176cm인 사람의 몸무게는 얼마일까? 가장 단순한 접근은 데이터 전체의 평균(예: 63.5kg)을 예측값으로 쓰는 것이다. 하지만 키라는 정보를 알고 있는데 이를 무시하는 것은 아깝다.</p>
+  <p><b>하나의 직선으로 근사</b>: 회귀분석은 각 x값에 대응하는 y의 평균치를 추정하는 방법이며, 그 평균들의 그래프를 하나의 직선으로 근사시킨 것이 회귀직선이다. 각 키(x)마다 평균 몸무게(y)를 구하고, 그 점들을 근사하는 직선을 그은 것이라 이해하면 된다.</p>
+  <div class="note">💭 회귀직선은 평균의 그래프를 하나의 직선으로 근사한 것이므로, 평균의 그래프가 애초에 비선형이라면 직선으로의 선형 근사는 부적절할 수 있다.</div>
+  <p><b>좋은 직선의 기준</b>: 데이터와 직선 사이의 거리, 즉 <b>잔차(Residuals)</b>의 합이 작은 직선이 좋은 직선이다.</p>
+
+  <h3>2) 최소제곱법(Least Squares Method)</h3>
+  <p>실제 관측값과 예측값 사이 오차(잔차)의 <b>제곱합을 최소화</b>하는 방식으로 회귀직선의 기울기와 절편(회귀계수)을 구하는 방법. OLS(Ordinary Least Squares)는 전형적인 가정 하에 쓰이는 최소제곱법을 가리키는 이름이다.</p>
+  <p><b>왜 제곱인가?</b></p>
+  <ul class="b">
+  <li>단순합은 양수·음수 잔차가 서로 상쇄된다(Positive and Negative Residuals Cancel Out)</li>
+  <li>큰 오차에 더 크게 패널티를 준다 (오차 2 → 4, 오차 5 → 25)</li>
+  <li>미분이 용이하다 (x² → 2x)</li>
+  <li>제곱 함수는 U자형이라 항상 하나의 최소해가 존재한다</li>
+  </ul>
+  <p><b>[참고] 회귀직선 비교 예시</b> — 후보 직선 y1=2x, y2=x+2, y3=x 중 어느 것이 가장 좋은가? Train Data: A(1,1), B(2,2), C(3,3)</p>
+  <table class="t"><thead><tr><th>Train Data</th><th>x,y(관측값)</th><th>y1=2x(예측)</th><th>y2=x+2(예측)</th><th>y3=x(예측)</th></tr></thead>
+  <tbody>
+  <tr><td>A</td><td>1,1</td><td>2</td><td>3</td><td>1</td></tr>
+  <tr><td>B</td><td>2,2</td><td>4</td><td>4</td><td>2</td></tr>
+  <tr><td>C</td><td>3,3</td><td>6</td><td>5</td><td>3</td></tr>
+  <tr><td colspan="2"><b>Σ잔차²</b></td><td><b>14</b></td><td><b>12</b></td><td><b>0</b></td></tr>
+  </tbody></table>
+  <p>잔차제곱합이 최소(0)가 되는 y3=x가 가장 좋은 직선이다. 최소제곱법은 바로 이 잔차제곱합을 최소화하는 직선을 수학적으로 찾아준다.</p>
+  <div class="formula"><div class="expr">yᵢ = β₀ + β₁xᵢ + εᵢ &nbsp;&nbsp;·&nbsp;&nbsp; min[β₀,β₁] Σ(yᵢ − β₀ − β₁xᵢ)²</div><div class="cap">OLS 추정: β̂₁ = Σ(xᵢ−x̄)(yᵢ−ȳ) / Σ(xᵢ−x̄)² = Cov(X,Y)/Var(X) &nbsp;·&nbsp; β̂₀ = ȳ − β̂₁x̄</div></div>
+
+  <h3>3) 회귀직선과 상관계수의 만남</h3>
+  <p>평균키(167.5cm) + 표준편차(8.5cm) = 176cm인 사람의 몸무게는 평균몸무게(63.5kg) + 표준편차(11.9kg) = 75.4kg일까? <b>아니다.</b> 표준편차를 그대로 더하면 안 되고, 상관계수(r)만큼만 반영해야 한다.</p>
+  <div class="formula"><div class="expr">예측 몸무게 = 63.5kg + 0.67 × 11.9kg ≈ <b>71.5kg</b></div><div class="cap">b = r × (SDy / SDx) — 회귀직선의 기울기 공식</div></div>
+  <p>상관계수 r은 "Y가 X를 얼마나 따라갈지"를 결정하는 비율이다. X가 1표준편차 증가하면 Y는 상관계수 r만큼만 반응한다 — r=1이면 1SD만큼, r=0.5면 0.5SD만큼, r=0이면 전혀 이동하지 않는다.</p>
+
+  <h3>4) 회귀효과(Regression to the Mean)</h3>
+  <p><b>Concept</b>: 극단적인 관측값은 다음 측정에서 평균에 더 가까워지는 경향이 있다는 현상. 극단적인 수치는 일시적 요인(운, 실수, 특이 상황)의 영향을 받았을 가능성이 크기 때문에, 다시 측정하면 그 요인이 사라지며 결과가 평균으로 "회귀"한다.</p>
+  <p>중간고사에서 평소보다 매우 잘 본 학생(+2SD)은 기말고사에서 예상 점수가 +1SD로 축소되고, 매우 못 본 학생(-2SD)은 -1SD로 축소(평균 쪽으로 당겨짐)되는 경향이 나타난다. 예시 데이터(중간고사 평균129.3·표준편차30.8, 기말고사 평균112.4·표준편차40, 상관계수0.64)에서도 회귀직선이 "표준편차선"(r=1일 때의 직선)보다 완만하게 그려지며, 극단값이 평균 쪽으로 당겨지는 모습을 보인다.</p>
+  <div class="note">🔑 회귀효과와 상관계수: |r|이 작을수록(0에 가까울수록) 회귀직선에 의한 예측값은 평균으로 더 강하게 끌어당겨진다. 즉 회귀효과는 상관계수가 0에 가까워질수록 커진다.</div>
+
+  <h3>5) 회귀 모형의 평가 — RMSE</h3>
+  <div class="formula"><div class="expr">RMSE = √( (1/n) Σ(ŷᵢ − yᵢ)² )</div><div class="cap">잔차(residual) = 실제값 − 예측값. 추정의 표준오차(standard error of estimate)라고도 불림</div></div>
+  <p>MSE에 제곱근을 취해 Target과 단위를 동일하게 함으로써 해석성을 확보한 지표다. 68-95-99.7법칙이 회귀직선의 오차 분포에도 그대로 적용된다 — 회귀직선(각 x에서의 평균) 기준 ±1RMSE 구간에 약 68%, ±2RMSE 구간에 약 95%의 관측치가 포함된다.</p>
+
+  <h3>6) 회귀 모형의 평가 — R-Squared</h3>
+  <p>결정계수(Coefficient of Determination, R², 설명력): 적합된 회귀선이 데이터를 얼마나 잘 설명하는가(Goodness of Fit)를 나타낸다. 0.0~1.0 범위이며, 높을수록 독립변수가 종속변수를 많이 설명한다는 뜻이다. 예) R²=0.6이면 원인변수의 분산이 결과변수 분산의 60%를 설명한다.</p>
+  <div class="formula"><div class="expr">R² = SSR / SST = 1 − SSE / SST</div><div class="cap">SST(총변동) = SSR(회귀변동, 설명가능) + SSE(잔차변동, 설명불가능)</div></div>
+  <p>(yᵢ−ȳ)라는 총오차를 SSR(ŷᵢ−ȳ, 설명 가능한 부분)과 SSE(yᵢ−ŷᵢ, 설명 불가능한 부분)로 분해한다.</p>
+
+  <h3>7) 회귀분석 결과의 해석 — 실전 예제</h3>
+  <p><b>Biz 상황</b>: 기업이 상품A 마케팅을 강화해 구매 고객수를 늘리려 한다. <b>분석 목적</b>: 쿠폰 배포 매수와 판매가격 중 무엇이 구매 고객수에 더 큰 영향을 미치는가? (y=구매 고객수, x1=쿠폰배포매수, x2=판매가격)</p>
+  <h4>① 초기 모형 (x1, x2 모두 포함)</h4>
+  <table class="t"><thead><tr><th>회귀분석 통계량</th><th>값</th></tr></thead><tbody>
+  <tr><td>다중 상관계수</td><td>0.879</td></tr><tr><td>결정계수</td><td>0.773</td></tr>
+  <tr><td>조정된 결정계수</td><td>0.735</td></tr><tr><td>표준 오차</td><td>27.565</td></tr>
+  <tr><td>관측수</td><td>15</td></tr>
+  </tbody></table>
+  <table class="t"><thead><tr><th></th><th>자유도</th><th>제곱합</th><th>제곱평균</th><th>F비</th><th>유의한F</th></tr></thead><tbody>
+  <tr><td>회귀</td><td>2</td><td>30983.225</td><td>15491.613</td><td>20.389</td><td>0.000</td></tr>
+  <tr><td>잔차</td><td>12</td><td>9117.708</td><td>759.809</td><td></td><td></td></tr>
+  <tr><td>계</td><td>14</td><td>40100.933</td><td></td><td></td><td></td></tr>
+  </tbody></table>
+  <table class="t"><thead><tr><th></th><th>계수</th><th>표준오차</th><th>t통계량</th><th>P-값</th></tr></thead><tbody>
+  <tr><td>Y절편</td><td>274.375</td><td>45.401</td><td>6.043</td><td>5.817E-05</td></tr>
+  <tr><td>쿠폰배포매수(장)</td><td>0.109</td><td>0.017</td><td>6.326</td><td>3.795E-05</td></tr>
+  <tr><td>판매가격(원)</td><td>0.003</td><td>0.014</td><td>0.242</td><td>8.130E-01</td></tr>
+  </tbody></table>
+  <p>회귀식: y = 0.109·x1 + 0.003·x2 + 274.375</p>
+  <ul class="b">
+  <li><b>Adjusted R²</b>: 모델이 전체 변동의 73.5%를 설명한다. 변수를 추가할수록 R²는 항상 증가하므로, 다변수 모형에서는 조정된(Adjusted) R²를 확인해야 한다.</li>
+  <li><b>Standard Error</b>: 예측이 평균적으로 ±27.565 틀린다.</li>
+  <li><b>Significance F</b>: 0.000으로, 회귀 모델 전체가 통계적으로 유의하다.</li>
+  <li><b>Coefficients의 P-value</b>: 95% 신뢰수준에서 p&lt;0.05면 해당 계수는 통계적으로 유의하다. Y절편과 쿠폰배포매수는 유의하지만, <b>판매가격은 0.813으로 유의하지 않다</b> → 변수 제거 후 재적합 필요.</li>
+  </ul>
+  <h4>② 유의한 변수(쿠폰배포매수)만으로 재적합</h4>
+  <table class="t"><thead><tr><th>회귀분석 통계량</th><th>값</th></tr></thead><tbody>
+  <tr><td>다중 상관계수</td><td>0.866</td></tr><tr><td>결정계수</td><td>0.749</td></tr>
+  <tr><td>조정된 결정계수</td><td>0.730</td></tr><tr><td>표준 오차</td><td>27.810</td></tr>
+  <tr><td>관측수</td><td>15</td></tr>
+  </tbody></table>
+  <table class="t"><thead><tr><th></th><th>자유도</th><th>제곱합</th><th>제곱평균</th><th>F비</th><th>유의한F</th></tr></thead><tbody>
+  <tr><td>회귀</td><td>1</td><td>30047.056</td><td>30047.056</td><td>38.852</td><td>0.000</td></tr>
+  <tr><td>잔차</td><td>13</td><td>10053.877</td><td>773.375</td><td></td><td></td></tr>
+  <tr><td>계</td><td>14</td><td>40100.933</td><td></td><td></td><td></td></tr>
+  </tbody></table>
+  <table class="t"><thead><tr><th></th><th>계수</th><th>표준오차</th><th>t통계량</th><th>P-값</th></tr></thead><tbody>
+  <tr><td>Y절편</td><td>282.892</td><td>35.390</td><td>7.994</td><td>2.256E-06</td></tr>
+  <tr><td>쿠폰배포매수(장)</td><td>0.108</td><td>0.017</td><td>6.233</td><td>3.053E-05</td></tr>
+  </tbody></table>
+  <p>회귀식: y = 0.108·x1 + 282.892</p>
+  <div class="cp"><div class="cphead">✔ 최종 해석</div><ul>
+  <li>판매가격은 구매 고객수에 유의한 영향을 확인하지 못해 제거 후 재적합했다.</li>
+  <li>재적합 모형은 통계적으로 유의하며, 구매 고객수 변동의 약 73%를 설명한다.</li>
+  <li>쿠폰 배포 매수는 구매 고객수에 유의한 영향을 미친다.</li>
+  <li>다른 조건이 동일하다면, 쿠폰을 10장 추가 배포할 때 구매 고객수는 평균적으로 약 1.08명 증가할 것으로 예측된다.</li>
+  <li>쿠폰을 3,000장 배포할 경우 예상 구매 고객수는 약 607명이다.</li>
+  </ul></div>
+  <div class="callout goal"><span class="ctitle">🎯 회귀분석 결과 해석 Key Question 5가지</span><ul>
+  <li><b>R²</b>: 모델이 데이터를 얼마나 잘 설명하는가?</li>
+  <li><b>P-value</b>: 어떤 변수가 실제로 영향을 미치는가?</li>
+  <li><b>Coefficient</b>: 변수의 영향력과 방향(+, −)은 무엇인가?</li>
+  <li><b>RMSE(Standard Error)</b>: 평균적으로 얼마나 틀리는가?</li>
+  <li><b>F-test</b>: 모델 전체가 유의한가?</li>
+  </ul></div>
+</section>
+
+<section class="sec" id="s8" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">8.</span> 선형모형 가정</h2>
+  </div>
+  <p class="subtitle">선형성·독립성·등분산성·정규성 · 다중공선성 · 잔차 진단 · 불편추정량 · 강건성</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 회귀분석 결과(R², 계수, p-value)가 계산됐다고 해서 그 결과를 무조건 믿어도 되는 건 아니에요. <b>4대 가정(선형성/독립성/등분산성/정규성)</b>이 충족되는지 잔차(residual)를 살펴봐서 확인해야, 결과 해석과 예측 성능을 신뢰할 수 있어요.</div></div>
+
+  <h3>1) 회귀분석 결과, 그대로 믿어도 될까?</h3>
+  <p>회귀분석의 목적은 독립변수와 종속변수의 관계를 설명하고, 각 변수가 결과에 미치는 영향을 해석하며, 관측되지 않은 값이나 미래 결과를 예측하고, 표본에서 발견한 관계를 모집단으로 일반화하는 것이다. 회귀식·R²·회귀계수·p-value가 계산되었다고 해서 그 결과를 곧바로 신뢰할 수 있는 것은 아니다 — 회귀모형의 기본가정을 충족하는지 확인해야 한다.</p>
+  <div class="note">⚠️ 가정이 충족되지 않으면: 회귀계수의 크기와 방향 해석이 어려워지고, 표준오차·p-value 결과를 신뢰하기 어려우며, 새로운 데이터에 대한 예측 성능이 떨어질 수 있다.</div>
+
+  <h3>2) 회귀분석의 4대 가정</h3>
+  <h4>선형성(Linearity)</h4>
+  <p><b>Concept</b>: 독립변수와 종속변수의 관계가 직선으로 표현될 수 있어야 한다는 성질. "X와 Y의 평균적인 관계가 직선으로 설명될 수 있는가?"가 핵심 질문이다. 선형관계일 때는 잔차가 랜덤하게 흩어지지만, 실제 관계가 곡선(비선형)인데 직선으로 억지로 맞추면 잔차가 U자형 등 특정 패턴을 보인다.</p>
+  <h4>독립성(Independence)</h4>
+  <p><b>Concept</b>: 각 관측치의 오차는 다른 관측치의 오차와 서로 영향을 주고받지 않아야 한다. 오늘의 예측 오차가 양수였기 때문에 내일도 양수가 되는 경향이 반복된다면 오차들이 서로 독립적이지 않은 것이며, 이는 중복된 정보가 포함된 것과 비슷한 효과를 낸다. 시계열 데이터(매출·주가·기온), 공간 데이터(인접 지역 집값), 반복 측정 데이터(한 사람의 혈압을 여러 번 측정)에서 독립성 위반이 자주 발생한다.</p>
+  <h4>등분산성(Homoscedasticity)</h4>
+  <p><b>Concept</b>: 예측값의 크기와 관계없이 잔차의 분산(퍼짐)은 일정해야 한다. "잔차의 퍼짐이 일정한가?"를 보는 것이지, 오차가 작은지를 보는 것이 아니다. 위반되면(이분산성, Heteroscedasticity) 표준오차가 왜곡되고 p-value가 부정확해지며 변수의 유의성을 잘못 판단할 수 있다. 등분산이면 예측값 전체에서 잔차가 고르게 퍼지지만, 이분산이면 예측값이 커질수록 잔차의 퍼짐이 깔때기 모양으로 커지거나 작아진다.</p>
+  <h4>정규성(Normality)</h4>
+  <p><b>Concept</b>: 오차(잔차)가 평균이 0인 정규분포를 따라야 한다. "데이터 자체가 정규분포여야 한다"는 대표적인 오해이며, 정확히는 <b>잔차의</b> 정규성을 말한다. 회귀계수 자체는 정규성이 없어도 계산되지만, 회귀계수의 유의성 검정(t-test), 전체 모형검정(F-test), p-value·신뢰구간 계산 같은 <b>통계적 추론</b>을 위해서는 정규성이 필요하다. "회귀식을 계산하기 위한 가정"이라기보다 "회귀 결과를 해석하기 위한 가정"에 가깝다. 실무에서는 데이터가 충분히 많으면(중심극한정리) 정규성 위반이 큰 문제가 되지 않는 경우가 많다. Q-Q Plot에서 점들이 대각선에 가깝게 위치하면 정규성을 만족하고, 꼬리 부분이 직선에서 벗어나면 꼬리가 두껍다는 뜻이다.</p>
+
+  <h3>3) 다중공선성(No Multicollinearity)</h3>
+  <p><b>Concept</b>: 독립변수들(X) 사이에 강한 상관관계가 존재하는 현상. 독립변수들이 서로 거의 같은 정보를 가지고 있으면 각 변수의 고유한 영향을 구분하기 어려워진다.</p>
+  <div class="callout myth"><span class="ctitle">⚠️ 자주 하는 착각</span>
+  <p>"독립변수와 종속변수가 상관이 높으면 안 된다"? → 틀렸다. 오히려 좋은 상황이다. "독립변수끼리 상관이 높으면 안 된다"? → 맞다, 이것이 다중공선성이다. 다중공선성이 있으면 회귀계수가 불안정해지고, 변수의 중요도를 해석하기 어려워지며, 중요한 변수가 유의하지 않은 것처럼 나타날 수 있다.</p></div>
+
+  <h3>4) 잔차는 모든 것을 말해준다</h3>
+  <p>회귀모형의 가정 중 대부분은 잔차(Residual)를 통해 확인한다.</p>
+  <table class="t"><thead><tr><th>회귀모형의 가정</th><th>잔차 관점에서 확인할 사항</th><th>가정이 위배될 때 나타나는 현상</th></tr></thead>
+  <tbody>
+  <tr><td>선형성(Linearity)</td><td>잔차에 특정한 패턴이 없어야 한다(Random)</td><td>잔차가 곡선(U자형, S자형 등) 패턴을 보인다</td></tr>
+  <tr><td>독립성(Independence)</td><td>잔차들끼리 서로 상관이 없어야 한다</td><td>잔차가 시간이나 순서에 따라 연속적인 패턴을 보인다</td></tr>
+  <tr><td>등분산성(Homoscedasticity)</td><td>잔차의 퍼짐(분산)이 예측값 전체에서 일정해야 한다</td><td>잔차의 퍼짐이 점점 커지거나 작아진다(깔때기 모양)</td></tr>
+  <tr><td>정규성(Normality)</td><td>잔차가 정규분포를 따라야 한다</td><td>잔차 히스토그램 또는 Q-Q Plot이 정규분포에서 크게 벗어난다</td></tr>
+  </tbody></table>
+
+  <h3>5) 잔차 가정의 수학적 표현</h3>
+  <div class="formula"><div class="expr">Yᵢ = β₁ + β₂Xᵢ + eᵢ &nbsp; (i=1,2,...,n)</div></div>
+  <ul class="b">
+  <li><b>가정1. E(eᵢ)=0, ∀i</b> — 교육수준(x)과 소득(y) 예시로 보면, 평균보다 많이 벌거나 적게 버는 사람이 있지만 모두 합산했을 때 상쇄되어 그 합이 0이라는 것</li>
+  <li><b>가정2. E(eᵢ²)=Var(eᵢ)=σ², ∀i</b> — xᵢ가 어떤 값을 가지더라도(교육수준이 몇 년이든) eᵢ의 분포(퍼짐)는 동일하다는 것(등분산). 교육수준 16년일 때 평균소득 500만원 근방 ±50만원이라면, 교육수준 22년일 때 평균소득 800만원 근방도 여전히 ±50만원이어야 한다는 뜻인데, 현실적으로는 비현실적일 수 있다.</li>
+  <li><b>가정3. E(eᵢ·eⱼ)=Cov(eᵢ,eⱼ)=0, i≠j</b> — 서로 다른 eᵢ들 사이에는 아무런 관계가 없다는 것. 자기상관(Auto Correlation, Serial Correlation)이 없다는 의미와 동일하다.</li>
+  </ul>
+
+  <h3>6) 불편 추정량(Unbiased Estimator)</h3>
+  <p>불편성이란 어떤 모수의 추정량의 기댓값이 원래 모수가 되는 성질이다. 표본 분산에 대해 평균을 내면 모집단의 분산(variance)이 되는데, 이를 불편 추정량이라 부른다 — 말 그대로 편의(치우침)가 없는 정확한 추정량이라는 것이다.</p>
+  <div class="formula"><div class="expr">Var(β̂₂) = E[β̂₂ − E(β₂)]² = (σ² / (n−1)) / Var(X)</div></div>
+  <p>Var(β̂₂)가 작으면 여러 표본에서 구한 회귀직선들이 한 점 근처에 모여 비슷하게 그려지고, Var(β̂₂)가 크면 회귀직선들이 사방으로 크게 흩어진다.</p>
+
+  <h3>7) 강건성(Robustness)</h3>
+  <p>강건성이란 다양한 상황·예상치 못한 데이터·환경변화에도 견고한 성능을 유지하며 안정적으로 예측력을 제공하는 능력이다. 노이즈가 추가되거나 조건이 바뀌어도 성능이 크게 변하지 않는, 인풋값의 작은 변화에도 아웃풋값이 크게 변하지 않는 성질이며, 데이터 증대와 품질 향상, 일반화 노력이 견고성을 높이는 대표적 수단이다.</p>
+  <div class="cp"><div class="cphead">✔ 모형 복잡도와 강건성 — Bias-Variance Tradeoff</div><ul>
+  <li><b>Underfitting</b> (Low complexity) — High Bias, Low Variance: 모형이 너무 단순해 데이터의 패턴을 충분히 못 잡아낸다</li>
+  <li><b>Overfitting</b> (High complexity) — Low Bias, High Variance: 모형이 훈련 데이터의 잡음까지 과도하게 학습해 새로운 데이터에서 성능이 떨어진다</li>
+  <li>적정 복잡도에서 Training Sample 정확도와 Shifted/Modified Test Sample 정확도 사이의 트레이드오프가 균형을 이룬다</li>
+  </ul></div>
+</section>
+
+<div class="quiz-wrap" id="quiz-day2">
+  <h2>✅ Day 2 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="2">0 / 7 정답</div>
+  <div class="quiz-q" data-qid="d2q0" data-type="ox" data-answer="false" data-exp="상관계수는 오히려 이상치에 매우 민감해요. 키·체중 7명 사례에서 이상치 하나로 상관계수가 0.339 → 0.857로 크게 변했습니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>상관계수는 이상치(outlier)의 영향을 거의 받지 않는 강건한 지표다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q1" data-type="ox" data-answer="true" data-exp="다우존스 지수와 제니퍼 로렌스 언급 횟수처럼, 실제로는 인과관계가 없는데도 통계적으로 높은 상관관계가 나타나는 경우를 Spurious Correlation(가짜 상관관계)이라고 해요.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>두 변수 사이에 인과관계가 전혀 없어도 우연히 높은 상관계수가 나타날 수 있는데, 이를 Spurious Correlation이라 부른다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q2" data-type="ox" data-answer="true" data-exp="회귀효과(Regression to the mean)는 상관계수(|r|)가 0에 가까울수록 더 강하게 나타나요. r=1이면 회귀효과가 전혀 없습니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>회귀효과(Regression to the mean)는 상관계수의 절댓값이 0에 가까울수록 더 크게 나타난다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q3" data-type="mc" data-answer="독립변수끼리 상관이 높은 경우" data-exp="다중공선성은 독립변수(X)들 사이의 상관이 높을 때 발생하는 문제예요. 독립변수와 종속변수의 상관이 높은 것은 오히려 바람직한 상황입니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>다중공선성(Multicollinearity)이 발생하는 상황으로 옳은 것은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="독립변수와 종속변수의 상관이 높은 경우">독립변수와 종속변수의 상관이 높은 경우</button>
+      <button class="quiz-opt" data-val="독립변수끼리 상관이 높은 경우">독립변수끼리 상관이 높은 경우</button>
+      <button class="quiz-opt" data-val="잔차의 분산이 일정한 경우">잔차의 분산이 일정한 경우</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q4" data-type="mc" data-answer="잔차의 퍼짐이 예측값 크기에 따라 깔때기 모양으로 변한다" data-exp="등분산성(Homoscedasticity) 위반, 즉 이분산성이 있을 때 나타나는 전형적인 잔차 패턴이 예측값이 커질수록 잔차의 퍼짐이 깔때기 모양으로 커지거나 작아지는 것입니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>회귀모형의 등분산성(Homoscedasticity) 가정이 위반되었을 때 잔차 그래프에서 전형적으로 나타나는 패턴은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="잔차가 완전히 무작위로 고르게 퍼진다">잔차가 완전히 무작위로 고르게 퍼진다</button>
+      <button class="quiz-opt" data-val="잔차의 퍼짐이 예측값 크기에 따라 깔때기 모양으로 변한다">잔차의 퍼짐이 예측값 크기에 따라 깔때기 모양으로 변한다</button>
+      <button class="quiz-opt" data-val="잔차가 항상 정규분포를 따른다">잔차가 항상 정규분포를 따른다</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q5" data-type="short" data-accept='["최소제곱법", "OLS", "ols", "최소자승법"]' data-exp="실제값과 예측값의 차이(잔차)의 제곱합을 최소화하는 방법이 최소제곱법(Least Squares Method), 영문 약자로는 OLS(Ordinary Least Squares)예요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>잔차 제곱합을 최소화하여 회귀직선의 기울기·절편을 구하는 방법을 무엇이라 하는가? (한글 용어 또는 영문 약자)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q6" data-type="short" data-accept='["R2", "r2", "R²", "결정계수", "R-squared", "r-squared"]' data-exp="R²(결정계수, Coefficient of Determination)은 SSR/SST = 1-SSE/SST로, 회귀모형이 종속변수의 변동을 얼마나 설명하는지를 나타내요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>회귀모형이 데이터를 얼마나 잘 설명하는지를 나타내는, SSR/SST로 계산되는 지표는? (기호 또는 한글 용어)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+
+  </main>
+</div>
+<button class="top-btn" id="topBtn" title="맨 위로">↑</button>
+
+<script>
+  const links = document.querySelectorAll('.navlink');
+  const sections = document.querySelectorAll('.sec');
+  const searchBox = document.getElementById('searchBox');
+  const topBtn = document.getElementById('topBtn');
+
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const id = e.target.id;
+        links.forEach(l=>l.classList.toggle('active', l.getAttribute('href')==='#'+id));
+      }
+    });
+  }, {rootMargin:'-10% 0px -70% 0px'});
+  sections.forEach(s=>obs.observe(s));
+
+  searchBox.addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    sections.forEach(sec=>{
+      const text = sec.innerText.toLowerCase();
+      const match = q==='' || text.includes(q);
+      sec.style.display = match ? '' : 'none';
+    });
+    links.forEach(l=>{
+      const num = l.getAttribute('data-sec');
+      if(!num) return;
+      const sec = document.getElementById('s'+num);
+      const groupTitle = l.textContent.toLowerCase();
+      const match = q==='' || (sec && sec.innerText.toLowerCase().includes(q)) || groupTitle.includes(q);
+      l.style.display = match ? '' : 'none';
+    });
+  });
+
+  window.addEventListener('scroll', ()=>{
+    topBtn.style.display = window.scrollY > 600 ? 'block' : 'none';
+  });
+  topBtn.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'}));
+
+  // ---- Theme toggle ----
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', ()=>{
+    document.body.classList.toggle('light');
+    const isLight = document.body.classList.contains('light');
+    themeBtn.textContent = isLight ? '🌙 다크 모드' : '☀ 라이트 모드';
+  });
+
+  // ---- Quiz interactivity ----
+  function updateScore(day){
+    const wrap = document.getElementById('quiz-day'+day);
+    const total = wrap.querySelectorAll('.quiz-q').length;
+    const correct = wrap.querySelectorAll('.quiz-q.answered-correct').length;
+    wrap.querySelector('.quiz-score').textContent = correct + ' / ' + total + ' 정답';
+  }
+  const MAX_ATTEMPTS = 3;
+  function expHtml(exp){
+    return exp ? '<div class="quiz-exp">💡 ' + exp + '</div>' : '';
+  }
+  document.querySelectorAll('.quiz-q[data-type="ox"], .quiz-q[data-type="mc"]').forEach(qEl=>{
+    const answer = qEl.dataset.answer;
+    const exp = qEl.dataset.exp || '';
+    const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    const fb = qEl.querySelector('.quiz-feedback');
+    let attempts = 0;
+    qEl.querySelectorAll('.quiz-opt').forEach(opt=>{
+      opt.addEventListener('click', ()=>{
+        if(qEl.classList.contains('locked') || opt.disabled) return;
+        const val = opt.dataset.val;
+        const isCorrect = (val === answer);
+        if(isCorrect){
+          qEl.classList.add('locked','answered-correct');
+          opt.classList.add('correct');
+          qEl.querySelectorAll('.quiz-opt').forEach(o=> o.setAttribute('disabled','true'));
+          fb.innerHTML = '정답이에요! 🎉' + expHtml(exp);
+          fb.className = 'quiz-feedback ok';
+          updateScore(day);
+          return;
+        }
+        attempts++;
+        opt.classList.add('incorrect');
+        opt.setAttribute('disabled','true');
+        if(attempts >= MAX_ATTEMPTS){
+          qEl.classList.add('locked');
+          qEl.querySelectorAll('.quiz-opt').forEach(o=>{
+            o.setAttribute('disabled','true');
+            if(o.dataset.val === answer) o.classList.add('correct');
+          });
+          fb.innerHTML = MAX_ATTEMPTS + '번 틀렸어요. 정답은 강조 표시된 항목이에요.' + expHtml(exp);
+        } else {
+          fb.textContent = '아쉬워요, 다시 시도해보세요. (' + attempts + '/' + MAX_ATTEMPTS + ')';
+        }
+        fb.className = 'quiz-feedback no';
+        updateScore(day);
+      });
+    });
+  });
+  document.querySelectorAll('.quiz-q[data-type="short"]').forEach(qEl=>{
+    const acceptRaw = JSON.parse(qEl.dataset.accept);
+    const accept = acceptRaw.map(a=>a.toLowerCase().trim());
+    const exp = qEl.dataset.exp || '';
+    const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    const input = qEl.querySelector('input');
+    const btn = qEl.querySelector('.quiz-check');
+    const fb = qEl.querySelector('.quiz-feedback');
+    let attempts = 0;
+    function check(){
+      if(qEl.classList.contains('locked')) return;
+      const val = input.value.toLowerCase().trim();
+      const isCorrect = accept.includes(val) && val !== '';
+      if(isCorrect){
+        qEl.classList.add('locked','answered-correct');
+        fb.innerHTML = '정답이에요! 🎉' + expHtml(exp);
+        fb.className = 'quiz-feedback ok';
+        input.disabled = true; btn.disabled = true;
+        updateScore(day);
+        return;
+      }
+      attempts++;
+      if(attempts >= MAX_ATTEMPTS){
+        qEl.classList.add('locked');
+        input.disabled = true; btn.disabled = true;
+        fb.innerHTML = MAX_ATTEMPTS + '번 틀렸어요. 정답은 <b>' + acceptRaw[0] + '</b> 이에요.' + expHtml(exp);
+      } else {
+        fb.textContent = '다시 시도해보세요. (' + attempts + '/' + MAX_ATTEMPTS + ')';
+      }
+      fb.className = 'quiz-feedback no';
+    }
+    btn.addEventListener('click', check);
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); });
+  });
+</script>
+</body>
+</html>
