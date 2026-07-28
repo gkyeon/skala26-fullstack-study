@@ -436,6 +436,9 @@
 <a class="navlink" href="#s33" data-sec="33">33. 종합실습 – 4</a>
 <a class="navlink" href="#quiz-day4" style="color:var(--accent2);">✅ Day4 퀴즈</a>
 </div>
+<div class="day-group"><div class="day-title">종합</div>
+<a class="navlink" href="#quiz-dayfinal" style="color:var(--accent2);">📝 과목 마무리 퀴즈</a>
+</div>
   </nav>
   <main>
     <div class="page-head">
@@ -6217,7 +6220,7 @@ cur.execute("SELECT * FROM users WHERE name = %s", (user_input,))</code></pre></
 <li><code>%s</code>는 <b>파이썬의 <code>%</code> 포맷이 아니라 드라이버의 자리표시자</b>다. <code>cur.execute("... = %s" % user_input)</code>처럼 <b><code>%</code>로 미리 끼워 넣으면 문자열 이어붙이기와 완전히 같아진다</b> — 생김새가 비슷해서 가장 많이 하는 실수다.</li>
 <li><b>여기서 최소 권한 원칙이 왜 중요한지가 드러난다</b> — <b>애플리케이션 계정에 <code>DROP</code> 권한이 없었다면 뚫려도 테이블은 살아남았다.</b> 두 층이 다 있어야 사고가 막힌다.</li>
 </ul></div>
-<div class="callout myth"><span class="ctitle">⚠️ 바인딩으로 안 되는 자리가 있다 — 정렬·컬럼 이름</b></span>
+<div class="callout myth"><span class="ctitle">⚠️ 바인딩으로 안 되는 자리가 있다 — 정렬·컬럼 이름</span>
 <p><code>ORDER BY $1</code>이나 <code>FROM $1</code>은 <b>동작하지 않는다.</b> 바인딩은 <b>값</b>의 자리에만 쓸 수 있고 <b>식별자</b>는 안 된다. 그래서 정렬 컬럼을 사용자가 고르게 하려면 <b>화이트리스트</b>(허용된 컬럼명 목록에 있는지 코드로 검사)를 쓰고, 동적으로 만들어야 한다면 PL/pgSQL의 <code>format('... %I ...', col)</code>처럼 <b>식별자 전용 이스케이프(<code>%I</code>)</b>를 쓴다.</p>
 <p>그리고 <b>ORM도 자동 방어가 아니다.</b> ORM이 만들어 주는 쿼리는 안전하지만, <b>raw SQL을 문자열로 조립하는 순간</b>(<code>@Query("... where name = '" + name + "'")</code>) 똑같이 뚫린다. <b>저장 프로시저·뷰도 마찬가지</b>다 — 그 안에서 동적 SQL을 문자열로 만들면 소용없다.</p></div>
 
@@ -6577,6 +6580,213 @@ avg  0.195 ms</code></pre></div>
               </div>
               <div class="quiz-feedback"></div>
             </div>
+</div>
+
+<div class="quiz-wrap" id="quiz-dayfinal">
+  <h2>📝 과목 마무리 퀴즈</h2>
+  <p>Day1~4 전체 내용(발전과정·ACID·WAL·Consensus·Isolation Level, 모델링·DDL·제약조건·데이터타입, 인덱스·실행계획, Cloud DB)을 종합 점검하는 20문항 마무리 퀴즈예요.</p>
+  <div class="quiz-score" data-day="final">0 / 20 정답</div>
+
+  <div class="quiz-q" data-qid="fq1" data-type="mc" data-answer="RDBMS에 비해 데이터베이스 수평 확장이 매우 어렵다" data-exp="파일 시스템 시대의 실제 한계는 데이터 중복·일관성 부족·동시성 제어 불가였어요. '수평 확장'은 RDBMS 이후에나 논의되는 개념이라 시대적으로 맞지 않는 보기예요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>데이터베이스 발전 과정 중 1960년대 '파일 시스템' 시대의 대표적인 한계점으로 가장 적합하지 않은 것은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="애플리케이션마다 독자적인 파일을 사용하여 데이터 중복이 발생하기 쉽다">애플리케이션마다 독자적인 파일을 사용하여 데이터 중복이 발생하기 쉽다</button>
+      <button class="quiz-opt" data-val="데이터 불일치가 일어날 확률이 높아 일관성 보장이 어렵다">데이터 불일치가 일어날 확률이 높아 일관성 보장이 어렵다</button>
+      <button class="quiz-opt" data-val="여러 사용자가 동시에 데이터를 수정하고 접근하는 동시성 제어가 불가능하다">여러 사용자가 동시에 데이터를 수정하고 접근하는 동시성 제어가 불가능하다</button>
+      <button class="quiz-opt" data-val="RDBMS에 비해 데이터베이스 수평 확장이 매우 어렵다">관계형 데이터베이스(RDBMS)에 비해 데이터베이스 수평 확장이 매우 어렵다</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq2" data-type="mc" data-answer="계층형 데이터베이스 (Hierarchical DB)" data-exp="IBM IMS로 대표되는 계층형 DB는 트리 구조라 1:N 탐색은 빠르지만 N:M 관계 표현이 어려워요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>1970년대 IBM IMS 등으로 대표되며, 1:N 관계의 데이터를 빠른 속도로 탐색할 수 있으나 N:M(다대다) 관계 표현이 어렵고 유연성이 부족했던 데이터베이스 구조는 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="파일 시스템">파일 시스템</button>
+      <button class="quiz-opt" data-val="계층형 데이터베이스 (Hierarchical DB)">계층형 데이터베이스 (Hierarchical DB)</button>
+      <button class="quiz-opt" data-val="관계형 데이터베이스 (RDBMS)">관계형 데이터베이스 (RDBMS)</button>
+      <button class="quiz-opt" data-val="NoSQL 데이터베이스">NoSQL 데이터베이스</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq3" data-type="mc" data-answer="Atomicity (원자성)" data-exp="원자성(Atomicity)은 트랜잭션의 모든 작업이 전부 수행되거나 전혀 수행되지 않아야 한다는 All-or-Nothing 원칙이에요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>데이터베이스 트랜잭션이 안전하게 수행된다는 것을 보장하기 위한 4가지 원칙(ACID) 중, "트랜잭션 내 모든 작업이 완전히 수행되거나 아니면 전혀 수행되지 않아야 한다(All or Nothing)"는 속성은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="Atomicity (원자성)">Atomicity (원자성)</button>
+      <button class="quiz-opt" data-val="Consistency (일관성)">Consistency (일관성)</button>
+      <button class="quiz-opt" data-val="Isolation (격리성)">Isolation (격리성)</button>
+      <button class="quiz-opt" data-val="Durability (지속성)">Durability (지속성)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq4" data-type="mc" data-answer="Isolation (격리성)" data-exp="격리성(Isolation)은 동시에 실행되는 트랜잭션들이 서로 간섭하지 않고 순차 실행된 것처럼 보이게 보장해요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>트랜잭션이 동시에 여러 개 실행될 때, 서로 간섭하지 못하도록 차단하여 마치 순차적으로 하나씩 실행되는 것처럼 보장하는 ACID 속성은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="Atomicity (원자성)">Atomicity (원자성)</button>
+      <button class="quiz-opt" data-val="Consistency (일관성)">Consistency (일관성)</button>
+      <button class="quiz-opt" data-val="Isolation (격리성)">Isolation (격리성)</button>
+      <button class="quiz-opt" data-val="Durability (지속성)">Durability (지속성)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq5" data-type="mc" data-answer="MyISAM" data-exp="MyISAM은 Rollback과 외래키(FK) 제약조건을 지원하지 않아 사실상 ACID를 완전히 보장하지 못해요. InnoDB는 둘 다 지원해요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>MySQL 데이터베이스의 스토리지 엔진 중, 트랜잭션 Rollback 기능이나 외래키(FK) 제약조건을 지원하지 않아 사실상 교과서적인 ACID 속성을 완전하게 보장하기 어려운 엔진은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="InnoDB">InnoDB</button>
+      <button class="quiz-opt" data-val="MyISAM">MyISAM</button>
+      <button class="quiz-opt" data-val="PostgreSQL 엔진">PostgreSQL 엔진</button>
+      <button class="quiz-opt" data-val="Memory 엔진">Memory 엔진</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq6" data-type="mc" data-answer="WAL (Write-Ahead Logging)" data-exp="WAL은 데이터 파일을 직접 수정하기 전에 로그를 먼저 기록해두는 방식으로, 장애 복구와 지속성(Durability)을 보장해요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>데이터베이스에서 변경 사항을 실제 디스크의 데이터 파일에 직접 수정하기 전에, 장애 복구와 지속성 보장을 위해 별도의 로그 버퍼 및 디스크 저널에 변경 내역을 먼저 기록하는 안전장치 기술은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="MVCC (다중 버전 동시성 제어)">MVCC (다중 버전 동시성 제어)</button>
+      <button class="quiz-opt" data-val="WAL (Write-Ahead Logging)">WAL (Write-Ahead Logging)</button>
+      <button class="quiz-opt" data-val="Consensus (합의 알고리즘)">Consensus (합의 알고리즘)</button>
+      <button class="quiz-opt" data-val="Checkpoint (체크포인트)">Checkpoint (체크포인트)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq7" data-type="mc" data-answer="WAL (Witte-Ahead Logging)" data-exp="WAL은 단일 노드 안에서 장애 복구를 보장하는 로컬 로그 기술일 뿐, 여러 노드가 투표로 합의하는 분산 합의 알고리즘이 아니에요. Paxos·Raft는 대표적인 분산 합의 알고리즘이고, TrueTime API는 Paxos와 함께 쓰이는 전역 시계 동기화 기술이에요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>분산/클라우드 데이터베이스 환경(예: AWS Aurora, CockroachDB)에서 여러 노드가 네트워크 지연이나 장애를 겪더라도 과반수 투표를 통해 데이터의 강한 일관성(Strong Consistency)과 동일한 상태를 유지하게 만드는 분산 합의 알고리즘으로 보기 어려운 것은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="Paxos">Paxos</button>
+      <button class="quiz-opt" data-val="Raft">Raft</button>
+      <button class="quiz-opt" data-val="TrueTime API">TrueTime API</button>
+      <button class="quiz-opt" data-val="WAL (Witte-Ahead Logging)">WAL (Witte-Ahead Logging)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq8" data-type="mc" data-answer="Dirty Read" data-exp="커밋되지 않은 다른 트랜잭션의 임시 변경 데이터를 읽어버리는 현상이 Dirty Read예요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>트랜잭션 동시성 이상 현상 중, 아직 커밋(Commit)되지 않은 다른 트랜잭션의 임시 변경 데이터를 조회하여 잘못된 상태를 읽어오게 되는 현상을 무엇이라고 하나요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="Dirty Read">Dirty Read</button>
+      <button class="quiz-opt" data-val="Non-Repeatable Read">Non-Repeatable Read</button>
+      <button class="quiz-opt" data-val="Phantom Read">Phantom Read</button>
+      <button class="quiz-opt" data-val="Lost Update">Lost Update</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq9" data-type="mc" data-answer="Phantom Read" data-exp="같은 조건으로 두 번 조회했는데 행의 개수가 달라지는 현상이 Phantom Read예요(다른 트랜잭션의 INSERT/DELETE 때문).">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>하나의 트랜잭션 안에서 동일한 조건으로 SELECT 조회를 두 번 실행했는데, 첫 번째 조회 때는 없던 새로운 행이 추가되거나 기존 행이 사라져 데이터의 '개수(행의 수)'가 달라지는 이상 현상은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="Dirty Read">Dirty Read</button>
+      <button class="quiz-opt" data-val="Non-Repeatable Read">Non-Repeatable Read</button>
+      <button class="quiz-opt" data-val="Phantom Read">Phantom Read</button>
+      <button class="quiz-opt" data-val="Isolation Read">Isolation Read</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq10" data-type="mc" data-answer="Read Committed" data-exp="PostgreSQL과 Oracle의 기본 격리 수준은 Read Committed예요. Dirty Read는 막지만 Non-Repeatable Read는 발생할 수 있어요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>PostgreSQL과 Oracle 데이터베이스의 기본 격리 수준(Default Isolation Level)에 해당하며, Dirty Read는 완벽하게 차단하지만 하나의 트랜잭션 안에서 동일한 행을 다시 읽었을 때 값이 바뀔 수 있는 수준은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="Read Uncommitteed">Read Uncommitteed</button>
+      <button class="quiz-opt" data-val="Read Committed">Read Committed</button>
+      <button class="quiz-opt" data-val="Repeatable Read">Repeatable Read</button>
+      <button class="quiz-opt" data-val="Serializable">Serializable</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq11" data-type="mc" data-answer="Repeatable Read" data-exp="MySQL(InnoDB)의 기본 격리 수준은 Repeatable Read이고, MVCC 스냅샷과 Next-Key Lock 덕분에 표준 정의보다 강력하게 Phantom Read까지 실질적으로 차단해줘요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>MySQL(InnoDB)의 기본 격리 수준이며, 일반적인 SELECT 조회 시 MVCC(다중 버전 동시성 제어) 스냅샷을 사용하고 잠금 읽기 시 Next-Key Lock(레코드+갭 잠금)을 활용하여 표준 정의와 달리 실질적으로 Phantom Read까지 차단해 주는 높은 안정성의 격리 수준은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="Read Uncimmitted">Read Uncimmitted</button>
+      <button class="quiz-opt" data-val="Read Committed">Read Committed</button>
+      <button class="quiz-opt" data-val="Repeatable Read">Repeatable Read</button>
+      <button class="quiz-opt" data-val="Serializable">Serializable</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq12" data-type="mc" data-answer="개념적 모델 설계 (개념 모델링)" data-exp="개념적 모델링은 특정 DBMS에 종속되지 않고 엔티티·속성·관계를 도출하는 가장 첫 추상화 단계예요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>다음 중 고유한 참값(Real-world entity)을 가지는 식별 불가능한 데이터 모델링 단계에서, 엔티티(Entity)와 속성, 이들 간의 관계를 도출하여 다이어그램으로 그리지만 특정 DBMS 기종(Oracle, MySQL 등)에 종속되지 않는 최초의 추상화 단계는 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="개념적 모델 설계 (개념 모델링)">개념적 모델 설계 (개념 모델링)</button>
+      <button class="quiz-opt" data-val="논리적 모델 설계 (논리 모델링)">논리적 모델 설계 (논리 모델링)</button>
+      <button class="quiz-opt" data-val="물리적 모델 설계 (물리 모델링)">물리적 모델 설계 (물리 모델링)</button>
+      <button class="quiz-opt" data-val="인덱스 튜닝 단계">인덱스 튜닝 단계</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq13" data-type="mc" data-answer="CREATE ALTER, DROP" data-exp="CREATE, ALTER, DROP처럼 스키마 구조 자체를 정의하는 명령어들이 DDL(Data Definition Language)이에요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>테이블 스키마 구조를 정의하는 SQL 문법 분류인 DDL(Data Definition Language)에 속하는 명령어로만 묶인 것은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="SELECT, INSERT, UPDATE">SELECT, INSERT, UPDATE</button>
+      <button class="quiz-opt" data-val="CREATE ALTER, DROP">CREATE ALTER, DROP</button>
+      <button class="quiz-opt" data-val="GRANT, REVOKE, DENY">GRANT, REVOKE, DENY</button>
+      <button class="quiz-opt" data-val="COMMIT, ROLLBACK, SAVEPOINT">COMMIT, ROLLBACK, SAVEPOINT</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq14" data-type="mc" data-answer="FOREIGN KEY (외래키)" data-exp="외래키(FOREIGN KEY)는 자식 테이블이 부모 테이블의 PK/UNIQUE 컬럼을 참조하도록 강제해 잘못된 데이터 결합을 막아줘요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>데이터 무결성을 보장하는 '4대 제약조건' 중 하나로, 자식 테이블의 컬럼이 부모 테이블의 기본키(PK)나 유니크(UNIQUE) 컬럼을 참조하도록 지정하여 잘못된 데이터 결합을 방지하는 제약조건은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="NOT NULL">NOT NULL</button>
+      <button class="quiz-opt" data-val="DEFAULT">DEFAULT</button>
+      <button class="quiz-opt" data-val="CHECK">CHECK</button>
+      <button class="quiz-opt" data-val="FOREIGN KEY (외래키)">FOREIGN KEY (외래키)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq15" data-type="mc" data-answer="DECIMAL 또는 NUMERIC" data-exp="FLOAT/DOUBLE/REAL은 부동소수점이라 오차가 생길 수 있어요. 금액처럼 정밀도가 중요한 데이터는 DECIMAL/NUMERIC을 써야 해요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>금액이나 수량처럼 소수점 이하의 오차가 절대 발생하면 안 되는 정밀한 금융 데이터를 저장할 때 표준 SQL 스키마 설계에서 가장 권장되는 호환성 높은 데이터 타입은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="FLOAT">FLOAT</button>
+      <button class="quiz-opt" data-val="DOUBLE">DOUBLE</button>
+      <button class="quiz-opt" data-val="DECIMAL 또는 NUMERIC">DECIMAL 또는 NUMERIC</button>
+      <button class="quiz-opt" data-val="REAL">REAL</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq16" data-type="mc" data-answer="대용량 테이블의 특정 컬럼 데이터 타입을 완전히 변경하기" data-exp="컬럼 타입 변경은 대부분 테이블 전체를 재작성해야 해서 대용량 테이블에서는 긴 락 경합과 부하를 유발하는 고위험 작업이에요. 반면 끝에 NULL 허용 컬럼 추가나 주석 추가는 상대적으로 가벼워요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>대용량 테이블 운영 시 스키마 변경(ALTER TABLE) 작업은 큰 부하를 유발합니다. 다음 중 데이터가 수천만 건 쌓여 있는 프로덕션 환경에서 가장 주의해야 하며 테이블 전체 재작성(Full Table Rewrite) 및 락(Lock) 경합을 발생시킬 수 있는 고위험 작업은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="새로운 NULL 허용 컬럼을 맨 끝에 추가하기">새로운 NULL 허용 컬럼을 맨 끝에 추가하기</button>
+      <button class="quiz-opt" data-val="대용량 테이블의 특정 컬럼 데이터 타입을 완전히 변경하기">대용량 테이블의 특정 컬럼 데이터 타입을 완전히 변경하기</button>
+      <button class="quiz-opt" data-val="인덱스가 없는 컬럼에 단순 주석(COMMENT) 추가하기">인덱스가 없는 컬럼에 단순 주석(COMMENT) 추가하기</button>
+      <button class="quiz-opt" data-val="트랜잭션 강제 커밋 수행하기">트랜잭션 강제 커밋 수행하기</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq17" data-type="mc" data-answer="WHERE YEAR(order_date) = 2024와 같이 WHERE 절 안에서 인덱스 컬럼을 함수로 감싸 변형하기" data-exp="인덱스 컬럼에 함수를 씌우면 옵티마이저가 인덱스를 활용하지 못해 풀스캔이 발생해요. 범위 조건으로 바꾸면 인덱스를 그대로 탈 수 있어요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>SQL 성능 최적화(튜닝) 관점에서 인덱스(Index)의 작동 방식을 무력화하여 옵티마이저가 무조건적인 테이블 전체 스캔(Seq Scan 또는 Full Table Scan)을 선택하게 만드는 나쁜 SQL 작성 패턴은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="WHERE 절 조건식 왼쪽에 인덱스 컬럼을 날것 그대로 명시하기">WHERE 절 조건식 왼쪽에 인덱스 컬럼을 날것 그대로 명시하기</button>
+      <button class="quiz-opt" data-val="WHERE YEAR(order_date) = 2024와 같이 WHERE 절 안에서 인덱스 컬럼을 함수로 감싸 변형하기">WHERE YEAR(order_date) = 2024와 같이 WHERE 절 안에서 인덱스 컬럼을 함수로 감싸 변형하기</button>
+      <button class="quiz-opt" data-val="범위 조건으로 분리하기">WHERE order_date >= '2024-01-01' AND order_date &lt; '2025-01-01'처럼 범위 조건으로 분리하기</button>
+      <button class="quiz-opt" data-val="필요한 컬럼만 명시하기">SELECT 문에 전체 아스테리스크(*) 대신 필요한 컬럼만 명시하기</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq18" data-type="mc" data-answer="Index Only Scan (인덱스 전용 스캔)" data-exp="필요한 컬럼이 모두 인덱스 안에 있으면(커버링 인덱스) 테이블 디스크를 아예 안 읽고 인덱스만으로 응답하는 Index Only Scan이 가장 빨라요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>SQL 실행 계획을 분석하기 위해 EXPLAIN 혹은 EXPLAIN ANALYZE 명령을 활용할 때, 출력 결과 중 "인덱스 내의 정보만으로 쿼리가 요청한 모든 컬럼을 커버할 수 있어, 실제 데이터 블록이 있는 테이블 디스크를 단 한 번도 보러 가지 않는 가장 효율적인 탐색 형태"는 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="Seq Scan (전체 스캔)">Seq Scan (전체 스캔)</button>
+      <button class="quiz-opt" data-val="Index Scan (인덱스 스캔)">Index Scan (인덱스 스캔)</button>
+      <button class="quiz-opt" data-val="Index Only Scan (인덱스 전용 스캔)">Index Only Scan (인덱스 전용 스캔)</button>
+      <button class="quiz-opt" data-val="Nested Loop (중첩 루프 조인)">Nested Loop (중첩 루프 조인)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq19" data-type="mc" data-answer="물리적인 서버 하드웨어 교체, 디스크 불량 복구 및 인프라 마이너 패치" data-exp="DBaaS의 책임 공유 모델에서 물리 인프라 관리는 클라우드 공급자 책임이지만, 쿼리 튜닝·ERD 설계·보안 정책·메이저 버전 업그레이드 검증은 여전히 사용자(개발팀) 책임이에요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>클라우드 관리형 데이터베이스 서비스(DBaaS, 예: AWS RDS)를 도입하여 사용할 때, 공급업체(AWS 등)가 자동 관리해 주기 때문에 우리의 책임 영역에서 완전히 제외되는 업무는 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="물리적인 서버 하드웨어 교체, 디스크 불량 복구 및 인프라 마이너 패치">물리적인 서버 하드웨어 교체, 디스크 불량 복구 및 인프라 마이너 패치</button>
+      <button class="quiz-opt" data-val="슬로우 쿼리 식별 및 데이터베이스 인덱스/SQL 최적화 설계">슬로우 쿼리 식별 및 데이터베이스 인덱스/SQL 최적화 설계</button>
+      <button class="quiz-opt" data-val="비즈니스 도메인에 맞는 ERD 설계 및 보안 권한 정책 구성">비즈니스 도메인에 맞는 엔티티 관계도(ERD) 설계 및 보안 권한 정책 구성</button>
+      <button class="quiz-opt" data-val="애플리케이션 릴리즈에 따른 메이저 버전 업그레이드 호환성 검증">애플리케이션의 릴리즈에 따른 메이저 버전 업그레이드 호환성 검증</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="fq20" data-type="mc" data-answer="컴퓨트/스토리지 분리 및 6중 복제" data-exp="Aurora는 컴퓨트와 스토리지를 분리하고 3개 AZ에 걸쳐 6중 복제하는 구조가 핵심 차별점이에요. 오픈소스 호환 엔진(MySQL/PostgreSQL)을 그대로 쓸 수 있어요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>AWS의 클라우드 네이티브 대표 RDBMS 솔루션인 Amazon Aurora의 아키텍처적 특성 중, 일반적인 AWS RDS 표준 아키텍처와 비교했을 때 가장 두드러지는 차이점은 무엇인가요?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="오픈소스 엔진을 쓰지 못하고 오직 상용 엔진만 독자 구동한다">오픈소스 엔진을 쓰지 못하고 오직 상용 상용화 상용 엔진만 독자 구동한다</button>
+      <button class="quiz-opt" data-val="컴퓨트/스토리지 분리 및 6중 복제">컴퓨트(Compute) 연산 노드와 스토리지 계층이 완전히 분리되어 있으며, 3개 AZ(가용영역)에 걸쳐 데이터를 6중으로 자동 복제한다</button>
+      <button class="quiz-opt" data-val="로컬 파일 시스템 아키텍처를 그대로 활용한다">로컬 파일 시스템 아키텍처를 그대로 활용하므로 대량 데이터 증설 시 수동으로 EBS 용량을 계속 늘려주어야만 한다</button>
+      <button class="quiz-opt" data-val="트랜잭션 가비지 컬렉션 기능이 제외되어 있다">트랜잭션 가비지 컬렉션(GC) 기능이 아예 제외되어 있어 읽기 부하 분산 성능이 매우 취약하다</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
 </div>
   </main>
 </div>
