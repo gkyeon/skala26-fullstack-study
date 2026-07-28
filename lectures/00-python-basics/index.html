@@ -1410,6 +1410,13 @@ numpy_squared = numpy_array ** 2           # 훨씬 빠름</code></pre></div>
     <li>트리는 노드가 부모-자식 관계로 계층적으로 연결된 구조 — 루트(root)에서 시작해 leaf까지 뻗어나감</li>
     <li><b>이진 탐색 트리(BST)</b>는 왼쪽 자식은 항상 부모보다 작고, 오른쪽 자식은 항상 부모보다 큰 규칙을 가진 트리 — 탐색·삽입이 평균 O(log n)</li>
   </ul>
+  <figure style="margin:16px 0; background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/d/da/Binary_search_tree.svg" alt="이진 탐색 트리 예시. 루트 노드에서 왼쪽 자식은 항상 더 작은 값, 오른쪽 자식은 항상 더 큰 값을 갖도록 정렬되어 배치됨" style="max-width:320px; width:100%; height:auto;">
+    <figcaption style="margin-top:10px; font-size:12px; color:#555;">
+      "Binary search tree" by Derrick Coetzee (Public Domain) ·
+      <a href="https://commons.wikimedia.org/wiki/File:Binary_search_tree.svg" target="_blank" rel="noopener">Wikimedia Commons</a>
+    </figcaption>
+  </figure>
   <div class="sqlbox"><div class="sqlhead">이진 트리 &amp; BST 구현</div><pre><code>class Node:
     def __init__(self, value):
         self.value = value
@@ -1503,6 +1510,14 @@ bfs(graph, 1)  # 1 2 3 4 5 6</code></pre></div>
     <li>알고리즘의 실행 속도를 입력 크기(n)에 대한 함수로 수학적으로 표현하는 방법, 보통 <b>최악의 경우(worst-case)</b>를 기준으로 분석</li>
     <li><b>O(1)</b> 상수 시간(입력 크기와 무관), <b>O(log n)</b> 로그 시간(이진 탐색), <b>O(n)</b> 선형 시간(전체 순회), <b>O(n²)</b> 이차 시간(이중 반복문)</li>
   </ul>
+  <figure style="margin:16px 0; background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/7/7e/Comparison_computational_complexity.svg" alt="입력 크기(n)에 따른 연산 횟수(N)를 O(1), O(log n), O(n), O(n log n), O(n^2), O(2^n), O(n!) 등 여러 시간복잡도별로 비교한 그래프. n이 커질수록 복잡도가 높은 곡선이 훨씬 가파르게 증가함" style="max-width:420px; width:100%; height:auto;">
+    <figcaption style="margin-top:10px; font-size:12px; color:#555;">
+      "Comparison of computational complexity" by Cmglee ·
+      <a href="https://commons.wikimedia.org/wiki/File:Comparison_computational_complexity.svg" target="_blank" rel="noopener">Wikimedia Commons</a> ·
+      <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>
+    </figcaption>
+  </figure>
   <div class="sqlbox"><div class="sqlhead">O(1) vs O(n) vs O(n²) 예시</div><pre><code>arr = [1, 2, 3, 4, 5]
 print(arr[-1])  # O(1) — 인덱스 접근은 크기와 무관
 

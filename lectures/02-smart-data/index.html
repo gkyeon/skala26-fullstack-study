@@ -3142,6 +3142,14 @@ INNER      → 홍길동, 이순신                              (양쪽 다 있
 LEFT       → 홍길동, 이순신, 강감찬(NULL)                 (왼쪽 전부)
 RIGHT      → 홍길동, 이순신, 고아수강(NULL)               (오른쪽 전부)
 FULL OUTER → 홍길동, 이순신, 강감찬(NULL), 고아수강(NULL)  (양쪽 전부)</code></pre></div>
+  <figure style="margin:16px 0; background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/9/9d/SQL_Joins.svg" alt="INNER, LEFT, RIGHT, FULL OUTER JOIN을 각각 두 원(A, B)의 벤 다이어그램으로 표현한 그림. 매칭되는 부분이 색칠되어 어느 쪽 데이터가 결과에 포함되는지 보여줌" style="max-width:560px; width:100%; height:auto;">
+    <figcaption style="margin-top:10px; font-size:12px; color:#555;">
+      "SQL Joins" by Arbeck ·
+      <a href="https://commons.wikimedia.org/wiki/File:SQL_Joins.svg" target="_blank" rel="noopener">Wikimedia Commons</a> ·
+      <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>
+    </figcaption>
+  </figure>
 <ul class="b">
 <li><b>INNER JOIN</b> — 양쪽에 모두 매칭되는 행만(교집합). <code>INNER</code> 키워드는 생략 가능하지만 <b>리포트나 협업 코드에서는 의도를 명시</b>하는 편이 읽기 좋다. 핵심 성질은 <b>양쪽에 없으면 사라진다</b>는 것 — "전체 학생 수를 세려고 JOIN했더니 숫자가 줄었다"의 원인이다.</li>
 <li><b>LEFT OUTER JOIN</b> — 왼쪽 전체 + 오른쪽 없으면 NULL. <b>"기준이 되는 목록이 있고 거기에 정보를 덧붙이고 싶을 때"</b> 쓴다. 전체 학생 명단을 보여 주되 수강 정보가 있으면 같이 보여 준다.</li>
@@ -4146,6 +4154,14 @@ SELECT emp_name, salary, dept_id, dept_avg FROM (
 
   <h3>1) 인덱스 개념과 트레이드오프</h3>
 <p><b>인덱스(Index)</b>는 테이블의 특정 컬럼 값을 <b>정렬된 별도의 자료구조</b>에 복사해 두고, 각 값 옆에 <b>그 행이 테이블 어디에 있는지의 물리적 위치</b>를 함께 저장한 객체다(PostgreSQL은 <code>ctid</code>, Oracle은 <code>ROWID</code>). 정렬돼 있으므로 <b>이진 탐색</b>이 가능하다 — 100만 행을 뒤지는 대신 약 20번의 비교로 도달한다. 실제로는 B-Tree라 밑이 수백이어서 <b>3~4번의 페이지 읽기</b>로 끝난다.</p>
+  <figure style="margin:16px 0; background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/e/ee/PostgreSQL_B-tree.svg" alt="PostgreSQL의 B-Tree 인덱스 구조 다이어그램. 루트 노드에서 시작해 여러 리프 노드로 갈라지는 다분기 균형 트리 형태를 보여주며, 각 리프가 정렬된 키와 실제 행 위치를 가리킴" style="max-width:560px; width:100%; height:auto;">
+    <figcaption style="margin-top:10px; font-size:12px; color:#555;">
+      "Implementation of B-trees in PostgreSQL" by Kelti ·
+      <a href="https://commons.wikimedia.org/wiki/File:PostgreSQL_B-tree.svg" target="_blank" rel="noopener">Wikimedia Commons</a> ·
+      <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>
+    </figcaption>
+  </figure>
 <table class="t"><thead><tr><th style="width:24%">항목</th><th>내용</th></tr></thead><tbody>
 <tr><td><b>읽기 성능 향상</b></td><td><code>WHERE</code>/<code>JOIN</code>/<code>ORDER BY</code>에 자주 등장하는 컬럼에서 극적으로 빨라진다</td></tr>
 <tr><td><b>쓰기 비용 증가</b></td><td><code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code>마다 인덱스도 같이 고쳐야 한다</td></tr>
