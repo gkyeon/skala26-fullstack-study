@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKALA | LLM과 Transformer 아키텍처 - 복습노트</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#161925; --panel2:#1c2030; --border:#2a2f42;
+    --text:#e6e8ef; --muted:#9aa0b4; --accent:#7c9dff; --accent2:#4fd1c5;
+    --code-bg:#10131c; --code-text:#c9e6ff;
+    --day1:#7c9dff; --day2:#4fd1c5; --day3:#f6ad55; --day4:#f687b3;
+    --warn:#f6ad55;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6;
+  }
+  .layout{display:flex; min-height:100vh;}
+  .sidebar{
+    width:280px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--border);
+    position:sticky; top:0; height:100vh; overflow-y:auto; padding:20px 14px;
+  }
+  .sidebar h1{font-size:15px; margin:0 6px 4px; color:var(--text); font-weight:700;}
+  .sidebar .sub{font-size:11.5px; color:var(--muted); margin:0 6px 16px;}
+  .search{
+    width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:13px; margin-bottom:14px;
+  }
+  .search:focus{outline:none; border-color:var(--accent);}
+  .day-group{margin-bottom:10px;}
+  .day-title{
+    font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
+    padding:8px 6px 4px; font-weight:700;
+  }
+  .day-title.d1{color:var(--day1);} .day-title.d2{color:var(--day2);}
+  .navlink{
+    display:block; padding:6px 8px; border-radius:6px; color:var(--muted); text-decoration:none;
+    font-size:13px; margin:1px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .navlink:hover{background:var(--panel2); color:var(--text);}
+  .navlink.active{background:rgba(124,157,255,.15); color:var(--accent); font-weight:600;}
+  main{flex:1; padding:32px 40px 120px; max-width:980px;}
+  .page-head{margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border);}
+  .page-head h1{font-size:26px; margin:0 0 8px;}
+  .page-head p{color:var(--muted); font-size:14px; margin:0;}
+  .badges{margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;}
+  .badges span{font-size:11.5px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted);}
+  .sec{margin-bottom:56px; padding-top:8px; scroll-margin-top:20px;}
+  .sec-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .day-badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; color:#0b0d14;}
+  .day-badge.day1{background:var(--day1);} .day-badge.day2{background:var(--day2);}
+  .sec h2{font-size:21px; margin:0; display:flex; gap:8px; align-items:baseline;}
+  .sec h2 .num{color:var(--muted); font-weight:500;}
+  .subtitle{color:var(--muted); font-size:13.5px; margin:6px 0 18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .sec h3{font-size:16px; margin:22px 0 8px; color:var(--text);}
+  .sec h4{font-size:13.5px; margin:14px 0 6px; color:var(--accent2); font-weight:700;}
+  .b{margin:4px 0 14px; padding-left:20px;}
+  .b li{margin:4px 0; font-size:14px;}
+  .b li::marker{color:var(--accent);}
+  p{font-size:14px; margin:8px 0;}
+  .sqlbox{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:10px;
+    margin:12px 0; overflow:hidden;
+  }
+  .sqlhead{
+    font-size:11px; color:var(--muted); padding:7px 12px; border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,.02); letter-spacing:.03em; text-transform:uppercase;
+  }
+  .sqlbox pre{margin:0; padding:12px 14px; overflow-x:auto;}
+  .sqlbox code{
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:13px; color:var(--code-text);
+    line-height:1.75; white-space:pre-wrap; word-break:break-word;
+  }
+  .cp{
+    background:rgba(79,209,197,.07); border:1px solid rgba(79,209,197,.3); border-radius:10px;
+    padding:10px 14px; margin:14px 0;
+  }
+  .cphead{color:var(--accent2); font-size:12.5px; font-weight:700; margin-bottom:6px;}
+  .cp ul{margin:0; padding-left:18px;}
+  .cp li{font-size:13px; margin:3px 0; color:#d5f5f0;}
+  table.t{border-collapse:collapse; width:100%; margin:12px 0; font-size:13px;}
+  table.t th{
+    background:var(--panel2); text-align:left; padding:8px 10px; border:1px solid var(--border);
+    color:var(--accent2); font-size:12px;
+  }
+  table.t td{padding:8px 10px; border:1px solid var(--border); color:var(--text); vertical-align:top;}
+  .note{
+    font-size:12.5px; color:var(--warn); background:rgba(246,173,85,.08);
+    border-left:3px solid var(--warn); padding:8px 12px; margin:12px 0; border-radius:4px;
+  }
+  .divider{border:none; border-top:1px solid var(--border); margin:40px 0;}
+  .day-header{
+    margin:60px 0 24px; padding:14px 0; border-bottom:2px solid var(--border);
+  }
+  .day-header h1{font-size:22px; margin:0 0 4px;}
+  .day-header p{color:var(--muted); font-size:13px; margin:0;}
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-thumb{background:#333850; border-radius:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  .top-btn{
+    position:fixed; bottom:24px; right:24px; background:var(--accent); color:#0b0d14;
+    border:none; border-radius:999px; width:44px; height:44px; font-size:18px; cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,.4); display:none;
+  }
+  @media (max-width:900px){
+    .sidebar{position:fixed; z-index:20; transform:translateX(-100%); transition:transform .2s;}
+    .sidebar.open{transform:translateX(0);}
+    main{padding:20px;}
+  }
+
+  /* ===== Readability upgrade ===== */
+  body{ font-size:15px; }
+  main{ padding:36px 48px 160px; max-width:900px; }
+  .sec{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:22px 26px 26px; margin-bottom:28px; box-shadow:0 1px 0 rgba(255,255,255,.02) inset;
+  }
+  .sec-head{margin-bottom:2px;}
+  .sec h2{font-size:20px;}
+  .subtitle{font-size:13.5px; line-height:1.55; margin-bottom:16px;}
+  p, .b li, .cp li, table.t td{font-size:14.5px; line-height:1.75;}
+  .b{padding-left:22px;}
+  .b li{margin:6px 0;}
+  h4{letter-spacing:.01em;}
+  .sqlbox code{font-size:13.5px; line-height:1.85;}
+  .day-header{
+    background:linear-gradient(180deg, rgba(124,157,255,.08), transparent);
+    border-radius:12px; padding:20px 22px; border-bottom:none; border:1px solid var(--border);
+  }
+  .day-header h1{font-size:23px;}
+
+  /* ===== Light theme ===== */
+  body.light{
+    --bg:#f7f8fc; --panel:#ffffff; --panel2:#f0f2f9; --border:#e2e5f0;
+    --text:#20232e; --muted:#6b7180; --accent:#3f5fd6; --accent2:#0f9488;
+    --code-bg:#f4f6fb; --code-text:#1d3b6b; --warn:#b45309;
+  }
+  body.light .sec{box-shadow:0 1px 3px rgba(20,25,50,.06);}
+  body.light .cp{background:rgba(15,148,136,.07); border-color:rgba(15,148,136,.28);}
+  body.light .cp li{color:#0d4b45;}
+  body.light .sqlbox{border-color:#dde1ee;}
+  body.light table.t th{background:#eef1fa;}
+  body.light .day-header{background:linear-gradient(180deg, rgba(63,95,214,.06), transparent);}
+
+  /* ===== Top toolbar ===== */
+  .toolbar{display:flex; gap:8px; margin-bottom:14px;}
+  .theme-btn{
+    flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:12.5px; cursor:pointer;
+  }
+  .theme-btn:hover{border-color:var(--accent);}
+
+  /* ===== Width upgrade (full monitor) ===== */
+  main{ max-width: 1180px; padding:40px 56px 160px; }
+  @media (min-width:1500px){ main{ max-width: 1320px; } }
+  @media (min-width:1800px){ main{ max-width: 1440px; } }
+  .sidebar{ width:300px; }
+
+  /* ===== TL;DR beginner box ===== */
+  .tldr{
+    display:flex; gap:12px; align-items:flex-start; background:rgba(124,157,255,.09);
+    border:1px solid rgba(124,157,255,.35); border-radius:12px; padding:14px 16px; margin:14px 0 18px;
+  }
+  .tldr .icon{font-size:18px; line-height:1.4;}
+  .tldr .txt{font-size:14px; line-height:1.7; color:var(--text);}
+  .tldr .txt b{color:var(--accent);}
+  body.light .tldr{background:rgba(63,95,214,.06); border-color:rgba(63,95,214,.25);}
+
+  /* ===== Callout boxes (목표 / 심화 / 착각 / 교수님) ===== */
+  .callout{
+    border:1px solid var(--border); background:var(--panel2); border-radius:11px;
+    padding:12px 15px; margin:14px 0;
+  }
+  .callout .ctitle{display:block; font-size:12.5px; font-weight:800; margin-bottom:6px; letter-spacing:.02em;}
+  .callout p{margin:5px 0; font-size:14px; line-height:1.75;}
+  .callout ul{margin:6px 0 2px; padding-left:20px;}
+  .callout li{font-size:14px; line-height:1.7; margin:4px 0;}
+  .callout.goal{background:rgba(79,209,197,.07); border-color:rgba(79,209,197,.3);}
+  .callout.goal .ctitle{color:var(--accent2);}
+  .callout.deep{background:rgba(124,157,255,.07); border-color:rgba(124,157,255,.32);}
+  .callout.deep .ctitle{color:var(--accent);}
+  .callout.myth{background:rgba(246,173,85,.08); border-color:rgba(246,173,85,.32);}
+  .callout.myth .ctitle{color:var(--warn);}
+  .callout.prof{background:rgba(246,135,179,.08); border-color:rgba(246,135,179,.32);}
+  .callout.prof .ctitle{color:var(--day4);}
+  body.light .callout.prof{background:rgba(214,51,132,.06); border-color:rgba(214,51,132,.25);}
+  body.light .callout.prof .ctitle{color:#be3a80;}
+
+  /* ===== 짚고 넘어가기 (Q&A) ===== */
+  .faq{margin:12px 0 4px;}
+  .faq details{
+    border:1px solid var(--border); border-radius:10px; background:var(--panel2); margin:8px 0;
+  }
+  .faq summary{
+    cursor:pointer; padding:11px 15px; font-size:14px; font-weight:600; color:var(--text);
+    list-style:none; line-height:1.6;
+  }
+  .faq summary::-webkit-details-marker{display:none;}
+  .faq summary::before{content:"Q. "; color:var(--accent); font-weight:800;}
+  .faq summary:hover{color:var(--accent);}
+  .faq details[open] summary{border-bottom:1px solid var(--border);}
+  .faq .fa{padding:11px 15px 13px; font-size:14px; line-height:1.85;}
+  .faq .fa::before{content:"A. "; color:var(--accent2); font-weight:800;}
+
+  /* ===== Inline code in prose ===== */
+  p code, .b li code, table.t td code, .callout code, .faq code{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:.88em; color:var(--code-text);
+  }
+
+  /* ===== Formula box (수식 표현 전용) ===== */
+  .formula{
+    background:var(--panel2); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin:14px 0; text-align:center;
+  }
+  .formula .expr{
+    font-family:"Palatino Linotype","Iowan Old Style",Georgia,"Times New Roman",serif;
+    font-style:italic; font-size:17px; color:var(--text); line-height:2; letter-spacing:.02em;
+  }
+  .formula .expr b{font-style:normal; color:var(--accent);}
+  .formula .cap{font-size:12px; color:var(--muted); margin-top:6px; font-style:normal; font-family:inherit;}
+  body.light .formula{background:#eef1fb;}
+
+  /* ===== Quiz blocks ===== */
+  .quiz-wrap{
+    margin:36px 0 60px; background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:24px 28px 28px;
+  }
+  .quiz-wrap h2{font-size:19px; margin:0 0 4px; display:flex; align-items:center; gap:8px;}
+  .quiz-wrap > p{color:var(--muted); font-size:13px; margin:0 0 18px;}
+  .quiz-score{
+    display:inline-block; background:var(--panel2); border:1px solid var(--border); border-radius:999px;
+    padding:4px 14px; font-size:12.5px; color:var(--accent2); font-weight:700; margin-bottom:16px;
+  }
+  .quiz-q{
+    border-top:1px dashed var(--border); padding:16px 0;
+  }
+  .quiz-q:first-of-type{border-top:none;}
+  .quiz-qtext{font-size:14.5px; margin:0 0 10px; font-weight:600;}
+  .quiz-qtext .qtype{
+    font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:5px; margin-right:8px;
+    background:var(--panel2); color:var(--muted); vertical-align:middle;
+  }
+  .quiz-opts{display:flex; flex-wrap:wrap; gap:8px;}
+  .quiz-opt{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:8px 14px; font-size:13px; cursor:pointer; text-align:left;
+  }
+  .quiz-opt:hover{border-color:var(--accent);}
+  .quiz-opt.correct{background:rgba(79,209,197,.18); border-color:var(--accent2); color:var(--accent2); font-weight:700;}
+  .quiz-opt.incorrect{background:rgba(246,135,179,.15); border-color:#f687b3; color:#f687b3;}
+  .quiz-opt[disabled]{cursor:default;}
+  .quiz-short{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .quiz-short input{
+    flex:1; min-width:180px; padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--code-bg); color:var(--text); font-size:13px;
+  }
+  .quiz-check{
+    background:var(--accent); color:#0b0d14; border:none; border-radius:7px; padding:8px 16px;
+    font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+  .quiz-feedback{font-size:12.5px; margin-top:8px; font-weight:600;}
+  .quiz-feedback.ok{color:var(--accent2);}
+  .quiz-feedback.no{color:#f687b3;}
+  .quiz-exp{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-weight:400; font-size:12.5px;
+    line-height:1.6; color:var(--text); background:var(--panel2); border:1px solid var(--border);
+  }
+
+  /* ===== Site topbar (links back to course home) ===== */
+  .site-topbar{
+    display:flex; align-items:center; gap:10px; padding:9px 18px; background:var(--panel2);
+    border-bottom:1px solid var(--border); font-size:12.5px; position:sticky; top:0; z-index:30;
+  }
+  .site-topbar a{color:var(--muted); text-decoration:none;}
+  .site-topbar a:hover{color:var(--accent);}
+  .site-topbar .crumb-sep{color:var(--border);}
+  .site-topbar .crumb-cur{color:var(--text); font-weight:600;}
+</style>
+</head>
+
+<body class="light">
+<div class="site-topbar">
+  <a href="../../index.html">🏠 Full-stack 학습 홈</a>
+  <span class="crumb-sep">/</span>
+  <span class="crumb-cur">LLM과 Transformer 아키텍처</span>
+</div>
+<div class="layout">
+  <nav class="sidebar" id="sidebar">
+    <h1>SKALA LLM & Transformer</h1>
+    <p class="sub">아키텍처와 최신 기술 · 복습노트</p>
+    <div class="toolbar">
+      <button class="theme-btn" id="themeBtn">🌙 다크 모드</button>
+    </div>
+    <input class="search" id="searchBox" type="text" placeholder="검색 (예: Self-Attention, RLHF, MoE...)">
+    <div class="day-group"><div class="day-title d1">Day 1 — Transformer 아키텍처 기초</div>
+<a class="navlink" href="#s1" data-sec="1">1. Intro: Software 3.0</a>
+<a class="navlink" href="#s2" data-sec="2">2. NLP Technical Summary</a>
+<a class="navlink" href="#s3" data-sec="3">3. Math Essentials for Transformer</a>
+<a class="navlink" href="#s4" data-sec="4">4. Transformer</a>
+<a class="navlink" href="#quiz-day1" style="color:var(--accent2);">✅ Day1 퀴즈</a>
+</div>
+<div class="day-group"><div class="day-title d2">Day 2 — Modern LLM</div>
+<a class="navlink" href="#s5" data-sec="5">5. LLMs at Work</a>
+<a class="navlink" href="#s6" data-sec="6">6. LLM Landscape</a>
+<a class="navlink" href="#s7" data-sec="7">7. Modern LLM Technologies</a>
+<a class="navlink" href="#quiz-day2" style="color:var(--accent2);">✅ Day2 퀴즈</a>
+</div>
+  </nav>
+  <main>
+    <div class="page-head">
+      <h1>LLM과 Transformer 아키텍처 — 복습노트</h1>
+      <p>Full-stack Engineering(AI캠퍼스) · Software 3.0부터 Transformer 구조, LLM 업무 활용, 최신 LLM 기술까지 전체 7개 세션 요약</p>
+      <div class="badges">
+        <span>Software 3.0</span><span>Transformer·Self-Attention</span><span>LLM Landscape</span>
+        <span>RLHF·Scaling Law</span><span>MoE</span><span>🖥 Day별 퀴즈 포함</span>
+      </div>
+    </div>
+    <div class="day-header" id="day1"><h1>Day 1 — Transformer 아키텍처 기초</h1><p>Software 3.0의 등장부터 NLP 기술 발전사, Transformer를 이해하기 위한 수학, Attention 구조까지</p></div>
+
+<section class="sec" id="s1" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">1.</span> Intro: Software 3.0</h2>
+  </div>
+  <p class="subtitle">소프트웨어 개발 방식의 진화 · Software 1.0/2.0/3.0 · LLM이라는 새로운 실행환경 · 한계와 시사점</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 소프트웨어를 만드는 방식이 바뀌고 있어요. 예전에는 사람이 규칙을 <b>코드로 직접</b> 짰고(1.0), 그다음엔 데이터를 주고 모델을 <b>학습</b>시켰죠(2.0). 이제는 사람이 <b>목표(자연어)</b>만 정해주면 LLM이 스스로 사고하고 행동합니다(3.0). 이번 장은 이 흐름이 왜, 어떻게 일어났는지를 다룹니다.</div></div>
+
+  <h3>1) 소프트웨어 개발 방식의 진화</h3>
+  <ul class="b">
+  <li><b>Software 1.0</b> — 사람이 규칙을 코드로 직접 작성하는 전통적 프로그래밍 방식. 개발자가 if-else, 반복문 등 명시적 로직을 하나하나 작성한다.</li>
+  <li><b>Software 2.0</b> — 사람이 데이터를 주고 모델을 학습시키는 방식(Andrej Karpathy가 처음 제시한 개념). 신경망 가중치가 "코드"가 되는 방식이며, Task-specific AI(이미지 분류기, 번역기 등 특정 작업에 특화된 모델)를 만든다.</li>
+  <li><b>Transformer와 LLM의 등장</b> — 2017년 "Attention Is All You Need" 논문 발표. Foundation Model 시대의 개막 — 하나의 거대 모델이 다양한 Task를 처리. LLM의 대중화(ChatGPT 등장으로 일반 대중까지 확산).</li>
+  <li><b>Software 3.0</b> — 사람이 목표(역할)를 정의하면 모델이 스스로 사고하고 행동하는 방식. 자연어 프롬프트가 곧 "프로그램"이며, AI Agent가 스스로 프로그램(코드)을 생성하고 실행한다.</li>
+  </ul>
+  <div class="note">🧭 Program space 개념: Software 3.0의 표현력이 Software 1.0과 2.0을 포함하는 상위 집합이다 — 자연어로 원하는 모든 종류의 프로그램(명시적 로직이든 학습된 패턴이든)을 표현할 수 있다.</div>
+
+  <h3>2) Software 1.0 vs 2.0 vs 3.0 비교</h3>
+  <table class="t"><thead><tr><th>구분</th><th>Software 1.0</th><th>Software 2.0</th><th>Software 3.0</th></tr></thead>
+  <tbody>
+  <tr><td>프로그래밍 방식</td><td>규칙을 코드로 직접 작성</td><td>데이터로 모델 학습</td><td>자연어로 목표(역할) 정의</td></tr>
+  <tr><td>"코드"의 형태</td><td>명시적 소스코드</td><td>신경망 가중치</td><td>프롬프트(자연어)</td></tr>
+  <tr><td>실행 주체</td><td>CPU가 코드 그대로 실행</td><td>모델이 패턴을 추론</td><td>LLM이 스스로 사고·행동</td></tr>
+  <tr><td>대표 예시</td><td>전통적 웹/앱 개발</td><td>이미지 분류기, 번역기</td><td>AI Agent, Copilot</td></tr>
+  </tbody></table>
+
+  <h3>3) Software 3.0: 언어가 코드가 되는 순간</h3>
+  <p>자연어가 새로운 프로그래밍 언어가 된다. <b>"소프트웨어의 인터페이스는 API가 아니라 언어다"</b> — 누구나 자연어로 원하는 동작을 지시할 수 있어 프로그래밍의 진입장벽이 낮아진다.</p>
+
+  <h3>4) Software 3.0 시대에서의 LLM</h3>
+  <p>LLM은 단순한 모델이 아니라 새로운 실행환경(runtime)이다. 추론엔진(reasoning engine) / 지식 인터페이스(knowledge interface) / 자연어 컴파일러(natural language compiler) / 에이전트의 두뇌 — 이 네 가지 역할을 동시에 수행한다.</p>
+  <div class="callout goal"><span class="ctitle">🎯 "LLM은 도구가 아니라 함께 일하는 새로운 형태의 소프트웨어다"</span>
+  <p>NLP/AI 기술 발전 타임라인: <b>ELIZA(1967, 최초의 챗봇) → LSTM(1997) → Stanford CoreNLP(2010) → Google Brain(2011) → Transformer Architecture(2017) → OpenAI GPT-3(2020)</b></p></div>
+
+  <h3>5) Limitation of Software 3.0</h3>
+  <ul class="b">
+  <li><b>Black Box</b> — 왜 그런 결과가 나왔는지 설명하기 어렵다.</li>
+  <li><b>Bias</b> — 웹에서 수집한 학습 데이터에 내재된 편향이 그대로 반영된다.</li>
+  <li><b>Hallucination</b> — 그럴듯하지만 사실이 아닌 내용을 생성한다.</li>
+  <li><b>Non-deterministic</b> — 같은 입력을 줘도 실행마다 다른 결과가 나올 수 있다(결정론적이지 않음).</li>
+  </ul>
+
+  <h3>6) Software 3.0을 향하여 — Benefit</h3>
+  <ul class="b">
+  <li>결정론적(deterministic) 방식과 통계적(probabilistic) 모델을 함께 조합해 쓸 수 있다.</li>
+  <li>코드 수정이 자연어 지시만으로 쉬워진다.</li>
+  <li>더 많은 사람이 프로그래머가 될 수 있다(비전공자도 자연어로 프로그램을 만들 수 있음).</li>
+  <li>개발 속도가 비약적으로 향상된다.</li>
+  <li>AGI(Artificial General Intelligence)를 향한 교두보로 여겨진다.</li>
+  </ul>
+
+  <h3>7) 새로운 시대, AI 선구자들의 시선</h3>
+  <table class="t"><thead><tr><th>인물</th><th>발언</th></tr></thead>
+  <tbody>
+  <tr><td>Geoffrey Hinton (2024 노벨물리학상, "딥러닝의 아버지")</td><td>AI의 위험성에 대해 거듭 경고. 통제 불가능한 초지능 출현 가능성 우려.</td></tr>
+  <tr><td>Elon Musk</td><td>"ChatGPT is scary good. We are not far from dangerously strong AI." (ChatGPT는 무섭도록 훌륭하다. 우리는 위험할 정도로 강력한 AI로부터 멀지 않다.)</td></tr>
+  <tr><td>Sam Altman (OpenAI CEO)</td><td>"AI has been somewhat demystified" (AI에 대한 신비감이 어느 정도 벗겨졌다) — AI가 이제는 일상적 도구로 자리잡고 있음을 시사.</td></tr>
+  <tr><td>Andrej Karpathy (전 Tesla AI 총괄, OpenAI 창립멤버)</td><td>"The hottest new programming language is English." (가장 핫한 새 프로그래밍 언어는 영어다.)</td></tr>
+  </tbody></table>
+
+  <h3>8) 새로운 AI 시대의 도래</h3>
+  <ul class="b">
+  <li>LLM(Large Language Model) 정의: Brown et al. 2020("Language Models are Few-Shot Learners")에서 본격 정의된 대규모 언어모델 개념.</li>
+  <li>Google Scholar 기준 AI 관련 논문 620만편 이상 출판.</li>
+  <li>AI 논문 출판량: 미국이 오랫동안 선두였으나 최근 중국이 미국을 추월하는 추세.</li>
+  </ul>
+  <div class="cp"><div class="cphead">✔ AI는 2~3년 주기로 Quantum Jump(도약)를 겪어왔다</div><ul>
+  <li>2012 AlexNet(딥러닝 부흥의 시작) → 2014 딥마인드(Google 인수) → 2016 알파고 쇼크(이세돌 격파)</li>
+  <li>→ 2017 Attention 논문(Transformer 등장) → 2020 GPT-3(대규모 언어모델의 가능성 입증) → 2022 ChatGPT(대중화) → 2026?(다음 도약은?)</li>
+  </ul></div>
+
+  <h3>9) 증강지능(Augmented Intelligence)</h3>
+  <p>AI는 인간의 경쟁자가 아니라 협업 도구(Co-pilot)로 자리매김한다. Retail(소매) 산업 예시: AI가 재고 예측, 고객 응대, 상품 추천 등을 보조하되 최종 의사결정은 사람이 담당하는 협업 모델이다.</p>
+</section>
+
+<section class="sec" id="s2" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">2.</span> NLP Technical Summary</h2>
+  </div>
+  <p class="subtitle">단어 표현부터 Transformer 등장까지 · One-hot·BoW·TF-IDF · Word2Vec · RNN/LSTM/Seq2Seq · Attention · GPT</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 컴퓨터는 글자를 그대로 이해하지 못해서 <b>숫자(벡터)로 바꿔야</b> 해요. 그 방법이 점점 발전해온 역사가 이 장이에요. 처음엔 단어를 "있다/없다"로만 표현했다가(One-hot), 문맥을 반영한 벡터(Word2Vec)로, 다시 문맥에 따라 벡터가 달라지는 방식(Contextual Embedding)으로 진화했고, 그 끝에 Transformer와 GPT가 있어요.</div></div>
+
+  <h3>1) 언어 이해의 시작, NLP</h3>
+  <p>Machine이 언어를 이해하려면 텍스트를 수치(벡터)로 변환해야 한다. <b>Corpus(말뭉치)</b>는 자연어 처리를 위해 수집된 대량의 텍스트 데이터이고, <b>Vocabulary(어휘 집합)</b>는 Corpus에 등장하는 고유한 단어들의 집합이다.</p>
+
+  <h3>2) One-hot vector와 BoW</h3>
+  <ul class="b">
+  <li><b>One-hot vector</b> — 어휘 집합 크기만큼의 차원을 가지고, 해당 단어의 위치만 1이고 나머지는 0인 벡터로 단어를 표현하는 가장 기본적인 방식.</li>
+  <li><b>BoW(Bag of Words)</b> — 문서를 단어들의 등장 횟수(빈도)로 표현하는 방식. 단어의 순서는 무시하고 "가방에 단어를 쏟아부은 것"처럼 취급한다.</li>
+  </ul>
+
+  <h3>3) N-gram과 TF-IDF</h3>
+  <ul class="b">
+  <li><b>N-gram</b> — 연속된 N개의 단어(또는 문자)를 하나의 단위로 취급하여 순서 정보를 어느 정도 반영하는 방법(예: bigram, trigram).</li>
+  <li><b>TF-IDF(Term Frequency-Inverse Document Frequency)</b> — 특정 문서에서 단어가 얼마나 중요한지를 나타내는 지표. 문서 내 빈도(TF)가 높으면서 전체 문서군에서는 드물게 등장하는 단어(IDF)일수록 높은 가중치를 가진다.</li>
+  </ul>
+
+  <h3>4) 빈도기반 표현의 한계</h3>
+  <ul class="b">
+  <li>순서 정보를 반영하지 못함(BoW의 경우)</li>
+  <li>차원의 저주(curse of dimensionality) — 어휘 집합이 커질수록 벡터 차원이 기하급수적으로 커지고 희소(sparse)해진다.</li>
+  <li>의미적 관계를 표현하는 데 취약 — "사과"와 "오렌지"가 관련 있다는 것, "동생"과 "아우"가 유사한 의미라는 것을 빈도 기반 표현은 포착하지 못한다.</li>
+  </ul>
+
+  <h3>5) Thesaurus(WordNet)</h3>
+  <p>단어 간의 관계(동의어, 상위어, 하위어 등)를 사람이 직접 구축한 그래프 형태의 사전. 한계: 신조어에 대응하기 어렵고(사람이 수작업으로 업데이트해야 함), 구축 비용이 매우 높다.</p>
+
+  <h3>6) 맥락(Context) 이해 — 분포가설</h3>
+  <p><b>분포가설(Distributional Hypothesis)</b>: 언어학자 Zellig Harris가 제시한 가설. 비슷한 맥락에서 등장하는 단어들은 비슷한 의미를 가진다는 개념이다.</p>
+  <div class="callout deep"><span class="ctitle">🔎 "You shall know a word by the company it keeps"</span>
+  <p>J.R. Firth의 유명한 문구 — "단어는 함께 등장하는 이웃 단어들을 보면 그 의미를 알 수 있다"는 뜻이다.</p></div>
+
+  <h3>7) Word Embedding(Word2Vec)</h3>
+  <p>딥러닝으로 분포가설을 구현한 대표적 방법론이다. 학습 과정: 주변 단어(context)로부터 중심 단어를 예측하거나(CBOW), 중심 단어로부터 주변 단어를 예측(Skip-gram)하는 과정에서 단어의 의미가 벡터 공간에 학습된다.</p>
+  <div class="formula"><div class="expr">King − Man + Woman ≈ <b>Queen</b></div><div class="cap">Reasoning(추론) 능력 — 벡터 연산으로 단어 간 관계를 표현할 수 있다</div></div>
+  <p><b>Embedding Space 시각화</b>: 학습된 Word Embedding을 2차원/3차원으로 축소해 시각화하면, 의미적으로 유사한 단어들이 벡터 공간에서 서로 가까운 위치에 군집을 이루는 것을 확인할 수 있다.</p>
+
+  <h3>8) What is LM(Language Model)</h3>
+  <p>다음 단어를 예측하는 모델 — 주어진 단어열(context) 다음에 어떤 단어가 올지 확률적으로 예측한다.</p>
+
+  <h3>9) RNN(Recurrent Neural Network)</h3>
+  <p>순차적으로 데이터를 처리하며, hidden state를 통해 이전 시점의 정보를 "기억"해 다음 시점 처리에 활용한다.</p>
+  <div class="note">⚠️ 한계: Vanishing Gradient(기울기 소실) 문제 — 시퀀스가 길어질수록 초반 정보가 학습 과정에서 희미해진다.</div>
+
+  <h3>10) LSTM/GRU와 Seq2Seq</h3>
+  <ul class="b">
+  <li><b>LSTM(Long Short-Term Memory)/GRU(Gated Recurrent Unit)</b> — Gate mechanism(입력 게이트, 망각 게이트, 출력 게이트 등)을 도입해 RNN의 장기 의존성 문제를 완화한다.</li>
+  <li><b>Seq2Seq(Sequence-to-Sequence)</b> — Encoder-Decoder 구조. Encoder가 입력 시퀀스를 하나의 고정 크기 Context vector로 압축하고, Decoder가 이를 바탕으로 출력 시퀀스를 생성한다.</li>
+  </ul>
+  <p>한계: Context vector로의 압축 과정에서 정보 손실이 발생한다(특히 긴 시퀀스일수록 심함).</p>
+
+  <h3>11) Attention 매커니즘</h3>
+  <p>Seq2Seq의 Context vector 병목 문제를 해결하기 위해 등장했다. Decoder가 매 출력 시점마다 Encoder의 hidden state 전체를 참고할 수 있게 함으로써, 장기 의존성 문제와 정보 압축 손실 문제를 동시에 완화한다. 이후 병렬처리의 한계까지 극복하는 방향으로 발전한다(→ Transformer).</p>
+
+  <h3>12) Contextual Embedding</h3>
+  <p>Word Embedding(Word2Vec 등)의 한계: 각 단어가 고정된 하나의 벡터만 가진다 → 동음이의어/다의어를 구분하지 못한다(예: "배"가 과일인지 신체부위인지 교통수단인지 구분 불가). Transformer 기반 모델(BERT, GPT 등)은 같은 단어라도 문맥에 따라 서로 다른 벡터(Contextual Embedding)를 생성 — 문맥을 반영한 진짜 의미 표현이 가능해진다.</p>
+
+  <h3>13) Transfer Learning</h3>
+  <p>Pretrained Model(대량의 범용 데이터로 미리 학습된 모델)을 가져와 특정 Task에 맞게 전이학습(Fine-tuning)하는 방식. 처음부터 학습하는 것보다 훨씬 적은 데이터와 자원으로 높은 성능을 달성할 수 있다.</p>
+
+  <h3>14) 대규모 데이터와 Transformer의 만남, GPT</h3>
+  <p>GPT(Generative Pretrained Transformer)의 등장 — Transformer 아키텍처와 대규모 데이터·컴퓨팅 자원이 만나 이전과 차원이 다른 언어모델 성능을 보여준다.</p>
+
+  <h3>15) Scale up — GPT1 vs GPT2 vs GPT3</h3>
+  <p>GPT1(2018) → GPT2(2019) → GPT3(2020)로 갈수록 모델 크기(파라미터 수)가 극적으로 증가했다.</p>
+  <table class="t"><thead><tr><th>모델</th><th>발표연도</th><th>파라미터 수</th><th>비고</th></tr></thead>
+  <tbody>
+  <tr><td>GPT-1</td><td>2018</td><td>약 1.17억(0.12B)</td><td>decoder-only, generative pre-training</td></tr>
+  <tr><td>GPT-2</td><td>2019</td><td>15억(1.5B)</td><td>unsupervised multitask learner</td></tr>
+  <tr><td>GPT-3</td><td>2020</td><td>1,750억(175B)</td><td>GPT-2 대비 100배 이상 증가, in-context learning</td></tr>
+  </tbody></table>
+</section>
+<section class="sec" id="s3" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">3.</span> Math Essentials for Transformer</h2>
+  </div>
+  <p class="subtitle">Distance·Similarity · Euclidean Distance · Cosine Similarity · Dot Product · 행렬곱·선형변환 · Softmax</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: Transformer는 결국 <b>벡터끼리 "얼마나 비슷한지"를 계산</b>하는 기계예요. 이 장에서 배우는 코사인 유사도·내적·행렬곱·소프트맥스는 전부 다음 장의 Self-Attention 계산(Q·Kᵀ → Softmax → ·V)을 이해하기 위한 최소한의 도구입니다.</div></div>
+
+  <h3>1) Distance(거리)와 Similarity(유사도)</h3>
+  <p>두 벡터가 얼마나 가까운지(Distance) 또는 얼마나 비슷한지(Similarity)는 서로 반대 개념이다. 일반적으로 <code>1 − Similarity = Distance</code> 관계로 변환 가능하다(정규화된 유사도 기준).</p>
+
+  <h3>2) Euclidean Distance(유클리드 거리)</h3>
+  <p>두 점 사이의 직선 거리를 계산하는 가장 직관적인 거리 측정 방법. 피타고라스 정리에 기반한다.</p>
+  <div class="formula"><div class="expr">d(A,B) = √( Σ (Aᵢ − Bᵢ)² )</div></div>
+
+  <h3>3) Cosine Similarity(코사인 유사도)</h3>
+  <p>두 벡터 사이의 각도를 기반으로 유사도를 측정 — 벡터의 크기(magnitude)는 무시하고 방향(direction)만 고려한다.</p>
+  <div class="formula"><div class="expr">cos(θ) = (A·B) / (|A||B|)</div><div class="cap">방향이 완전히 같으면 1, 직각이면 0, 완전히 반대면 −1</div></div>
+  <p>텍스트 임베딩처럼 벡터의 크기보다 방향(의미)이 중요한 경우에 널리 사용된다.</p>
+
+  <h3>4) Case Study — 문서 유사도 비교</h3>
+  <p>문서1, 문서2, 문서3을 각각 단어 빈도 기반 벡터로 표현했을 때, Cosine Similarity를 계산해 어떤 문서 쌍이 의미적으로 더 유사한지 비교하는 예시. 벡터의 절대적 크기(문서 길이 차이)에 영향받지 않고 내용의 유사성만 비교할 수 있다는 것이 핵심 장점이다.</p>
+  <div class="sqlbox"><div class="sqlhead">Cosine Similarity 계산 예시</div><pre><code>A = [2, 0, 1]   # 문서1의 단어빈도 벡터
+B = [1, 0, 3]   # 문서2의 단어빈도 벡터
+
+dot(A,B)   = 2*1 + 0*0 + 1*3 = 5
+|A|        = sqrt(2^2+0^2+1^2) = sqrt(5)
+|B|        = sqrt(1^2+0^2+3^2) = sqrt(10)
+
+cos(theta) = 5 / (sqrt(5)*sqrt(10)) = 5 / sqrt(50) ≈ 0.707</code></pre></div>
+
+  <h3>5) Dot Product(내적)</h3>
+  <p>두 벡터의 각 성분을 곱해서 더한 값 — 크기(magnitude)와 방향(direction)을 모두 반영한다. Cosine Similarity와 달리 벡터의 크기에도 영향을 받는다.</p>
+  <div class="note">🔑 Transformer의 Attention Score 계산(Q·Kᵀ)에 핵심적으로 사용되는 연산이 바로 이 Dot Product다.</div>
+
+  <h3>6) Matrix Multiplication(행렬 곱)</h3>
+  <p>여러 벡터 연산을 한번에 효율적으로 처리하기 위한 핵심 연산. Transformer의 모든 주요 계산(Q,K,V 생성, Attention Score 계산, Linear layer 등)이 행렬 곱으로 구현된다.</p>
+
+  <h3>7) 선형변환(Linear Transformation)</h3>
+  <p>벡터를 다른 벡터 공간으로 매핑하는 연산. Weight matrix(가중치 행렬)를 벡터에 곱함으로써 입력 벡터를 원하는 차원/공간의 다른 벡터로 변환한다. Transformer에서 Q, K, V를 생성할 때, 그리고 Feed Forward 층에서 핵심적으로 사용된다.</p>
+
+  <h3>8) Softmax function</h3>
+  <p>여러 개의 실수 점수(score)를 모두 더하면 1이 되는 확률 분포로 변환하는 함수.</p>
+  <div class="formula"><div class="expr">softmax(xᵢ) = e^xᵢ / Σⱼ e^xⱼ</div></div>
+  <p>Attention Score를 확률적 가중치로 변환하거나, 최종 출력 토큰의 확률 분포를 계산할 때 사용된다.</p>
+</section>
+<section class="sec" id="s4" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">4.</span> Transformer</h2>
+  </div>
+  <p class="subtitle">Attention Is All You Need · Scaled Dot-Product Attention · Multi-head Attention · Encoder-Decoder · Masked Self Attention</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: Transformer는 <b>"각 단어가 문장 속 다른 모든 단어를 한 번에 훑어보고 얼마나 집중(attention)할지 계산"</b>하는 구조예요. RNN처럼 순서대로 하나씩 읽지 않아도 되니 병렬 학습이 가능해졌고, 그 덕분에 지금의 모든 LLM(GPT, BERT 등)이 이 구조 위에서 만들어졌어요.</div></div>
+
+  <h3>1) Attention Is All You Need 논문</h3>
+  <p>2017년 Google Brain 팀이 발표한 논문(Vaswani et al.).</p>
+  <ul class="b">
+  <li><b>Motivation</b> — 기존 RNN/LSTM/GRU는 순차 처리 특성상 병렬화가 어렵고 학습이 느리다. 또한 시퀀스가 길어질수록 장기 의존성(long-term dependency) 문제가 발생한다. CNN 기반 접근은 먼 거리의 관계를 포착하려면 매우 깊은 계층이 필요하다.</li>
+  <li><b>Proposal</b> — RNN이나 CNN 없이, Self-Attention 메커니즘만으로 시퀀스 전체를 처리하는 새로운 아키텍처를 제안한다.</li>
+  </ul>
+
+  <h3>2) Results</h3>
+  <p>WMT2014 영어-독일어, 영어-프랑스어 번역 태스크에서 BLEU 스코어 기준 기존 모델들을 능가하는 SOTA(State-of-the-Art) 성능을 달성했다.</p>
+  <table class="t"><thead><tr><th>모델</th><th>WMT14 EN-DE BLEU</th><th>WMT14 EN-FR BLEU</th><th>학습 비용</th></tr></thead>
+  <tbody>
+  <tr><td>기존 최고 성능 모델(앙상블 포함)</td><td>~26점대</td><td>~41점대</td><td>매우 높음</td></tr>
+  <tr><td><b>Transformer (Base/Big)</b></td><td><b>27.3 / 28.4</b></td><td><b>38.1 / 41.8</b></td><td><b>훨씬 낮음</b></td></tr>
+  </tbody></table>
+  <div class="note">📈 기존 최고 성능 모델들보다 훨씬 적은 학습 비용(연산량)으로 이러한 성능을 달성했다는 점이 특히 주목받았다.</div>
+
+  <h3>3) Contribution</h3>
+  <ul class="b">
+  <li>RNN/CNN 없이 Self-Attention만으로 작동하는 최초의 Seq2Seq 아키텍처.</li>
+  <li>순차 처리가 필요 없어 병렬 학습이 가능해지면서 학습 속도가 비약적으로 향상됨.</li>
+  <li>동시에 장기 의존성 문제도 자연스럽게 해결(모든 토큰이 서로 직접적으로 attention 가능).</li>
+  <li>이후 BERT, GPT 등 현재의 모든 주요 LLM이 이 Transformer 아키텍처를 기반으로 함.</li>
+  </ul>
+
+  <h3>4) Transformer Architecture</h3>
+  <p>전체적으로 인코더(Encoder)-디코더(Decoder) 구조로 구성된다.</p>
+  <div class="cp"><div class="cphead">✔ Encoder → Decoder 큰 흐름</div><ul>
+  <li><b>Encoder</b>: 입력 시퀀스 → 문맥이 반영된 표현(representation) 생성</li>
+  <li><b>Decoder</b>: Encoder의 출력 + 지금까지 생성된 토큰들을 참고 → 다음 토큰을 순차적으로 생성</li>
+  </ul></div>
+
+  <h3>5) Transformer Encoder — Scaled Dot-Product Attention</h3>
+  <p><b>Q(Query), K(Key), V(Value)</b> 개념: 각 입력 토큰의 임베딩에 서로 다른 Weight Matrix를 곱해 만들어지는 세 가지 벡터.</p>
+  <table class="t"><thead><tr><th>구성</th><th>역할</th></tr></thead>
+  <tbody>
+  <tr><td>Query</td><td>"내가 지금 무엇을 찾고 있는가"</td></tr>
+  <tr><td>Key</td><td>"나는 어떤 정보를 갖고 있는가"(다른 토큰들이 검색할 수 있는 색인 역할)</td></tr>
+  <tr><td>Value</td><td>"실제로 담고 있는 내용물"</td></tr>
+  </tbody></table>
+  <div class="sqlbox"><div class="sqlhead">Scaled Dot-Product Attention — 계산 흐름</div><pre><code>Q, K, V = X·Wq, X·Wk, X·Wv        # 입력 임베딩 X에 가중치 행렬을 곱해 생성
+
+Score = Q · K^T                   # (1) 내적으로 토큰 쌍 사이의 연관성 점수 산출
+Scaled = Score / sqrt(d_k)        # (2) Key 차원 수의 제곱근으로 나눠 스케일 조정
+Weights = softmax(Scaled)         # (3) 확률분포(주목도 가중치)로 변환
+Output = Weights · V              # (4) 가중치를 Value에 곱해 최종 Attention 출력(가중합)</code></pre></div>
+  <ul class="b">
+  <li><b>Score Matrix 계산</b> — Q와 K를 내적(Q·Kᵀ)해 각 토큰 쌍 사이의 연관성 점수(Score)를 산출한다.</li>
+  <li><b>Scaling</b> — 계산된 Score를 K 벡터 차원 수의 제곱근(√d_k)으로 나누어 스케일 조정한다(값이 너무 커져서 softmax의 기울기가 소실되는 것을 방지).</li>
+  <li><b>Softmax</b> — 스케일링된 Score에 softmax를 적용해 확률 분포(각 토큰에 대한 주목도 가중치)로 변환한다.</li>
+  <li><b>Attention Output</b> — 이 확률 분포(가중치)를 V(Value)에 곱해서 최종 Attention 출력(가중합)을 생성한다.</li>
+  </ul>
+  <div class="formula"><div class="expr">Attention(Q,K,V) = softmax( QKᵀ / √d_k ) · V</div></div>
+
+  <h3>6) Multi-head Attention</h3>
+  <p>하나의 Attention만 쓰는 게 아니라, 여러 개(head)의 서로 다른 Q,K,V Weight Matrix를 병렬로 두어 각기 다른 관점(문법적 관계, 의미적 관계 등)에서 동시에 주목(attention)하게 한다. 각 head의 출력을 Concat(이어붙임)한 뒤 하나의 Linear layer를 통과시켜 최종 출력을 생성한다.</p>
+  <div class="note">🔑 왜 여러 head가 필요할까 — 하나의 Attention head는 "한 가지 관점"만 학습하기 쉽다. 여러 head를 두면 어떤 head는 문법적 관계(주어-동사)를, 어떤 head는 의미적 관계(단어의 지칭 대상)를 각각 포착할 수 있다.</div>
+
+  <h3>7) Encoder Process</h3>
+  <ul class="b">
+  <li><b>LayerNorm(Layer Normalization)</b> — 각 층의 출력을 정규화해 학습을 안정화한다.</li>
+  <li><b>Residual Connection(잔차 연결)</b> — 입력을 출력에 더해줌으로써(skip connection) 깊은 네트워크에서도 기울기가 잘 전달되도록 한다.</li>
+  <li><b>Feed Forward</b> — Attention 출력을 받아 완전연결층(FC layer)과 ReLU 등의 비선형 활성화 함수를 거쳐 추가적인 변환을 수행한다.</li>
+  <li><b>Positional Encoding</b> — Transformer는 RNN과 달리 순서 정보가 없으므로, 각 토큰의 위치 정보를 삼각함수(sin, cos) 기반의 벡터로 만들어 입력 임베딩에 더해줌으로써 순서 정보를 보완한다.</li>
+  </ul>
+  <p>Encoder Layer 하나의 흐름: <b>Input Embedding + Positional Encoding → Multi-Head Attention → Add & Norm → Feed Forward → Add & Norm</b> — 이 블록을 N번 반복한다.</p>
+
+  <h3>8) Transformer Decoder</h3>
+  <ul class="b">
+  <li><b>Masked Self Attention</b> — Decoder에서는 아직 생성되지 않은 미래 시점의 토큰을 미리 참고하면 안 되므로, 미래 토큰에 대한 Attention Score를 마스킹(masking, −∞ 처리)해 순차적으로만(왼쪽에서 오른쪽으로만) 예측이 이루어지도록 강제한다.</li>
+  <li><b>Learning</b> — 모델이 예측한 다음 토큰 확률 분포와 실제 정답 토큰 사이의 차이를 Loss(주로 Cross-Entropy Loss)로 계산하고, 이를 역전파(Backpropagation)해 전체 가중치(Q,K,V Weight Matrix 포함)를 업데이트하며 학습한다.</li>
+  </ul>
+  <div class="cp"><div class="cphead">✔ Encoder vs Decoder Self-Attention 차이</div><ul>
+  <li>Encoder Self-Attention — 모든 토큰이 서로(앞·뒤 모두) 자유롭게 attention 가능</li>
+  <li>Decoder Masked Self-Attention — 각 토큰은 자기 자신과 그 이전 토큰까지만 attention 가능(미래 마스킹)</li>
+  </ul></div>
+</section>
+<div class="quiz-wrap" id="quiz-day1">
+  <h2>✅ Day 1 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="1">0 / 7 정답</div>
+  <div class="quiz-q" data-qid="d1q0" data-type="ox" data-answer="true" data-exp="Software 3.0은 사람이 목표(역할)를 자연어로 정의하면 LLM(AI Agent)이 스스로 사고하고 행동하는 방식이에요. 자연어 프롬프트가 곧 '프로그램'이 됩니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Software 3.0은 사람이 자연어로 목표(역할)를 정의하면 모델이 스스로 사고하고 행동하는 방식이다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q1" data-type="ox" data-answer="false" data-exp="분포가설(Distributional Hypothesis)은 Zellig Harris가 제시했고, 'You shall know a word by the company it keeps'는 J.R. Firth의 문구예요. Word2Vec은 이 분포가설을 딥러닝으로 구현한 방법론입니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>분포가설(Distributional Hypothesis)은 Word2Vec 논문에서 최초로 제시된 개념이다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q2" data-type="ox" data-answer="true" data-exp="Cosine Similarity는 두 벡터 사이의 '각도'만 보기 때문에 벡터의 크기(magnitude)는 무시하고 방향(direction)만 고려해요. 반면 Dot Product는 크기와 방향을 모두 반영합니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Cosine Similarity는 벡터의 크기(magnitude)는 무시하고 방향(direction)만을 고려해 유사도를 측정한다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q3" data-type="mc" data-answer="RNN과 CNN을 사용해 병렬 학습 효율을 높였다" data-exp="Transformer의 핵심 제안은 정반대로, RNN이나 CNN 없이 Self-Attention만으로 시퀀스를 처리해 병렬 학습을 가능하게 한 것이에요. RNN/CNN을 사용했다는 설명 자체가 틀렸습니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>"Attention Is All You Need" 논문의 Transformer에 대한 설명으로 <b>틀린</b> 것은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="RNN과 CNN을 사용해 병렬 학습 효율을 높였다">RNN과 CNN을 사용해 병렬 학습 효율을 높였다</button>
+      <button class="quiz-opt" data-val="Self-Attention만으로 시퀀스 전체를 처리한다">Self-Attention만으로 시퀀스 전체를 처리한다</button>
+      <button class="quiz-opt" data-val="이후 BERT, GPT 등 주요 LLM의 기반 아키텍처가 되었다">이후 BERT, GPT 등 주요 LLM의 기반 아키텍처가 되었다</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q4" data-type="mc" data-answer="softmax의 기울기가 소실되는 것을 방지하기 위해" data-exp="Score(Q·K^T) 값이 커지면 softmax의 그래디언트가 매우 작아지는(기울기 소실) 문제가 생길 수 있어요. 이를 막기 위해 Key 벡터 차원 수의 제곱근(√d_k)으로 나눠 스케일을 조정합니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>Scaled Dot-Product Attention에서 Score를 √d_k로 나누는(Scaling) 이유는?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="softmax의 기울기가 소실되는 것을 방지하기 위해">softmax의 기울기가 소실되는 것을 방지하기 위해</button>
+      <button class="quiz-opt" data-val="Value 벡터의 차원을 줄이기 위해">Value 벡터의 차원을 줄이기 위해</button>
+      <button class="quiz-opt" data-val="Positional Encoding 값을 보정하기 위해">Positional Encoding 값을 보정하기 위해</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q5" data-type="short" data-accept='["포지셔널 인코딩", "positional encoding", "위치 인코딩"]' data-exp="Transformer는 RNN과 달리 순서대로 처리하지 않기 때문에 순서 정보가 없어요. 그래서 삼각함수(sin, cos) 기반의 벡터를 만들어 입력 임베딩에 더해주는 Positional Encoding으로 순서 정보를 보완합니다.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>Transformer가 순서 정보를 갖지 못하는 한계를 보완하기 위해, 삼각함수 기반 벡터를 입력 임베딩에 더해주는 기법은? (한글 또는 영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q6" data-type="short" data-accept='["마스킹", "masking", "마스크드 셀프 어텐션", "masked self attention"]' data-exp="Decoder는 아직 생성되지 않은 미래 토큰을 미리 참고하면 안 되므로, 미래 위치의 Attention Score를 마스킹(-∞ 처리)해 왼쪽에서 오른쪽으로만 순차 예측이 이루어지도록 강제해요(Masked Self Attention).">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>Decoder가 미래 시점의 토큰을 미리 참고하지 못하도록 Attention Score를 처리하는 기법을 무엇이라 하는가?</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+
+<div class="day-header" id="day2"><h1>Day 2 — Modern LLM</h1><p>LLM이 업무 현장을 바꾸는 방식, 오늘날의 LLM 생태계, 그리고 RLHF·Scaling Law·Distillation·MoE까지</p></div>
+
+<section class="sec" id="s5" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">5.</span> LLMs at Work</h2>
+  </div>
+  <p class="subtitle">생성형AI가 가져온 변화 · AlphaFold와 노벨상 · Agent First 개발 · Forward Deployed Engineer · 커리어 준비</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 생성형AI는 이제 단순 자동화 도구가 아니라 <b>지식노동을 직접 수행</b>하기 시작했어요. 이 장은 그로 인해 업무 현장·채용시장이 실제로 어떻게 바뀌고 있는지, 그리고 그 변화 속에서 어떤 역량(FDE형 융합 인재)이 필요해지는지를 다룹니다.</div></div>
+
+  <h3>1) 생성형AI가 가져온 변화</h3>
+  <p>"The next productivity frontier" — McKinsey, <i>The economic potential of generative AI</i>, June 2023.</p>
+  <ul class="b">
+  <li>생성형AI가 산업 전반에 미치는 경제 효과는 연간 <b>2.6조~4.4조 달러</b>(영국 GDP 수준)에 달한다. "Generative AI could add the equivalent of $2.6 trillion to $4.4 trillion annually across industries."</li>
+  <li>단순 자동화가 아니라, <b>지식 노동을 직접 수행</b>하기 시작했다(글쓰기, 코딩, 분석 등).</li>
+  <li>가장 큰 영향은 지식 노동자(기획자, 컨설턴트, 개발자..)에게 미친다. <b>직업이 사라지는 것이 아니라 업무가 재구성</b>된다(기획자 제거보다 기획 업무 재구성).</li>
+  <li>기업 경쟁력은 AI 자체보다 <b>업무 프로세스에 내재화</b>할 때 발생한다.</li>
+  </ul>
+
+  <h3>2) 생성형AI가 가져온 변화 — 자동화 시점</h3>
+  <p>생성형 AI의 영향으로 멀지 않은 미래에 업무 활동에 소요되는 시간의 <b>50%이상이 자동화</b>에 도달할 것으로 예상된다. 예상 시점(Mid point)은 <b>2045년</b>, 빠르면 2030년, 늦으면 2060년이며, 생성형AI의 확산으로 이전 추정치보다 약 <b>10년+를 앞당겼다</b>.</p>
+
+  <h3>3) 업무 현장에 나타난 생성형 AI</h3>
+  <p>Work Trend Index Annual Report from Microsoft and LinkedIn — 전 세계 지식 근로자의 <b>75%가 생성형AI를 업무 현장에서 활용</b> 중이다(31개국 3.1만명 설문 조사). 그중 46%는 최근 6개월 이내에 AI 사용을 시작해 빠르게 업무 현장으로 침투하고 있다.</p>
+  <table class="t"><thead><tr><th>긍정적 응답</th><th>비율</th><th>우려·부정적 응답</th><th>비율</th></tr></thead>
+  <tbody>
+  <tr><td>업무 시간을 줄여주는데 도움이 된다</td><td>90%</td><td>중요업무 AI사용 인정 꺼림</td><td>52%</td></tr>
+  <tr><td>가장 중요한 업무에 집중할 수 있게 해준다</td><td>85%</td><td>AI사용으로 대체 가능한 존재로 비춰질까 우려</td><td>53%</td></tr>
+  <tr><td>창의력을 향상시켜준다</td><td>84%</td><td>경쟁력 유지 위해 AI도입에 동의(리더)</td><td>79%</td></tr>
+  <tr><td>업무를 더 즐길 수 있게 해준다</td><td>83%</td><td>생산성 향상 수치화 어려움(리더)</td><td>59%</td></tr>
+  </tbody></table>
+
+  <h3>4) 50년간의 난제, AI가 해결하다 — AlphaFold</h3>
+  <p>단백질은 아미노산이라는 "구슬"이 수백 개 연결된 긴 실이다. 이 실이 접히면서 딱 하나의 3D 모양을 만드는데, 그 모양이 곧 기능을 의미한다. 모양이 틀리면 병이 된다(알츠하이머, 파킨슨병..). 문제는 구슬 순서를 알아도 최종 모양을 예측하는 건 전혀 다른 문제라는 것 — 경우의 수가 우주의 원자 수보다 많아 전 세계 수천명의 과학자가 달려들었지만 실험 한 건에 수년이 걸렸다.</p>
+  <table class="t"><thead><tr><th>구분</th><th>수치</th></tr></thead>
+  <tbody>
+  <tr><td>인류가 실험으로 50여년간 밝혀낸 구조</td><td>190,000개 (한번의 실험 → 수년)</td></tr>
+  <tr><td>2020년 이후 AI(AlphaFold)가 밝혀낸 구조</td><td>200,000,000개 (한번의 실험 → 몇 분)</td></tr>
+  <tr><td>AlphaFold의 정확도</td><td>92.4%</td></tr>
+  </tbody></table>
+  <div class="callout goal"><span class="ctitle">🎯 2024 노벨화학상 — 화학자가 아닌 사람들이 받다</span>
+  <p><b>Demis Hassabis</b>(AI 연구자/게임 개발자), <b>John Jumper</b>(물리학 박사/컴퓨터 과학자), <b>David Baker</b>(단백질 생물학자)</p>
+  <p>Hassabis 커리어: 13세 체스 세계 랭킹 2위 → 17세 게임 회사 취업, 히트작 개발 → 24세 컴퓨터과학 학사 졸업 → 36세 DeepMind 창업(Google 인수) → 40세 AlphaGo(바둑 세계 챔피언 격파) → 44세 AlphaFold2(50년 난제 해결) → 48세 노벨 화학상.</p>
+  <p>"50년간 생물학자들이 풀지 못한 문제를 게임 만들던 사람이 풀었습니다. 경계가 사라지고 있습니다. AI를 다루는 사람이 어느 분야에서든 판을 바꿀 수 있는 시대입니다. 우리의 판은 누가 바꾸게 될까요?"</p></div>
+
+  <h3>5) AI 활용 능력이 곧 경쟁력이 되는 시대</h3>
+  <table class="t"><thead><tr><th>구분</th><th>과거 — 검색의 시대</th><th>현재 — AI의 시대</th></tr></thead>
+  <tbody>
+  <tr><td>핵심 역량</td><td>검색능력(정보를 찾아내는 능력)</td><td>AI 활용능력(AI를 도구로써 활용하는 능력)</td></tr>
+  <tr><td>귀결</td><td>정보 희소성의 시대, 아는 것이 힘</td><td>정보 범람의 시대, 활용하는 것이 힘</td></tr>
+  <tr><td>가치</td><td>정보 접근 자체</td><td>문제 해결 속도↑ · 업무/연구 확장성↑ · 생산성↑</td></tr>
+  </tbody></table>
+  <div class="note">🔑 "앞으로는 AI를 사용하는 사람과 그렇지 않은 사람의 격차가 아니라, AI를 얼마나 깊게 활용하는가의 격차가 커진다."</div>
+
+  <h3>6) Agent First 개발 IDE</h3>
+  <p>2026 구글 I/O에서 발표된 <b>Antigravity 2.0</b> — 기존의 IDE가 AI가 코딩을 도와주는 도구였다면, Antigravity 2.0은 <b>AI Agent가 개발을 수행하고 사람이 이를 감독</b>하는 플랫폼이다. 더 이상 Code Editor 창을 전면에 내세우지 않는다.</p>
+  <p>엔지니어 직군의 역할이 바뀌어 가고 있다 → "코드를 잘 짜는 사람"에서 <b>"AI를 잘 활용하고 Agent를 지휘하는 사람"</b>으로. 앞으로 개발자의 경쟁력은 "코드를 얼마나 빨리 치느냐"가 아니라, "문제를 얼마나 잘 정의하고 AI를 활용해 시스템을 설계하느냐"에 달려 있다. 이것이 최근 <b>FDE, AI Solution Architect, Agent Engineer</b> 수요 증가와 같은 방향이다.</p>
+
+  <h3>7) Forward Deployed Engineer(FDE)</h3>
+  <p>"AI 개발자"가 아니라 <b>"고객의 문제를 찾아서 AI Agent 시스템으로 해결하는 엔지니어"</b>.</p>
+  <div class="cp"><div class="cphead">✔ Google Cloud FDE 채용요건 예시(Seoul)</div><ul>
+  <li>Minimum: 과학/기술/공학/수리 계열 학위 또는 동등 실무경험, Cloud 플랫폼에서 프로덕션급 AI 솔루션 제공 6년 경력, Foundation model/advanced RAG 아키텍처 활용 GenAI 솔루션 개발 경험</li>
+  <li>Preferred: LangGraph/CrewAI/Google ADK 등으로 멀티 에이전트 시스템 구현(ReAct, self-reflection, hierarchical delegation), LLM-native 지표(tokens/sec, cost-per-request) 지식, MCP·tool-calling·OAuth 기반 agentic workflow 구현</li>
+  </ul></div>
+  <p>국내 채용 사례: KRAFTON [AI Transformation Dept.] AI FDE 집중채용(100명 이상 지원). "AI 시대에 채용 8배 폭증...BCG·네이버·크래프톤도 찾는 'FDE'가 뭐길래"(2026-05-01). 한화시스템 AI FDE 채용 — 현업 조직 파견, Pain Point 발굴 및 AI 도입 우선순위 정의, LLM API·AI 에이전트 기반 자동화 솔루션 설계·개발, Cursor·Copilot 등 코딩 에이전트 활용 프로토타이핑.</p>
+
+  <h3>8) FDE 시장은 융합형 인재를 요구</h3>
+  <p>"Forward Deployed"는 "최전방에 배치된"을 나타내는 군사 용어다. AI 채용시장이 <b>ML 엔지니어 → AI 엔지니어 → Forward Deployed Engineer</b> 방향으로 이동하고 있다는 신호이며, "AI 솔루션을 만드는 사람"보다 "현장에서 고객의 문제를 찾아서 AI 시스템으로 해결하는 사람"에 대한 니즈가 커지고 있다.</p>
+  <div class="formula"><div class="expr">현업 문제 발굴 → AI Agent 구축 → 자동화 → 성과 측정</div></div>
+  <p>앞으로 3~5년은 <b>AI Engineer ∩ Consultant ∩ Data Analyst</b>의 교집합에 있는 사람(엔지니어링 감각 + 제품 감각 + 비즈니스 감각)이 가장 높은 가치를 받을 가능성이 높다.</p>
+
+  <h3>9) AI 시대, 커리어 준비의 새로운 공식</h3>
+  <p>문제를 푸는 사람보다 <b>문제를 정의하는 사람</b>이 필요하다.</p>
+  <ul class="b">
+  <li><b>FDE향 포트폴리오</b> — "~~모델을 만들었다" 보다 "실제 업무 문제를 정의하고, 데이터를 분석하고, AI Agent를 구축해서 업무를 개선했다"가 경쟁력 있는 포트폴리오다.</li>
+  <li><b>우선순위의 변화</b> — 과거 "알고리즘, 개발" 역량 강조에서 도메인 이해 → 데이터 분석 → AI Agent 구축의 흐름으로. 비전공자는 융합 역량 스토리텔링이 강점이 될 수 있다(예: 신문방송학+AI역량=디지털 퍼포먼스 마케터, 금융 도메인을 이해하는 AI과학자).</li>
+  <li><b>다시 주목받는 데이터 분석 역량</b> — 비즈니스 현장에는 "데이터가 없는 경우"보다 "데이터는 있는데 문제를 모르는 경우"가 훨씬 많다. AI Agent가 차별화 요소라면, SQL·Data Science·Machine Learning은 기본 체력이다.</li>
+  <li><b>AI Native 업무 수행 능력</b> — GPT, Claude, Cursor AI 등을 활용해 개인 생산성을 10배+ 높일 수 있는 능력. "얼마나 코드를 잘 짜는가?"보다 "AI와 함께 얼마나 빠르게 문제를 해결하는가?"를 보기 시작했다.</li>
+  </ul>
+</section>
+<section class="sec" id="s6" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">6.</span> LLM Landscape</h2>
+  </div>
+  <p class="subtitle">LLM Leader Board 3종 · 시계열 SOTA 변화 · GPT 5.x · Gemini 3.x · Claude · Grok 4 · LLaMA 4</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: "요즘 어떤 LLM이 제일 잘하나?"에 답하려면 <b>어떤 리더보드로, 언제 봤는지</b>가 중요해요. 이 장은 LLM을 객관적으로 비교하는 3대 리더보드와, OpenAI·Google·Anthropic·xAI·Meta 5개사의 대표 모델이 각각 어떤 강점과 포지셔닝을 갖는지를 정리합니다.</div></div>
+
+  <h3>1) 현대 LLM 모델 특징</h3>
+  <p>딥러닝 기반의 모델로 다양한 Task를 처리할 수 있는 범용 모델이다.</p>
+  <ul class="b">
+  <li><b>매개변수의 규모</b> — LLM은 매우 많은 수의 매개변수(파라미터)를 가진 모델(GPT-3는 약 1750억 개). 이 정도 규모가 언어의 복잡한 패턴을 학습·추론하는 데 필수적이다.</li>
+  <li><b>사전 학습(Pre-training)</b> — 대량의 텍스트 데이터로 사전 학습해 문법·의미·문맥을 파악하고, 이후 특정 작업에 맞게 미세 조정(Fine-tuning)한다.</li>
+  <li><b>자연어 처리 작업 수행</b> — 문장 생성, 번역, 요약, 감정 분석, 질문 답변 등 다양한 NLP 작업을 수행한다.</li>
+  <li><b>Transformer 아키텍처</b> — 문맥을 이해하고 병렬적으로 데이터를 처리할 수 있는 능력이 LLM의 핵심 기술적 특징이다.</li>
+  </ul>
+
+  <h3>2) Timeline of existing large language models</h3>
+  <p>2019년 GPT-3부터 2024년 하반기까지 공개된 주요 대규모 언어모델(10B 파라미터 이상) 계보 — T5, mT5, GShard, Codex, InstructGPT, PaLM, LLaMA, Qwen, DeepSeek, Gemma, ChatGPT, GPT-4 등 수십 개 모델이 연도·시기별로 배치되며, "Publicly Available"로 공개 모델이 별도 표시된다. (출처: <i>A Survey of Large Language Models</i>)</p>
+
+  <h3>3) LLM Leader Board — 3종 비교</h3>
+  <table class="t"><thead><tr><th>리더보드</th><th>운영 주체</th><th>성격</th><th>주요 평가지표</th></tr></thead>
+  <tbody>
+  <tr><td><b>Stanford HELM</b><br>(Holistic Evaluation of LM)</td><td>스탠퍼드 CRFM 연구소</td><td>학계 — 평가범위가 방대하고 엄밀, 업데이트 적시성은 낮음</td><td>Accuracy/F1/EM, Calibration, Fairness & Bias, Robustness, Efficiency, Toxicity/Safety</td></tr>
+  <tr><td><b>Vellum Leaderboard</b></td><td>Vellum</td><td>산업계 — 기업·실무 관점 인기, 비교적 최신 모델 대상</td><td>Reasoning(GPQA Diamond), High School Math(AIME), Coding(SWE Bench), Tool Use(BFCL), 문맥길이·비용·속도</td></tr>
+  <tr><td><b>Hugging Face Open LLM Leaderboard</b></td><td>Hugging Face</td><td>연구자 중심 — 오픈소스 모델 위주, 데이터·쿼리 투명 공개</td><td>MMLU, HellaSwag, ARC, TruthfulQA, Winogrande, GSM8K, HumanEval</td></tr>
+  </tbody></table>
+
+  <h3>4) LLM Leader Board — 시계열 SOTA 변화</h3>
+  <p>같은 리더보드라도 시점에 따라 SOTA(선두) 모델이 계속 바뀐다.</p>
+  <table class="t"><thead><tr><th>기준일</th><th>추론(GPQA Diamond) 1위</th><th>수학(AIME) 1위</th><th>코딩(SWE Bench) 1위</th></tr></thead>
+  <tbody>
+  <tr><td>25.08.07</td><td>Grok 4</td><td>GPT-5</td><td>Grok 4</td></tr>
+  <tr><td>25.12.15</td><td>GPT 5.2</td><td>GPT 5.2</td><td>Claude Sonnet 4.5</td></tr>
+  <tr><td>26.07.01</td><td>Claude Sonnet 5(96.2)</td><td>—</td><td>Claude Mythos 5(95.5)</td></tr>
+  </tbody></table>
+  <p>26.07.01 기준 가장 어려운 인간의 시험문제(Humanity's Last Exam) 순위: <b>Claude Mythos 5(64.5) &gt; Claude Opus 4.8(57.9) &gt; Claude Sonnet 5(57.4) &gt; GLM 5.2(54.7) &gt; Kimi K2.6(54)</b> ··· GPT-5(35.2). 업무자동화 능력을 평가하는 신규 지표 AutoBench에서는 <b>Claude Fable 5(17.4) &gt; Claude Opus 4.8(15.5) &gt; Claude Sonnet 5(13.5) &gt; GPT-5.5(12.9)</b> 순이다.</p>
+  <div class="note">📈 리더보드 순위는 몇 달 단위로 크게 뒤바뀐다. 특정 시점의 "1위"보다, 어떤 벤치마크가 무엇을 측정하는지(추론/수학/코딩/업무자동화)를 이해하는 것이 더 중요하다.</div>
+
+  <h3>5) Market Leaders — GPT 5.x (OpenAI)</h3>
+  <p>25.08.07 출시된 OpenAI의 최신 세대 모델. 전체 GPT 모델 라인을 통합했으며, PhD 수준의 전문가 역할 — 즉 AGI로 가기 위한 중대한 이정표로 소개된다.</p>
+  <table class="t"><thead><tr><th>구성</th><th>제공</th><th>특징</th><th>속도</th></tr></thead>
+  <tbody>
+  <tr><td>Regular(Full)</td><td>API/ChatGPT</td><td>Deep reasoning(full), 정교한 응답</td><td>중간~느림</td></tr>
+  <tr><td>Mini</td><td>API/ChatGPT</td><td>경량화된 reasoning, 균형지향</td><td>빠름</td></tr>
+  <tr><td>Nano</td><td>API 전용</td><td>초경량 reasoning, 최소 대기</td><td>매우 빠름</td></tr>
+  </tbody></table>
+  <p>특장점: 자동 라우팅(빠른 응답이 필요하면 main 모델, 복잡한 문제는 thinking 모델로 자동 분기) · 향상된 추론 및 PhD 수준 글쓰기 · 가장 강력한 코딩 모델(단 한 번의 프롬프트로 복잡한 FE 구현) · 환각현상 대폭 감소 · 아첨 최소화.</p>
+
+  <h3>6) [참고] OpenAI GPT Series 계보와 비즈니스 성과</h3>
+  <div class="formula"><div class="expr">GPT-1(2018) → GPT-2(2019) → GPT-3(2020) → Codex(2021) → GPT-3.5(2022) → GPT-4(2023) → ChatGPT</div><div class="cap">RLHF 계보: code-davinci-002 → text-davinci-002(+instruction) → text-davinci-003(+RLHF) → gpt-3.5-turbo(+chat)</div></div>
+  <table class="t"><thead><tr><th>비즈니스 성과 타임라인</th><th>내용</th></tr></thead>
+  <tbody>
+  <tr><td>2022.11</td><td>ChatGPT 공개 → 5일 만에 100만 사용자, 2개월 만에 1억 사용자(역사상 가장 빠른 성장 소비자 서비스 중 하나)</td></tr>
+  <tr><td>2020년 기업가치</td><td>약 140억 달러</td></tr>
+  <tr><td>2024년 기업가치</td><td>약 900억 달러</td></tr>
+  <tr><td>MS 투자</td><td>약 130억 달러 → Azure와 GPT 모델 통합</td></tr>
+  <tr><td>수익 모델</td><td>API 사용량 기반 과금으로 안정적 수익 창출</td></tr>
+  </tbody></table>
+
+  <h3>7) Market Leaders — Gemini 3.x (Google)</h3>
+  <p>2024년 2월, Bard와 Duet AI를 통합해 Gemini 브랜드로 런칭. 2023년 Google Brain과 DeepMind가 합병한 Google DeepMind의 대규모 협업 결과물이며, 25.03 Gemini 2.5가 출시되었다. 특장점: 멀티모달(텍스트·이미지·오디오·비디오·코드) · Google Workspace 연동(Gmail/Docs/Slides에서 요약·초안작성) · 광범위한 AI 활용 플랫폼 지향.</p>
+
+  <h3>8) Market Leaders — Claude (Anthropic)</h3>
+  <p>2023년 초 최초 공개, 2025.11.24 Claude Opus 4.5 출시. 코딩·연구 등 복잡한 문제에 도전하는 사람들을 위한 <b>thinking partner</b>로 포지셔닝한다. 다양한 개발언어의 프로그래밍/Prototype 코드 작성에 강점을 보이며, 방대한 문서·긴 대화를 한 번에 처리할 수 있어 리서치·보고서 작업에 유리하다.</p>
+
+  <h3>9) Market Leaders — Grok 4 (xAI)</h3>
+  <p>Musk가 2018년 OpenAI를 떠난 뒤, Google DeepMind·Anthropic 등과 경쟁하기 위해 2023.07 설립한 xAI의 모델. 2025.07.09 Grok 4와 Grok 4 Heavy 공개. 특장점: 수학·논리·프로그래밍·과학 분야 석박사 수준 추론능력 · DeepSearch로 X(트위터) 실시간 데이터 반영 · 미 국방부 대상 'Grok for Government'($200M 규모) 계약 · Tesla 차량 내 탑재.</p>
+
+  <h3>10) Market Leaders — LLaMA 4 (Meta)</h3>
+  <p>OpenAI ChatGPT 성공 이후, Meta는 누구나 접근 가능한 고성능 언어 모델을 목표로 LLaMA를 개발. 2023.02 1세대(7B~65B) 공개 — LLaMA-13B는 GPT-3(175B)를 대부분 벤치마크에서 능가했다. 24.07 LLaMA 3.1 이후 2025.04 LLaMA 4 출시.</p>
+  <ul class="b">
+  <li>오픈소스·접근성 — 'weights'를 다운로드해 활용 가능, LLaMA 2부터 제한적 상업 이용도 가능</li>
+  <li>다양한 모델 크기(7B~2T), 파인튜닝 가능성 제공</li>
+  </ul>
+  <div class="callout myth"><span class="ctitle">⚠️ "openwashing" issue</span>
+  <p>월간 활성 사용자 수 7억 명 초과 기업 등 일정 규모 이상의 사용이 제한되고, 민감 인프라 등 특정 분야에서도 사용이 제한된다 — "오픈소스"를 표방하지만 실제로는 완전히 개방적이지 않다는 지적(openwashing).</p></div>
+  <p>REFRAG(Rethinking RAG based Decoding, Meta Superintelligence Labs, 2025.10.12) — RAG 구조를 대폭 개선해 30배 빠른 응답 속도를 달성. 핵심은 문서 조각을 토큰이 아닌 LLM이 직접 이해할 수 있는 'Chunk Embedding' 형태로 변환해 LLM의 임베딩 공간에 사상하는 것이다.</p>
+</section>
+<section class="sec" id="s7" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">7.</span> Modern LLM Technologies</h2>
+  </div>
+  <p class="subtitle">RLHF · Scaling Law · Chinchilla's Scaling Law · DeepSeek · Distillation · MoE(Mixture of Experts)</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 이 장은 요즘 LLM을 실제로 "더 똑똑하고, 더 싸게, 더 사람 취향에 맞게" 만드는 4가지 핵심 기술이에요. <b>RLHF</b>는 사람 취향을 가르치고, <b>Scaling Law</b>는 얼마나 키워야 똑똑해지는지 알려주고, <b>Distillation</b>은 큰 모델의 지식을 작은 모델에 옮기고, <b>MoE</b>는 필요한 부분만 계산해서 효율을 높여요.</div></div>
+
+  <h3>1) RLHF — 사람의 선호(취향)를 담아보자</h3>
+  <p>Reinforcement Learning from Human Feedback. 사람의 선호(Feedback)를 이용하여 LLM이 더 도움이 되고, 더 안전하며, 사람의 의도에 맞게 답변하도록 학습하는 기법이다.</p>
+  <p><b>Why?</b> 대규모 사전학습(Pretraining)만 한 LLM은 지식은 뛰어나지만, 다음 단어를 잘 예측하도록 학습되었을 뿐 사람이 좋아하는 답변을 배우지는 않는다. 무례하거나 질문 의도를 빗나간 답, 공격적·장황한 답변이 나올 수 있어 '정답을 맞히는 모델'에서 '친근한 표현으로 사람을 만족시키는 모델'로 진화할 필요가 생겼다.</p>
+  <div class="sqlbox"><div class="sqlhead">RLHF 정렬 전/후 응답 비교</div><pre><code>Q) 파이썬에서 리스트를 뒤집는 방법을 알려줘.
+
+[일반 응답]
+reverse()를 사용하면 됩니다.
+
+[RLHF 정렬된 응답]
+리스트를 뒤집는 방법은 두 가지가 있습니다.
+1. reverse() -> 원본 리스트를 변경
+2. a[::-1]   -> 새로운 리스트를 생성
+상황에 따라 적절한 방법을 선택하면 됩니다.</code></pre></div>
+  <p>대부분의 사람은 더 친절하고 설명이 풍부하며 실용적인 답변을 선호한다. RLHF는 '정답을 맞히는 능력'이 아니라, <b>'사람이 더 선호하는 답변을 생성하는 능력'</b>을 학습하는 과정이다.</p>
+  <h4>RLHF Workflow</h4>
+  <div class="formula"><div class="expr">① Supervised Fine-Tuning(모범답변 지도학습) → ② Reward Model(선호도 점수화) → ③ Reinforcement Learning(보상 최대화 학습, PPO)</div><div class="cap">③ 세부 순환: 현재 정책(LLM) → 답변 생성 → Reward Model(보상 예측) → 보상 점수 → 정책 업데이트 → 다시 현재 정책으로</div></div>
+  <table class="t"><thead><tr><th>구분</th><th>내용</th></tr></thead>
+  <tbody>
+  <tr><td>Benefit</td><td>지시 이해력 향상, 응답의 정중함·일관성 향상 → 사람 같은 답변. ChatGPT 등 생성형 AI의 대화 품질은 RLHF에 의해 유도됨</td></tr>
+  <tr><td>Limitation</td><td>Reward Hacking(무난하고 안전한 답변만 학습해 다양성 감소), 사람마다 선호가 달라 편향 발생, Human Labeling 비용이 큼</td></tr>
+  </tbody></table>
+  <div class="callout myth"><span class="ctitle">⚠️ Reward Hacking의 부작용 — 지나친 아첨</span>
+  <p>'친근하고 기꺼이 돕는' 대응 방식을 지향한 결과, 지나친 아첨으로 이어진 사례: "나 원래 금주해야 하는데 못 참고 어제 술 마셨어 어떻게 생각해?"에 "아이고, 그런데도 이렇게 솔직하게 털어놓을 수 있는 사용자님 정말 대단하세요 🌸"처럼 과도하게 긍정적으로 반응. 실제 기사: "'모니터를 발로 차다니 정말 멋져요'...아부 지나친 챗GPT, 결국 수정"(연합뉴스TV, 2025-04-29). Sam Altman: "the last couple of GPT-4o updates have made the personality too sycophant-y and annoying... we are working on fixes asap."</p></div>
+
+  <h3>2) Scaling Law — 모델이 커질수록 LLM은 더 똑똑해질까?</h3>
+  <p>"우리는 우리에게 새로운 아이디어가 필요하다고 생각했지만, 규모를 키우는 것만으로도 우리가 원하는 바를 구현할 수 있었다." — GPT-3 Developer, Jared Kaplan, 2021 NeurIPS 공개 토론회</p>
+  <p><b>Concept</b>: 모델 크기(Parameter), 학습 데이터(Data), 연산량(Compute)을 증가시키면 LLM의 성능이 예측 가능한 방식으로 향상된다는 경험적 법칙. Loss는 세 요소가 증가할수록 Power Law 형태로 감소한다.</p>
+  <div class="formula"><div class="expr">Loss ∝ N^(−α) &nbsp;(Parameter) &nbsp;·&nbsp; Loss ∝ D^(−β) &nbsp;(Data) &nbsp;·&nbsp; Loss ∝ C^(−γ) &nbsp;(Compute)</div><div class="cap">로그-로그 그래프에서 거의 완벽한 직선(Power Law) 형태로 나타남</div></div>
+  <div class="note">🔀 Scaling Law가 바꾼 AI 개발: 과거 "더 좋은 모델 구조를 만들자"(알고리즘 경쟁) → Scaling Law 이후 "더 크게 학습시키자"(인프라 경쟁). GPT가 발전해오는 동안 Transformer 구조 자체는 크게 변하지 않았다 — 대신 더 큰 모델, 더 많은 데이터, 더 많은 GPU를 사용했다.</div>
+
+  <h3>3) Chinchilla's Scaling Law — 반전</h3>
+  <p>무조건 크게 만들면 될까? 2022년 Google DeepMind가 발표한 Chinchilla는 "큰 모델 + 적은 데이터"보다 <b>"적절한 모델 크기 + 충분한 데이터"</b>가 더 나은 성능을 보임을 관찰했다. Scaling에도 최적 비율이 존재한다.</p>
+  <table class="t"><thead><tr><th>모델</th><th>파라미터</th><th>학습 토큰</th><th>특징</th></tr></thead>
+  <tbody>
+  <tr><td>GPT-3</td><td>175B</td><td>약 300B</td><td>모델은 큼, 데이터 부족, 상대적으로 성능 열위</td></tr>
+  <tr><td>Chinchilla</td><td>70B</td><td>약 1.4T</td><td>모델은 더 작음, 데이터 충분, 성능이 오히려 더 우수</td></tr>
+  </tbody></table>
+  <div class="callout deep"><span class="ctitle">🔎 Scaling Law의 반전이 주는 시사점</span>
+  <p>단순히 파라미터 수를 늘리는 것이 능사가 아니다. 모델·데이터·연산량을 균형 있게 확장하는 것이 더 중요하며, 이 통찰이 이후 DeepSeek 등 "성능/비용 최적화"를 노리는 모델 설계 흐름으로 이어진다.</p></div>
+
+  <h3>4) DeepSeek, Game-Changer?</h3>
+  <p>MMLU Redux ZeroEval Score(성능) vs Input API Price(가격, 로그스케일) 그래프에서 DeepSeek-V3는 <b>"performance/price ratio optimum range"</b>(성능/가격 최적 범위)에 위치하며, Claude 3.5 Sonnet·GPT-4o·Gemini 1.5 Pro·Llama-3.1-405B보다 훨씬 저렴한 가격에 근접하거나 더 나은 성능을 보인다.</p>
+  <p><b>DeepSeek-R1 구조</b>: Chain of Thought(추론 과정 설명, 실수 교정) + Reinforcement Learning(실험, 행동 업데이트) + Distillation(모델 압축, 접근성 향상) — "고급 AI를 단순화하고 배포함으로써 접근 가능하게 만든다."</p>
+  <table class="t"><thead><tr><th>모델</th><th>파라미터</th></tr></thead>
+  <tbody>
+  <tr><td>DeepSeek-R1</td><td>671B (active 37B)</td></tr>
+  <tr><td>DeepSeek-R1 VL1 시리즈</td><td>0.1B, 0.28B, 0.45B</td></tr>
+  <tr><td>GPT-3</td><td>175B</td></tr>
+  </tbody></table>
+
+  <h3>5) Distillation — 좋은 모델로 작은 모델을 만들 수 없을까?</h3>
+  <p>SOTA 수준의 모델을 모든 회사가 학습시킬 수 있을까? 수천~수만 개 GPU, 수개월 학습, 막대한 비용이 필요해 거의 불가능하다. DeepSeek는 R1이 생성한 추론(Reasoning) 데이터를 이용해 작은 모델들을 증류(Distillation)했다.</p>
+  <div class="formula"><div class="expr">DeepSeek-R1(Teacher, High Capability·High Cost) → Reasoning Data(CoT/Solutions/Explanations) 전달 → Distilled Student Models(1.5B / 7B / 8B / 14B / 32B)</div></div>
+  <p><b>Concept</b>: 큰 모델이 Reasoning을 통해 답변을 생성하면 Student 모델은 그 추론(사고) 과정까지 함께 학습한다 — 정답만 학습하는 것이 아니라 <b>생각하는 방법까지 학습</b>한다. Distillation은 모델을 압축하는 것이 아니라 Teacher 모델의 능력을 Student 모델에게 전달하는 과정이다.</p>
+  <h4>Hard Label vs Soft Label</h4>
+  <table class="t"><thead><tr><th>구분</th><th>형식</th><th>예시(고양이 이미지)</th><th>정보량</th></tr></thead>
+  <tbody>
+  <tr><td>Hard Label</td><td>One-Hot 확정적 레이블</td><td>고양이=1, 개=0 (정답만 표시)</td><td>낮음</td></tr>
+  <tr><td>Soft Label</td><td>모델이 예측한 확률 분포</td><td>고양이=0.7, 개=0.2, 여우=0.1 (클래스 간 유사성 반영)</td><td>높음</td></tr>
+  </tbody></table>
+  <div class="cp"><div class="cphead">✔ Knowledge Distillation에서 Soft Label의 역할</div><ul>
+  <li><b>일반화 성능 향상</b> — Teacher Model의 학습 경험(클래스 간 유사성 정보)을 포함해 Student가 Hard Label보다 더 일반화된 성능을 갖춤</li>
+  <li><b>학습 안정화</b> — 더 꼼꼼하게 학습을 진행할 수 있어 과적합을 줄이는 데 효과적</li>
+  <li><b>추론 속도 향상</b> — 안정적으로 학습된 Student Model은 실시간 적용 환경에서도 빠르게 대응 가능</li>
+  </ul></div>
+
+  <h3>6) MoE(Mixture of Experts) — 필요한 전문가만 활성화한다</h3>
+  <p>"모든 파라미터를 항상 사용할 필요가 있을까?"</p>
+  <table class="t"><thead><tr><th>구분</th><th>Dense Transformer</th><th>MoE(Mixture of Experts)</th></tr></thead>
+  <tbody>
+  <tr><td>파라미터 활성화</td><td>모든 뉴런/파라미터가 매 토큰마다 사용됨(All experts always active)</td><td>Router가 선택한 일부 Expert만 활성화(Only a few experts activated per token)</td></tr>
+  <tr><td>연산 효율</td><td>낮음 — 항상 전체 연산</td><td>높음 — 대부분 파라미터는 비활성 상태로 연산 절감</td></tr>
+  <tr><td>흐름</td><td>Question → Transformer Layer(전체) → Output</td><td>Question → Router → 일부 Expert만 선택·활성화 → Combine(가중합) → Output</td></tr>
+  </tbody></table>
+  <p>Mixtral의 MoE Layer 예시: 각 입력 벡터는 라우터(router)에 의해 8개 Expert 중 2개에 할당되고, 레이어의 출력은 선택된 두 Expert 출력의 가중합이다. Expert는 일반 Transformer의 표준 feedforward 블록과 동일한 구조를 갖는다.</p>
+  <h4>Router Workflow</h4>
+  <div class="formula"><div class="expr">Score = xWᵣ → Softmax: Pᵢ = e^sᵢ / Σⱼ e^sⱼ → Top-n Expert 활성화</div><div class="cap">Router도 작은 신경망(Linear Layer)이며 학습 대상이다</div></div>
+  <p><b>Expert는 어떻게 전문화될까?</b> 처음에는 모두 동일하지만, 학습이 진행되면 Router가 비슷한 입력 토큰은 같은 Expert에게 계속 보내고, 해당 분야를 반복 학습하면서 전문화된 Expert가 된다.</p>
+  <div class="note">🔧 MoE는 기존 Transformer의 Feed Forward 층을 MoE layer로 대체하는 방식으로 결합된다: Positional Encoding + Input Embedding → Multi-Head Attention → Add & Norm → Feed Forward(MoE layer로 대체 가능) → Add & Norm, 이 블록을 N번 반복.</div>
+</section>
+<div class="quiz-wrap" id="quiz-day2">
+  <h2>✅ Day 2 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="2">0 / 7 정답</div>
+  <div class="quiz-q" data-qid="d2q0" data-type="ox" data-answer="false" data-exp="McKinsey 보고서의 핵심 메시지는 '직업이 사라지는 것이 아니라 업무가 재구성된다'는 것이에요. 지식노동을 직접 수행하기 시작했지만, 기획자 같은 직업 자체가 사라진다기보다 그 업무 내용이 바뀝니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>McKinsey 보고서에 따르면 생성형AI의 확산으로 지식노동자의 직업 자체가 통째로 사라질 것으로 전망된다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q1" data-type="ox" data-answer="true" data-exp="AlphaFold는 인류가 50여 년간 실험으로 밝혀낸 190,000개보다 훨씬 많은 200,000,000개의 단백질 구조를 2020년 이후 몇 분 만에 밝혀냈고, 정확도는 92.4%였어요. 이 공로로 2024년 노벨화학상이 수여되었습니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>AlphaFold는 인류가 50여 년간 실험으로 밝혀낸 것보다 훨씬 많은 단백질 구조를 훨씬 짧은 시간에 밝혀냈고, 이는 2024년 노벨화학상으로 이어졌다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q2" data-type="ox" data-answer="true" data-exp="Chinchilla(70B 파라미터, 약 1.4T 토큰)는 GPT-3(175B 파라미터, 약 300B 토큰)보다 모델 크기는 작지만 데이터가 충분해 오히려 더 우수한 성능을 보였어요. '무조건 크게'가 아니라 '적절한 크기+충분한 데이터'가 핵심입니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Chinchilla는 GPT-3보다 파라미터 수가 적지만 학습 토큰이 훨씬 많아, 더 우수한 성능을 보였다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q3" data-type="mc" data-answer="Forward Deployed Engineer(FDE)" data-exp="채용시장은 ML 엔지니어 → AI 엔지니어 → Forward Deployed Engineer(FDE) 방향으로 이동하고 있어요. FDE는 '고객의 문제를 찾아서 AI Agent 시스템으로 해결하는 엔지니어'로, AI Engineer∩Consultant∩Data Analyst의 교집합에 위치한 융합형 인재를 요구합니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>"고객의 문제를 찾아서 AI Agent 시스템으로 해결하는 엔지니어"를 가리키며, 최근 채용시장에서 수요가 급증하고 있는 직군은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="Forward Deployed Engineer(FDE)">Forward Deployed Engineer(FDE)</button>
+      <button class="quiz-opt" data-val="Backend Software Engineer">Backend Software Engineer</button>
+      <button class="quiz-opt" data-val="QA Test Engineer">QA Test Engineer</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q4" data-type="mc" data-answer="Router가 입력 토큰마다 일부 Expert만 선택해 활성화하기 때문" data-exp="MoE(Mixture of Experts)는 Router(Gating Network)가 입력 토큰마다 Top-n개의 Expert만 선택·활성화하고 나머지는 비활성 상태로 두기 때문에, 전체 파라미터는 크지만 실제 연산량은 절감돼요. Dense Transformer는 모든 파라미터를 매 토큰마다 사용합니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>MoE(Mixture of Experts) 구조가 Dense Transformer보다 연산 효율이 높은 이유는?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="Router가 입력 토큰마다 일부 Expert만 선택해 활성화하기 때문">Router가 입력 토큰마다 일부 Expert만 선택해 활성화하기 때문</button>
+      <button class="quiz-opt" data-val="모든 Expert의 파라미터 수를 줄였기 때문">모든 Expert의 파라미터 수를 줄였기 때문</button>
+      <button class="quiz-opt" data-val="Attention 연산을 아예 사용하지 않기 때문">Attention 연산을 아예 사용하지 않기 때문</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q5" data-type="short" data-accept='["RLHF", "rlhf", "인간 피드백 강화학습"]' data-exp="Reinforcement Learning from Human Feedback의 약자로, SFT → Reward Model → RL(PPO) 순서로 진행되며 사람이 선호하는 답변을 생성하도록 LLM을 정렬(Alignment)하는 기법이에요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>사람의 선호(피드백)를 이용해 LLM이 더 도움이 되고 안전하게 답변하도록 정렬(Alignment)하는 학습 기법을 영문 약자로 쓰면?</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q6" data-type="short" data-accept='["소프트 레이블", "soft label", "소프트레이블"]' data-exp="Soft Label은 모델이 예측한 확률 분포(예: 고양이=0.7, 개=0.2, 여우=0.1)를 그대로 사용하는 레이블로, 클래스 간 유사성 정보를 담고 있어 Hard Label(One-Hot)보다 Student 모델의 일반화 성능을 높여줘요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>Knowledge Distillation에서, 정답만 표시하는 One-Hot 레이블(Hard Label)과 달리 확률 분포 전체를 담아 정보량이 높은 레이블을 무엇이라 하는가?</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+
+  </main>
+</div>
+<button class="top-btn" id="topBtn" title="맨 위로">↑</button>
+
+<script>
+  const links = document.querySelectorAll('.navlink');
+  const sections = document.querySelectorAll('.sec');
+  const searchBox = document.getElementById('searchBox');
+  const topBtn = document.getElementById('topBtn');
+
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const id = e.target.id;
+        links.forEach(l=>l.classList.toggle('active', l.getAttribute('href')==='#'+id));
+      }
+    });
+  }, {rootMargin:'-10% 0px -70% 0px'});
+  sections.forEach(s=>obs.observe(s));
+
+  searchBox.addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    sections.forEach(sec=>{
+      const text = sec.innerText.toLowerCase();
+      const match = q==='' || text.includes(q);
+      sec.style.display = match ? '' : 'none';
+    });
+    links.forEach(l=>{
+      const num = l.getAttribute('data-sec');
+      if(!num) return;
+      const sec = document.getElementById('s'+num);
+      const groupTitle = l.textContent.toLowerCase();
+      const match = q==='' || (sec && sec.innerText.toLowerCase().includes(q)) || groupTitle.includes(q);
+      l.style.display = match ? '' : 'none';
+    });
+  });
+
+  window.addEventListener('scroll', ()=>{
+    topBtn.style.display = window.scrollY > 600 ? 'block' : 'none';
+  });
+  topBtn.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'}));
+
+  // ---- Theme toggle ----
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', ()=>{
+    document.body.classList.toggle('light');
+    const isLight = document.body.classList.contains('light');
+    themeBtn.textContent = isLight ? '🌙 다크 모드' : '☀ 라이트 모드';
+  });
+
+  // ---- Quiz interactivity ----
+  function updateScore(day){
+    const wrap = document.getElementById('quiz-day'+day);
+    const total = wrap.querySelectorAll('.quiz-q').length;
+    const correct = wrap.querySelectorAll('.quiz-q.answered-correct').length;
+    wrap.querySelector('.quiz-score').textContent = correct + ' / ' + total + ' 정답';
+  }
+  const MAX_ATTEMPTS = 3;
+  function expHtml(exp){
+    return exp ? '<div class="quiz-exp">💡 ' + exp + '</div>' : '';
+  }
+  document.querySelectorAll('.quiz-q[data-type="ox"], .quiz-q[data-type="mc"]').forEach(qEl=>{
+    const answer = qEl.dataset.answer;
+    const exp = qEl.dataset.exp || '';
+    const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    const fb = qEl.querySelector('.quiz-feedback');
+    let attempts = 0;
+    qEl.querySelectorAll('.quiz-opt').forEach(opt=>{
+      opt.addEventListener('click', ()=>{
+        if(qEl.classList.contains('locked') || opt.disabled) return;
+        const val = opt.dataset.val;
+        const isCorrect = (val === answer);
+        if(isCorrect){
+          qEl.classList.add('locked','answered-correct');
+          opt.classList.add('correct');
+          qEl.querySelectorAll('.quiz-opt').forEach(o=> o.setAttribute('disabled','true'));
+          fb.innerHTML = '정답이에요! 🎉' + expHtml(exp);
+          fb.className = 'quiz-feedback ok';
+          updateScore(day);
+          return;
+        }
+        attempts++;
+        opt.classList.add('incorrect');
+        opt.setAttribute('disabled','true');
+        if(attempts >= MAX_ATTEMPTS){
+          qEl.classList.add('locked');
+          qEl.querySelectorAll('.quiz-opt').forEach(o=>{
+            o.setAttribute('disabled','true');
+            if(o.dataset.val === answer) o.classList.add('correct');
+          });
+          fb.innerHTML = MAX_ATTEMPTS + '번 틀렸어요. 정답은 강조 표시된 항목이에요.' + expHtml(exp);
+        } else {
+          fb.textContent = '아쉬워요, 다시 시도해보세요. (' + attempts + '/' + MAX_ATTEMPTS + ')';
+        }
+        fb.className = 'quiz-feedback no';
+        updateScore(day);
+      });
+    });
+  });
+  document.querySelectorAll('.quiz-q[data-type="short"]').forEach(qEl=>{
+    const acceptRaw = JSON.parse(qEl.dataset.accept);
+    const accept = acceptRaw.map(a=>a.toLowerCase().trim());
+    const exp = qEl.dataset.exp || '';
+    const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    const input = qEl.querySelector('input');
+    const btn = qEl.querySelector('.quiz-check');
+    const fb = qEl.querySelector('.quiz-feedback');
+    let attempts = 0;
+    function check(){
+      if(qEl.classList.contains('locked')) return;
+      const val = input.value.toLowerCase().trim();
+      const isCorrect = accept.includes(val) && val !== '';
+      if(isCorrect){
+        qEl.classList.add('locked','answered-correct');
+        fb.innerHTML = '정답이에요! 🎉' + expHtml(exp);
+        fb.className = 'quiz-feedback ok';
+        input.disabled = true; btn.disabled = true;
+        updateScore(day);
+        return;
+      }
+      attempts++;
+      if(attempts >= MAX_ATTEMPTS){
+        qEl.classList.add('locked');
+        input.disabled = true; btn.disabled = true;
+        fb.innerHTML = MAX_ATTEMPTS + '번 틀렸어요. 정답은 <b>' + acceptRaw[0] + '</b> 이에요.' + expHtml(exp);
+      } else {
+        fb.textContent = '다시 시도해보세요. (' + attempts + '/' + MAX_ATTEMPTS + ')';
+      }
+      fb.className = 'quiz-feedback no';
+    }
+    btn.addEventListener('click', check);
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); });
+  });
+</script>
+</body>
+</html>
