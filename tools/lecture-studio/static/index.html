@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>SKALA 강의 제작 스튜디오</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <a class="skip-link" href="#workspace">본문으로 바로가기</a>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">S</span>
+      <div>
+        <strong>강의 제작 스튜디오</strong>
+        <span>SKALA 팀 학습 페이지 도구</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="header-help-btn preview-toggle-btn" id="livePreviewBtn" type="button">◫ 실시간 미리보기</button>
+      <button class="header-help-btn" id="gitHelpBtn" type="button">⌘ Git 도움말</button>
+      <div class="save-state" id="saveState" role="status">
+        <span class="save-dot"></span> 임시저장됨
+      </div>
+    </div>
+  </header>
+
+  <main class="shell" id="workspace">
+    <aside class="stepper" aria-label="제작 단계">
+      <div class="stepper-head">
+        <span class="eyebrow">4단계면 끝</span>
+        <h1>내용만 입력하세요.<br>구조는 도구가 만듭니다.</h1>
+        <p>폴더, HTML, 홈 카드, 배포 명령은 몰라도 괜찮아요.</p>
+      </div>
+      <nav id="stepNav">
+        <button class="step-link active" data-step="1">
+          <span class="step-num">1</span><span><b>강의 정보</b><small>제목과 소개</small></span>
+        </button>
+        <button class="step-link" data-step="2">
+          <span class="step-num">2</span><span><b>내용 작성</b><small>파트와 섹션</small></span>
+        </button>
+        <button class="step-link" data-step="3">
+          <span class="step-num">3</span><span><b>퀴즈</b><small>선택 사항</small></span>
+        </button>
+        <button class="step-link" data-step="4">
+          <span class="step-num">4</span><span><b>만들고 배포</b><small>검사 후 완료</small></span>
+        </button>
+      </nav>
+      <div class="safety-note">
+        <span aria-hidden="true">🛟</span>
+        <p><b>기존 파일은 보호돼요.</b><br>같은 이름이 있으면 먼저 멈추고 확인을 받아요.</p>
+      </div>
+    </aside>
+
+    <section class="editor">
+      <div id="globalNotice" class="notice hidden" role="status"></div>
+
+      <section class="step-panel active" data-panel="1">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">STEP 1</span>
+            <h2>어떤 강의인가요?</h2>
+            <p>홈과 강의 페이지에 표시될 기본 정보예요.</p>
+          </div>
+          <button class="icon-btn" type="button" data-tooltip="모든 입력 내용은 이 브라우저에 자동 임시저장됩니다." aria-label="자동 저장 도움말">?</button>
+        </div>
+
+        <section class="format-section" aria-labelledby="formatTitle">
+          <div class="format-head">
+            <div>
+              <span class="eyebrow">작성 규격</span>
+              <h3 id="formatTitle">원하는 기본 형식을 고르세요</h3>
+              <p>선택한 형식이 파트·섹션·퀴즈 뼈대를 먼저 만들어줘요.</p>
+            </div>
+            <button class="secondary-btn small" id="saveTemplateBtn" type="button">현재 구조 저장</button>
+          </div>
+          <div class="format-grid" id="formatGrid"></div>
+          <div class="template-library hidden" id="templateLibrary"></div>
+        </section>
+
+        <div class="mode-banner" id="existingDraftBanner">
+          <div>
+            <strong>기존 강의의 내용도 안전하게 수정할 수 있어요</strong>
+            <span id="existingDraftText">초안을 확인하는 중...</span>
+          </div>
+          <button class="secondary-btn small" id="useExistingBtn" type="button">기존 강의 수정</button>
+        </div>
+
+        <div class="form-grid two">
+          <label class="field">
+            <span>강의 번호 <button class="help" type="button" data-tooltip="현재 강의 폴더를 확인해 다음 번호를 자동 추천해요." aria-label="강의 번호 도움말">?</button></span>
+            <input id="number" inputmode="numeric" maxlength="2" placeholder="03">
+            <small>두 자리 숫자</small>
+          </label>
+          <label class="field">
+            <span>영문 주소 <button class="help" type="button" data-tooltip="링크에 들어가는 짧은 이름이에요. 예: spring-basics" aria-label="영문 주소 도움말">?</button></span>
+            <input id="slug" autocomplete="off" placeholder="spring-basics">
+            <small id="folderPreview">lectures/03-spring-basics/</small>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>강의 제목 <em>필수</em></span>
+          <input id="title" data-preview-target=".page-head h1" placeholder="예: Spring Boot 기초" maxlength="140">
+        </label>
+        <div class="share-panel" id="titleSharing"></div>
+        <label class="field">
+          <span>한 줄 부제</span>
+          <input id="subtitle" data-preview-target=".sidebar .sub" placeholder="예: 웹 애플리케이션의 시작부터 실행까지" maxlength="180">
+        </label>
+        <label class="field">
+          <span>홈 카드 소개 <em>필수</em></span>
+          <textarea id="description" data-preview-target=".page-head p" rows="3" placeholder="이 강의에서 무엇을 배우는지 1~2문장으로 적어주세요."></textarea>
+          <small><span id="descriptionCount">0</span>/500자</small>
+        </label>
+        <label class="field">
+          <span>핵심 키워드 <em>필수</em> <button class="help" type="button" data-tooltip="쉼표로 구분하면 홈 카드와 강의 상단의 태그로 표시돼요." aria-label="키워드 도움말">?</button></span>
+          <input id="keywords" data-preview-target=".badges" placeholder="Spring, REST API, MVC">
+          <small>쉼표로 나누어 최대 8개</small>
+        </label>
+        <div class="share-panel" id="keywordSharing"></div>
+      </section>
+
+      <section class="step-panel" data-panel="2">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">STEP 2</span>
+            <h2>배운 내용을 적어주세요</h2>
+            <p>파트 안에 섹션을 만들고, 필요한 내용 블록을 버튼으로 추가하세요.</p>
+          </div>
+          <button class="primary-btn compact" id="addPartBtn" type="button">＋ 파트 추가</button>
+        </div>
+        <div class="writing-tip">
+          <span>✦</span>
+          <p><b>막막할 땐 이렇게:</b> 섹션 하나에 개념 하나만 적고, “쉽게 말하면”에는 친구에게 설명하듯 작성해보세요.</p>
+        </div>
+        <div id="partsEditor" class="parts-editor"></div>
+        <div id="freeEditor" class="free-editor hidden">
+          <label class="field">
+            <span>자유 작성 본문</span>
+            <textarea id="freeContent" data-preview-target="#s1" rows="18" placeholder="형식에 맞추지 않고 자유롭게 작성하세요. 빈 줄을 넣으면 문단이 나뉩니다."></textarea>
+            <small>자유 작성은 제목과 본문만 사용하며, 필요하면 언제든 규격 작성으로 돌아갈 수 있어요.</small>
+          </label>
+        </div>
+      </section>
+
+      <section class="step-panel" data-panel="3">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">STEP 3 · 선택</span>
+            <h2>복습 퀴즈를 넣을까요?</h2>
+            <p>객관식, OX, 주관식을 섞어 만들 수 있어요. 건너뛰어도 됩니다.</p>
+          </div>
+        </div>
+        <div id="quizEditor" class="quiz-editor"></div>
+      </section>
+
+      <section class="step-panel" data-panel="4">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">STEP 4</span>
+            <h2>확인하고 완성하세요</h2>
+            <p>도구가 빠진 내용과 연결 오류를 먼저 확인합니다.</p>
+          </div>
+        </div>
+
+        <div class="summary-card" id="summaryCard"></div>
+        <div class="check-card">
+          <div class="check-head">
+            <div><span class="status-icon" id="checkIcon">○</span><div><strong id="checkTitle">아직 검사하지 않았어요</strong><small id="checkSub">아래 버튼을 눌러 확인하세요.</small></div></div>
+            <button class="secondary-btn" id="validateBtn" type="button">내용 검사</button>
+          </div>
+          <div id="validationResults" class="validation-results hidden"></div>
+        </div>
+
+        <div class="action-flow">
+          <article class="action-card">
+            <span class="action-number">1</span>
+            <div class="action-copy">
+              <h3>페이지 만들기</h3>
+              <p>강의 페이지와 홈 카드를 자동으로 만들어요.</p>
+            </div>
+            <button class="primary-btn" id="createBtn" type="button">페이지 만들기</button>
+          </article>
+          <article class="action-card disabled" id="previewCard">
+            <span class="action-number">2</span>
+            <div class="action-copy">
+              <h3>로컬에서 미리보기</h3>
+              <p>실제 페이지를 새 탭으로 열어 확인해요.</p>
+            </div>
+            <button class="secondary-btn" id="previewBtn" type="button" disabled>미리보기</button>
+          </article>
+          <article class="action-card disabled" id="deployCard">
+            <span class="action-number">3</span>
+            <div class="action-copy">
+              <h3>VS Code에서 배포 준비</h3>
+              <p>변경 파일을 확인하고 커밋·동기화해요.</p>
+            </div>
+            <button class="deploy-btn" id="deployBtn" type="button" disabled>VS Code로 열기</button>
+          </article>
+        </div>
+      </section>
+
+      <footer class="editor-footer">
+        <button class="secondary-btn" id="prevBtn" type="button" disabled>← 이전</button>
+        <span id="stepStatus">1 / 4</span>
+        <button class="primary-btn" id="nextBtn" type="button">다음: 내용 작성 →</button>
+      </footer>
+    </section>
+
+    <aside class="side-preview" id="sidePreview" aria-label="실시간 미리보기">
+      <div class="preview-sticky">
+        <div class="live-preview-head">
+          <div><span class="eyebrow">LIVE PREVIEW</span><strong id="previewFocusLabel">전체 페이지</strong></div>
+          <button class="ghost-btn" id="closeLivePreviewBtn" type="button" aria-label="실시간 미리보기 닫기">×</button>
+        </div>
+        <div class="live-frame-wrap">
+          <iframe id="livePreviewFrame" class="live-frame" title="작성 중인 강의 실시간 미리보기"></iframe>
+        </div>
+        <dl class="content-counts">
+          <div><dt>파트</dt><dd id="partCount">1</dd></div>
+          <div><dt>섹션</dt><dd id="sectionCount">1</dd></div>
+          <div><dt>퀴즈</dt><dd id="quizCount">0</dd></div>
+        </dl>
+        <div class="preview-actions">
+          <button class="secondary-btn small" id="refreshPreviewBtn" type="button">새로고침</button>
+          <button class="text-btn" id="clearDraftBtn" type="button">입력 내용 초기화</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div class="modal-backdrop hidden" id="modalBackdrop">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose" type="button" aria-label="닫기">×</button>
+      <div id="modalBody"></div>
+    </section>
+  </div>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
