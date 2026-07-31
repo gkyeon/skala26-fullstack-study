@@ -173,6 +173,92 @@
   .copy-btn:hover{border-color:var(--accent2); color:var(--accent2);}
   .copy-btn.copied{border-color:var(--accent2); color:var(--accent2);}
 
+  /* ===== Python 연습장 ===== */
+  #pyToggle{
+    position:fixed; right:24px; bottom:80px; z-index:40; background:var(--accent2); color:#0b0d14;
+    border:none; border-radius:999px; padding:12px 18px; font-size:13px; font-weight:700; cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,.35); display:flex; align-items:center; gap:6px;
+  }
+  #pyDrawer{
+    position:fixed; left:0; right:0; bottom:-70vh; height:66vh; background:var(--panel);
+    border-top:1px solid var(--border); z-index:39; transition:bottom .25s ease;
+    box-shadow:0 -8px 30px rgba(0,0,0,.4); display:flex; flex-direction:column;
+  }
+  #pyDrawer.open{bottom:0;}
+  .py-head{
+    display:flex; align-items:center; justify-content:space-between; padding:10px 18px;
+    border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .py-head h3{margin:0; font-size:14px; max-width:70%;}
+  .py-head .py-actions{display:flex; gap:8px; align-items:center; flex-shrink:0;}
+  .py-close{background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; line-height:1;}
+  .py-body{display:flex; flex:1; overflow:hidden;}
+  .py-side{
+    width:230px; flex-shrink:0; border-right:1px solid var(--border); overflow-y:auto; padding:12px 14px;
+    font-size:12px; color:var(--muted);
+  }
+  .py-side h4{color:var(--accent2); font-size:11.5px; margin:10px 0 4px;}
+  .py-main{flex:1; display:flex; flex-direction:column; padding:14px 18px; overflow:hidden;}
+  #pyEditor{
+    width:100%; flex:1; min-height:90px; max-height:160px; resize:vertical; background:var(--code-bg);
+    color:var(--code-text); border:1px solid var(--border); border-radius:8px; padding:10px 12px;
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:13px; line-height:1.6; white-space:pre;
+  }
+  .py-btnrow{display:flex; gap:8px; margin:10px 0;}
+  .py-run{
+    background:var(--accent2); color:#0b0d14; border:none; border-radius:7px; padding:8px 18px;
+    font-weight:700; font-size:13px; cursor:pointer;
+  }
+  .py-clear, .py-example{
+    background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:7px;
+    padding:8px 14px; font-size:12.5px; cursor:pointer;
+  }
+  .py-result{flex:1; overflow:auto; border:1px solid var(--border); border-radius:8px; padding:10px 12px; background:var(--code-bg);}
+  .py-result pre{margin:0; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:12.5px; white-space:pre-wrap; color:var(--code-text);}
+  .py-result pre.py-outexpr{margin-top:6px; color:var(--accent2);}
+  .py-figure{max-width:100%; margin-top:8px; border-radius:6px; border:1px solid var(--border); background:#fff;}
+  .pg-error{color:#ff8080; font-family:monospace; font-size:12.5px; white-space:pre-wrap;}
+  .pg-info{color:var(--muted); font-size:12.5px;}
+  @media (max-width:900px){
+    .py-side{display:none;}
+    #pyDrawer{height:80vh;}
+  }
+  .py-guide{
+    background:rgba(79,209,197,.08); border:1px solid rgba(79,209,197,.3); border-radius:10px;
+    padding:10px 14px; margin-bottom:12px; font-size:12.5px; line-height:1.7; color:var(--text);
+  }
+  .py-guide b{color:var(--accent2);}
+  .py-tabs{display:flex; gap:6px; margin-bottom:10px;}
+  .py-tab{
+    padding:6px 12px; border-radius:7px; border:1px solid var(--border); background:var(--panel2);
+    color:var(--muted); font-size:12px; cursor:pointer;
+  }
+  .py-tab.active{background:var(--accent); color:#0b0d14; border-color:var(--accent); font-weight:700;}
+  .ex-list{display:flex; flex-direction:column; gap:6px; max-height:100%; overflow-y:auto;}
+  .ex-item{
+    text-align:left; background:var(--panel2); border:1px solid var(--border); border-radius:8px;
+    padding:8px 10px; color:var(--text); font-size:12.5px; cursor:pointer; width:100%;
+  }
+  .ex-item:hover{border-color:var(--accent);}
+  .ex-item.active{border-color:var(--accent); background:rgba(124,157,255,.1);}
+  .ex-item .tag{color:var(--muted); font-size:10.5px; display:block; margin-bottom:2px;}
+  .ex-current{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:10px;
+    font-size:13px; line-height:1.6;
+  }
+  .ex-current b{color:var(--accent2);}
+  .ex-btnrow{display:flex; gap:8px; margin-top:8px;}
+  .ex-answer-btn{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:7px;
+    padding:6px 12px; font-size:12px; cursor:pointer;
+  }
+  .ex-answer-btn:hover{border-color:var(--accent2);}
+  .run-btn{
+    background:none; border:1px solid var(--border); color:var(--accent2); border-radius:6px;
+    padding:3px 9px; font-size:11px; cursor:pointer; margin-left:8px;
+  }
+  .run-btn:hover{border-color:var(--accent2); background:rgba(79,209,197,.1);}
+
   /* ===== Width upgrade (full monitor) ===== */
   main{ max-width: 1180px; padding:40px 56px 160px; }
   @media (min-width:1500px){ main{ max-width: 1320px; } }
@@ -259,6 +345,7 @@
     <p class="sub">기초 문법부터 데이터 분석 입문까지 · 복습노트</p>
     <div class="toolbar">
       <button class="theme-btn" id="themeBtn">🌙 다크 모드</button>
+      <button class="theme-btn" id="exerciseNavBtn">✏️ 연습문제</button>
     </div>
     <input class="search" id="searchBox" type="text" placeholder="검색 (예: 컴프리헨션, 데코레이터, DFS, Numpy...)">
     <div class="day-group"><div class="day-title d1">Day 1 — 기초 문법·함수·파일·예외</div>
@@ -318,20 +405,20 @@
     <li>사칙연산 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">+ - * /</code>, 몫 연산자 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">//</code>, 나머지 연산자 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">%</code>, 제곱 연산자 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">**</code></li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">type()</code>으로 자료형 확인, <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">import keyword; keyword.kwlist</code>로 예약어 목록 확인 가능</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">변수와 기본 자료형</div><pre><code>x = 10          # 정수형
-print(type(x))  # &lt;class 'int'&gt;
-y = 3.14        # 실수형
-print(type(y))  # &lt;class 'float'&gt;
-z = 2 + 3j      # 복소수형
-print(type(z))  # &lt;class 'complex'&gt;
-is_active = True
-print(is_active and False)  # False
+  <div class="sqlbox"><div class="sqlhead">변수와 기본 자료형</div><pre><code>count = 7            # 정수형
+print(type(count))   # &lt;class 'int'&gt;
+ratio = 1.75          # 실수형
+print(type(ratio))    # &lt;class 'float'&gt;
+signal = 4 - 5j        # 복소수형
+print(type(signal))    # &lt;class 'complex'&gt;
+is_ready = False
+print(is_ready or True)  # True
 
-s = "Hello, Python!"
-print(s[0])   # H
-print(s[-1])  # ! (-1: 마지막 인덱스)
-s2 = " hello "
-print(s2.strip().upper())  # HELLO</code></pre></div>
+msg = "Hey there, World!"
+print(msg[0])   # H
+print(msg[-1])  # ! (-1: 마지막 인덱스)
+msg2 = "  tidy me up  "
+print(msg2.strip().upper())  # TIDY ME UP</code></pre></div>
 
   <h4>문자열 — 인덱싱·슬라이싱·포맷팅</h4>
   <ul class="b">
@@ -340,24 +427,24 @@ print(s2.strip().upper())  # HELLO</code></pre></div>
     <li>문자열끼리 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">+</code> 연산 시 단순 연결, 문자열은 불변(Immutable) 객체</li>
     <li>포맷팅 방식은 4가지: <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">%</code> 연산자 → <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">.format()</code> → f-string 순으로 발전, <b>f-string</b>이 가장 현대적</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">슬라이싱 &amp; 포맷팅</div><pre><code>text = "Hello, Python!"
-print(text[0:5])   # 'Hello'
-print(text[:5])    # 'Hello' (처음부터)
-print(text[7:])    # 'Python!' (7부터 끝까지)
-print(text[::2])   # 'Hlo yhn' (2칸씩 건너뛰기)
-print(text[::-1])  # '!nohtyP ,olleH' (뒤집기)
+  <div class="sqlbox"><div class="sqlhead">슬라이싱 &amp; 포맷팅</div><pre><code>phrase = "Good Morning, Coder!"
+print(phrase[0:4])   # 'Good'
+print(phrase[:4])    # 'Good' (처음부터)
+print(phrase[14:])   # 'Coder!' (14부터 끝까지)
+print(phrase[::3])   # 3칸씩 건너뛰기
+print(phrase[::-1])  # 뒤집기
 
-name, age = "Alice", 25
-print("이름: %s, 나이: %d" % (name, age))              # % 연산자
-print("이름: {}, 나이: {}".format(name, age))            # format()
-print("이름: {name}, 나이: {age}".format(name=name, age=age))
-print(f"이름: {name}, 나이: {age}")                      # f-string(권장)
+user, level = "Jisoo", 42
+print("이름: %s, 레벨: %d" % (user, level))              # % 연산자
+print("이름: {}, 레벨: {}".format(user, level))            # format()
+print("이름: {user}, 레벨: {level}".format(user=user, level=level))
+print(f"이름: {user}, 레벨: {level}")                      # f-string(권장)
 
-pi = 3.14159
-print(f"파이 값: {pi:.2f}")     # 3.14 (소수점 둘째자리)
-print(f"[{name:>10}]")         # 오른쪽 정렬(10칸)
-print(f"[{name:<10}]")         # 왼쪽 정렬
-print(f"[{name:^10}]")         # 가운데 정렬</code></pre></div>
+e = 2.71828
+print(f"자연상수 e: {e:.2f}")     # 2.72 (소수점 둘째자리)
+print(f"[{user:>10}]")         # 오른쪽 정렬(10칸)
+print(f"[{user:<10}]")         # 왼쪽 정렬
+print(f"[{user:^10}]")         # 가운데 정렬</code></pre></div>
 
   <h4>리스트 — 가장 많이 쓰이는 컬렉션</h4>
   <ul class="b">
@@ -366,23 +453,23 @@ print(f"[{name:^10}]")         # 가운데 정렬</code></pre></div>
     <li>리스트끼리 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">+</code>는 이어붙이기, <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">*</code>는 반복, 다중 중첩(2중·3중)으로 행렬 표현 가능</li>
     <li>리스트 컴프리헨션으로 초기화하면 코드가 간결해지고 for 루프보다 빠름(바이트코드 최적화)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">리스트 — 생성·메서드·슬라이싱</div><pre><code>fruits = ["apple", "banana", "cherry"]
-fruits.append("orange")   # 요소 추가
-fruits.remove("banana")   # 요소 제거
-print(fruits)  # ['apple', 'cherry', 'orange']
+  <div class="sqlbox"><div class="sqlhead">리스트 — 생성·메서드·슬라이싱</div><pre><code>colors = ["red", "green", "blue"]
+colors.append("yellow")   # 요소 추가
+colors.remove("green")    # 요소 제거
+print(colors)  # ['red', 'blue', 'yellow']
 
-my_list = [1, 2, 3]
-my_list.insert(1, "new")  # [1, 'new', 2, 3]
-my_list.extend([4, 5])    # [1, 'new', 2, 3, 4, 5]
+nums = [10, 20, 30]
+nums.insert(1, "mid")  # [10, 'mid', 20, 30]
+nums.extend([40, 50])  # [10, 'mid', 20, 30, 40, 50]
 
-a = [1, 2, 3, 4, 5, 6, 7, 8]
-print(a[2:6])   # [3, 4, 5, 6]
-print(a[::2])   # [1, 3, 5, 7]
-print(a[::-1])  # 역순
+b = [3, 6, 9, 12, 15, 18, 21, 24]
+print(b[2:6])   # [9, 12, 15, 18]
+print(b[::2])   # [3, 9, 15, 21]
+print(b[::-1])  # 역순
 
-squares = [x**2 for x in range(10)]      # 리스트 컴프리헨션
-matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-cols = [row[1] for row in matrix]         # [2, 5, 8]</code></pre></div>
+cubes = [x**3 for x in range(8)]      # 리스트 컴프리헨션
+grid = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+diag = [grid[i][i] for i in range(3)]  # [1, 1, 1]</code></pre></div>
 
   <h4>튜플 — 값이 바뀌면 안 되는 불변 시퀀스</h4>
   <ul class="b">
@@ -391,22 +478,22 @@ cols = [row[1] for row in matrix]         # [2, 5, 8]</code></pre></div>
     <li>튜플은 딕셔너리의 키로 사용 가능(불변이라 해시 가능), 함수의 다중 반환값에 자주 쓰임</li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">count()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">index()</code> 메서드, <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">len/max/min/sum/sorted()</code> 내장 함수와도 함께 사용</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">튜플 — 생성 · 불변성 · 활용</div><pre><code>a = ("hello")   # 문자열로 인식!
-b = ("hello",)  # 튜플로 인식
-t = (10, 20, 30, 40, 50)
-print(t[1:4])   # (20, 30, 40)
-print(t[::-1])  # (50, 40, 30, 20, 10)
+  <div class="sqlbox"><div class="sqlhead">튜플 — 생성 · 불변성 · 활용</div><pre><code>p = ("solo")    # 문자열로 인식!
+q = ("solo",)   # 튜플로 인식
+t = (2, 4, 6, 8, 10)
+print(t[1:4])   # (4, 6, 8)
+print(t[::-1])  # (10, 8, 6, 4, 2)
 
-t2 = (1, 2, 3)
+t2 = (7, 8, 9)
 # t2[0] = 100  # TypeError: 튜플은 변경 불가
 
-def get_min_max(numbers):
+def get_span(numbers):
     return min(numbers), max(numbers)  # 튜플로 다중 반환
-lo, hi = get_min_max([10, 20, 30])
-print(lo, hi)  # 10 30
+lo, hi = get_span([5, 15, 25])
+print(lo, hi)  # 5 25
 
-coordinates = {(0, 0): "Origin", (1, 0): "X-axis"}  # 튜플을 dict 키로
-print(coordinates[(0, 0)])  # Origin</code></pre></div>
+grid_labels = {(0, 0): "Start", (1, 1): "Goal"}  # 튜플을 dict 키로
+print(grid_labels[(0, 0)])  # Start</code></pre></div>
 
   <h4>딕셔너리(Dictionary) — Key-Value 저장소</h4>
   <ul class="b">
@@ -416,22 +503,22 @@ print(coordinates[(0, 0)])  # Origin</code></pre></div>
     <li>삭제는 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">del d[key]</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">pop(key)</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">popitem()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">clear()</code></li>
     <li>딕셔너리 컴프리헨션: <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">{키_표현식: 값_표현식 for 변수 in 반복가능 if 조건}</code> — 변환·필터링에 매우 유용</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">딕셔너리 — 생성·CRUD·컴프리헨션</div><pre><code>person = {"name": "Alice", "age": 25, "city": "Seoul"}
-person["age"] = 26            # 수정
-person["country"] = "Korea"   # 새 키 추가
-print(person.get("job", "Unknown"))  # 없으면 기본값
+  <div class="sqlbox"><div class="sqlhead">딕셔너리 — 생성·CRUD·컴프리헨션</div><pre><code>profile = {"name": "Minho", "level": 3, "region": "Busan"}
+profile["level"] = 4            # 수정
+profile["guild"] = "Falcons"    # 새 키 추가
+print(profile.get("rank", "Unranked"))  # 없으면 기본값
 
-age = person.pop("age")       # 삭제 + 반환
-person.update({"age": 30, "job": "Engineer"})
+level = profile.pop("level")       # 삭제 + 반환
+profile.update({"level": 5, "rank": "Gold"})
 
-for k, v in person.items():
+for k, v in profile.items():
     print(f"{k}: {v}")
 
 # Dictionary Comprehension
-squares = {x: x**2 for x in range(1, 6)}
-even_squares = {x: x**2 for x in range(1, 11) if x % 2 == 0}
-word = "hello"
-char_count = {c: word.count(c) for c in word}  # {'h':1,'e':1,'l':2,'o':1}</code></pre></div>
+cubes = {x: x**3 for x in range(1, 6)}
+odd_cubes = {x: x**3 for x in range(1, 11) if x % 2 != 0}
+token = "banana"
+letter_count = {c: token.count(c) for c in token}  # {'b':1,'a':3,'n':2}</code></pre></div>
 
   <h4>집합(Set)과 frozenset</h4>
   <ul class="b">
@@ -440,19 +527,19 @@ char_count = {c: word.count(c) for c in word}  # {'h':1,'e':1,'l':2,'o':1}</code
     <li><b>frozenset</b>은 불변 집합 — 딕셔너리의 키나 집합의 원소로 사용 가능(일반 set은 해시 불가라 불가능)</li>
     <li>Bool 자료형: 0, 빈 리스트/튜플/딕셔너리, None 등은 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">False</code>, 나머지는 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">True</code></li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">집합 연산 &amp; frozenset</div><pre><code>set_a = {1, 2, 3}
-set_b = {3, 4, 5}
-print(set_a | set_b)  # 합집합: {1,2,3,4,5}
-print(set_a & set_b)  # 교집합: {3}
-print(set_a - set_b)  # 차집합: {1,2}
+  <div class="sqlbox"><div class="sqlhead">집합 연산 &amp; frozenset</div><pre><code>team_a = {"kim", "lee", "park"}
+team_b = {"park", "choi", "jung"}
+print(team_a | team_b)  # 합집합
+print(team_a & team_b)  # 교집합: {'park'}
+print(team_a - team_b)  # 차집합: {'kim','lee'}
 
-fs1 = frozenset([1, 2, 3, 4])
-fs2 = frozenset([3, 4, 5, 6])
-print(fs1 ^ fs2)  # 대칭차집합: frozenset({1,2,5,6})
+fs1 = frozenset(["A", "B", "C"])
+fs2 = frozenset(["B", "C", "D"])
+print(fs1 ^ fs2)  # 대칭차집합: frozenset({'A','D'})
 
 # frozenset은 딕셔너리 키로 사용 가능 (일반 set은 불가)
-discounts = {frozenset(["VIP", "Holiday"]): 20}
-print(discounts[frozenset(["Holiday", "VIP"])])  # 20 (순서 무관)</code></pre></div>
+bonus_rules = {frozenset(["Member", "Weekend"]): 15}
+print(bonus_rules[frozenset(["Weekend", "Member"])])  # 15 (순서 무관)</code></pre></div>
 
   <h4>타입 확인 &amp; 변환 — type() / isinstance()</h4>
   <ul class="b">
@@ -460,19 +547,19 @@ print(discounts[frozenset(["Holiday", "VIP"])])  # 20 (순서 무관)</code></pr
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">isinstance(x, (int, float))</code>처럼 튜플로 여러 타입을 한 번에 검사 가능</li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">str()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">int()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">float()</code>로 자료형 간 변환</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">isinstance() 활용 — 안전한 타입 분기</div><pre><code>def safe_add(a, b):
+  <div class="sqlbox"><div class="sqlhead">isinstance() 활용 — 안전한 타입 분기</div><pre><code>def safe_multiply(a, b):
     if isinstance(a, (int, float)) and isinstance(b, (int, float)):
-        return a + b
-    raise TypeError("숫자(int, float)만 덧셈이 가능합니다.")
-print(safe_add(10, 5.5))   # 15.5
-# safe_add("10", 5)        # TypeError 발생
+        return a * b
+    raise TypeError("숫자(int, float)만 곱셈이 가능합니다.")
+print(safe_multiply(4, 2.5))   # 10.0
+# safe_multiply("4", 2)        # TypeError 발생
 
-class Animal: pass
-class Dog(Animal): pass
-dog = Dog()
-print(isinstance(dog, Dog))     # True
-print(isinstance(dog, Animal))  # True (상속 관계도 인식)
-print(isinstance(dog, int))     # False</code></pre></div>
+class Vehicle: pass
+class Bicycle(Vehicle): pass
+bike = Bicycle()
+print(isinstance(bike, Bicycle))   # True
+print(isinstance(bike, Vehicle))   # True (상속 관계도 인식)
+print(isinstance(bike, str))       # False</code></pre></div>
 
   <h4>조건문(if)과 반복문(for / while)</h4>
   <ul class="b">
@@ -481,30 +568,30 @@ print(isinstance(dog, int))     # False</code></pre></div>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">break</code>(반복 즉시 종료) / <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">continue</code>(현재 회차만 건너뜀) / <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">pass</code>(아무 동작 없이 문법만 채움)</li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">enumerate()</code>로 인덱스+값 동시 순회</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">조건문 · 반복문 · break/continue</div><pre><code>age = 10
-if age >= 18:
-    print("성인입니다.")
-elif age >= 13:
-    print("청소년입니다.")
+  <div class="sqlbox"><div class="sqlhead">조건문 · 반복문 · break/continue</div><pre><code>score = 72
+if score >= 90:
+    print("A 등급입니다.")
+elif score >= 70:
+    print("B 등급입니다.")
 else:
-    print("어린이입니다.")
+    print("C 등급입니다.")
 
-status = "성인" if age >= 18 else "미성년자"
+grade = "합격" if score >= 60 else "불합격"
 
-fruits = ["사과", "바나나", "체리"]
-for idx, fruit in enumerate(fruits):
-    print(idx, fruit)
+veggies = ["당근", "감자", "양파"]
+for idx, veg in enumerate(veggies):
+    print(idx, veg)
 
-total = 0
-for i in range(1, 6):   # 1~5
-    total += i
+product = 1
+for i in range(1, 5):   # 1~4
+    product *= i
 
-for i in range(10):
-    if i == 5:
-        break       # 5에서 종료
-for i in range(5):
-    if i == 2:
-        continue    # 2만 건너뜀
+for i in range(20):
+    if i == 7:
+        break       # 7에서 종료
+for i in range(6):
+    if i == 3:
+        continue    # 3만 건너뜀
     print(i)</code></pre></div>
 
   <h4>컴프리헨션과 zip() — 반복문 간소화</h4>
@@ -513,21 +600,21 @@ for i in range(5):
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">zip(a, b)</code>는 여러 iterable을 짝지어 튜플로 묶는다 — 가장 짧은 것에 맞춰 끊김</li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">itertools.zip_longest(a, b, fillvalue=값)</code>는 긴 쪽 기준으로 부족한 자리를 채움</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">컴프리헨션 &amp; zip / zip_longest</div><pre><code>words = ["apple", "banana", "cherry"]
-upper_words = [w.upper() for w in words]
-even_squares = {i: i**2 for i in range(1, 6) if i % 2 == 0}  # {2:4, 4:16}
-unique_squares = {n**2 for n in [1, 2, 2, 3, 3]}              # 집합 컴프리헨션
+  <div class="sqlbox"><div class="sqlhead">컴프리헨션 &amp; zip / zip_longest</div><pre><code>animals = ["fox", "owl", "wolf"]
+upper_animals = [w.upper() for w in animals]
+odd_cubes = {i: i**3 for i in range(1, 7) if i % 2 != 0}  # {1:1, 3:27, 5:125}
+unique_cubes = {n**3 for n in [1, 1, 2, 2, 3]}              # 집합 컴프리헨션
 
-names = ["Alice", "Bob", "Charlie"]
-ages = [25, 30, 35]
-person = dict(zip(names, ages))
-for name, age in zip(names, ages):
-    print(f"{name}: {age}살")
+players = ["Yuna", "Dojin", "Somi"]
+scores = [88, 92, 76]
+board = dict(zip(players, scores))
+for player, score in zip(players, scores):
+    print(f"{player}: {score}점")
 
 from itertools import zip_longest
-a, b = [1, 2, 3], ["one", "two"]
-print(list(zip_longest(a, b, fillvalue="없음")))
-# [(1,'one'), (2,'two'), (3,'없음')]</code></pre></div>
+x, y = [1, 2, 3], ["red", "blue"]
+print(list(zip_longest(x, y, fillvalue="빈칸")))
+# [(1,'red'), (2,'blue'), (3,'빈칸')]</code></pre></div>
 
   <h4>핵심 자료구조 비교표</h4>
   <table class="t"><thead><tr>
@@ -556,53 +643,53 @@ print(list(zip_longest(a, b, fillvalue="없음")))
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">def 함수이름(매개변수): ... return 결과</code> 형태로 정의, <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">return</code>이 없으면 None 반환</li>
     <li>매개변수에 기본값을 줄 수 있다(<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">def introduce(name, age=20)</code>) — 단, 기본값 있는 인자는 항상 <b>뒤쪽</b>에 배치해야 한다(안 그러면 SyntaxError)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">함수 정의 &amp; 기본값 매개변수</div><pre><code>def greet(name):
-    return f"안녕하세요, {name}님!"
-print(greet("철수"))  # 안녕하세요, 철수님!
+  <div class="sqlbox"><div class="sqlhead">함수 정의 &amp; 기본값 매개변수</div><pre><code>def welcome(nickname):
+    return f"반갑습니다, {nickname}님!"
+print(welcome("두리"))  # 반갑습니다, 두리님!
 
-def introduce(name, age=20):        # 기본값은 뒤쪽 인자에만
-    print(f"이름: {name}, 나이: {age}")
-introduce("영희")        # 나이: 20 (기본값 사용)
-introduce("철수", 25)    # 나이: 25</code></pre></div>
+def register(nickname, level=1):        # 기본값은 뒤쪽 인자에만
+    print(f"닉네임: {nickname}, 레벨: {level}")
+register("나래")        # 레벨: 1 (기본값 사용)
+register("두리", 7)     # 레벨: 7</code></pre></div>
 
   <h4>가변 인자 — *args, **kwargs</h4>
   <ul class="b">
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">*args</code>: 여러 개의 위치 인자를 <b>튜플</b>로 저장, <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">**kwargs</code>: 여러 개의 키워드 인자를 <b>딕셔너리</b>로 저장</li>
     <li>함께 사용할 때 순서는 반드시 <b>일반 인자 → *args → **kwargs</b>(반대로 쓰면 SyntaxError)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">*args / **kwargs 혼합 사용</div><pre><code>def mix_example(a, b, *args, **kwargs):
-    print(f"a:{a}, b:{b}")
-    print(f"args:{args}")      # 튜플
-    print(f"kwargs:{kwargs}")  # 딕셔너리
+  <div class="sqlbox"><div class="sqlhead">*args / **kwargs 혼합 사용</div><pre><code>def order_summary(item, qty, *extras, **info):
+    print(f"item:{item}, qty:{qty}")
+    print(f"extras:{extras}")      # 튜플
+    print(f"info:{info}")  # 딕셔너리
 
-mix_example(1, 2, 3, 4, 5, name="철수", age=30)
-# a:1, b:2
-# args:(3, 4, 5)
-# kwargs:{'name': '철수', 'age': 30}
+order_summary("mug", 2, "gift-wrap", "express", customer="두리", vip=True)
+# item:mug, qty:2
+# extras:('gift-wrap', 'express')
+# info:{'customer': '두리', 'vip': True}
 
-def sum_numbers(*args):
-    return sum(args)
-print(sum_numbers(1, 2, 3, 4, 5))  # 15</code></pre></div>
+def total_price(*prices):
+    return sum(prices)
+print(total_price(1200, 3400, 800))  # 5400</code></pre></div>
 
   <h4>람다 함수와 고차 함수</h4>
   <ul class="b">
     <li><b>람다</b>는 이름 없는 한 줄짜리 함수: <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">lambda 인자: 표현식</code> — 정렬 key, map/filter 콜백에 자주 사용</li>
     <li><b>고차 함수</b>는 함수를 인자로 받거나 함수를 반환하는 함수 — <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">map()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">filter()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">functools.reduce()</code>가 대표적</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">lambda · map · filter · reduce</div><pre><code>students = [("철수", 90), ("영희", 80), ("민수", 95)]
-students.sort(key=lambda x: x[1])  # 점수 기준 정렬
+  <div class="sqlbox"><div class="sqlhead">lambda · map · filter · reduce</div><pre><code>runners = [("두리", 14.2), ("나래", 13.8), ("솔이", 15.1)]
+runners.sort(key=lambda x: x[1])  # 기록 기준 정렬
 
-numbers = [1, 2, 3, 4, 5]
-squared = list(map(lambda x: x**2, numbers))          # [1,4,9,16,25]
-even = list(filter(lambda x: x % 2 == 0, [1,2,3,4,5,6]))  # [2,4,6]
+nums = [2, 4, 6, 8, 10]
+halved = list(map(lambda x: x / 2, nums))              # [1.0,2.0,3.0,4.0,5.0]
+big = list(filter(lambda x: x > 5, [1,3,5,7,9,11]))     # [7,9,11]
 
 from functools import reduce
-total = reduce(lambda x, y: x + y, numbers)  # 15
+product = reduce(lambda x, y: x * y, nums)  # 3840
 
-def make_multiplier(n):   # 함수를 반환하는 고차함수(클로저)
-    return lambda x: x * n
-times3 = make_multiplier(3)
-print(times3(5))  # 15</code></pre></div>
+def make_adder(n):   # 함수를 반환하는 고차함수(클로저)
+    return lambda x: x + n
+add10 = make_adder(10)
+print(add10(5))  # 15</code></pre></div>
 
   <h4>모듈 사용법과 주요 표준 라이브러리</h4>
   <ul class="b">
@@ -611,11 +698,11 @@ print(times3(5))  # 15</code></pre></div>
     <li>pip로 numpy·pandas 같은 서드파티 패키지를 설치해서 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">import numpy as np</code>처럼 사용</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">모듈 import 다양한 방식</div><pre><code>import math
-print(math.sqrt(16))  # 4.0
-print(math.pi)         # 3.141592653589793
+print(math.sqrt(81))  # 9.0
+print(math.e)          # 2.718281828459045
 
-from math import sqrt, pi
-print(sqrt(25))  # 5.0
+from math import floor, ceil
+print(floor(4.7), ceil(4.2))  # 4 5
 
 import numpy as np     # 별칭으로 가져오기(관례)
 import pandas as pd</code></pre></div>
@@ -637,17 +724,17 @@ import pandas as pd</code></pre></div>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">with open(...) as f:</code> 구문을 쓰면 블록이 끝날 때 파일이 자동으로 닫힘 — 실무에서는 항상 이 방식을 권장</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">open/close vs with 구문</div><pre><code># 수동으로 열고 닫기 (실수로 close 누락 위험)
-file = open("example.txt", "w")
-file.write("Hello, Python!\n")
-file.close()
+log = open("diary.txt", "w")
+log.write("오늘의 기록 시작\n")
+log.close()
 
 # with 구문 - 자동으로 닫힘 (권장)
-with open("example.txt", "r") as file:
-    content = file.read()
+with open("diary.txt", "r") as log:
+    content = log.read()
     print(content)
 
-with open("example.txt", "a") as file:
-    file.write("새로운 내용을 추가합니다!\n")  # append 모드</code></pre></div>
+with open("diary.txt", "a") as log:
+    log.write("저녁 산책 완료!\n")  # append 모드</code></pre></div>
 
   <h4>CSV 파일 다루기 — csv 모듈</h4>
   <ul class="b">
@@ -656,15 +743,19 @@ with open("example.txt", "a") as file:
     <li>쓰기 모드에서는 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">newline=""</code> 옵션을 줘야 빈 줄이 끼어드는 문제를 방지</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">CSV 읽기 &amp; 쓰기</div><pre><code>import csv
-with open("data.csv", "r", encoding="utf-8") as file:
+with open("members.csv", "w", encoding="utf-8", newline="") as file:
+    writer = csv.writer(file)
+    writer.writerow(["나래", 31, "대전"])  # 읽기 예제를 위해 먼저 파일을 만들어둠
+
+with open("members.csv", "r", encoding="utf-8") as file:
     reader = csv.reader(file)
     for row in reader:
-        print(row)  # ['철수', '25', '서울'] 형태로 반환
+        print(row)  # ['나래', '31', '대전'] 형태로 반환
 
-with open("new_data.csv", "w", encoding="utf-8", newline="") as file:
+with open("members_new.csv", "w", encoding="utf-8", newline="") as file:
     writer = csv.writer(file)
-    writer.writerow(["이름", "나이", "도시"])
-    writer.writerow(["철수", 25, "서울"])</code></pre></div>
+    writer.writerow(["닉네임", "나이", "지역"])
+    writer.writerow(["나래", 31, "대전"])</code></pre></div>
 
   <h4>JSON 파일 다루기 — json 모듈</h4>
   <ul class="b">
@@ -673,14 +764,14 @@ with open("new_data.csv", "w", encoding="utf-8", newline="") as file:
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">ensure_ascii=False</code>로 한글이 깨지지 않게, <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">indent=4</code>로 보기 좋게 저장</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">JSON 저장 &amp; 로드</div><pre><code>import json
-data = {"이름": "철수", "나이": 25, "도시": "서울"}
+profile = {"닉네임": "솔이", "레벨": 12, "지역": "대전"}
 
-with open("data.json", "w", encoding="utf-8") as file:
-    json.dump(data, file, ensure_ascii=False, indent=4)
+with open("profile.json", "w", encoding="utf-8") as file:
+    json.dump(profile, file, ensure_ascii=False, indent=4)
 
-with open("data.json", "r", encoding="utf-8") as file:
+with open("profile.json", "r", encoding="utf-8") as file:
     loaded = json.load(file)
-print(loaded)  # {'이름': '철수', '나이': 25, '도시': '서울'}</code></pre></div>
+print(loaded)  # {'닉네임': '솔이', '레벨': 12, '지역': '대전'}</code></pre></div>
 </section>
 
 
@@ -699,38 +790,38 @@ print(loaded)  # {'이름': '철수', '나이': 25, '도시': '서울'}</code></
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">finally</code> 블록은 예외 발생 여부와 상관없이 항상 실행 — 파일/연결을 반드시 닫아야 할 때 사용</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">try-except-finally 기본 구조</div><pre><code>try:
-    num = int(input("숫자를 입력하세요: "))
-    result = 10 / num
-    print("결과:", result)
+    qty = int(input("수량을 입력하세요: "))
+    unit_price = 300 / qty
+    print("개당 가격:", unit_price)
 except ValueError:
     print("숫자만 입력해주세요!")
 except ZeroDivisionError:
-    print("0으로 나눌 수 없습니다!")
+    print("수량은 0이 될 수 없습니다!")
 except Exception as e:
     print("예외 발생:", e)
 finally:
-    print("프로그램 종료")  # 항상 실행됨</code></pre></div>
+    print("주문 처리 종료")  # 항상 실행됨</code></pre></div>
 
   <h4>사용자 정의 예외 작성</h4>
   <ul class="b">
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">Exception</code>을 상속받아 나만의 예외 클래스를 만들 수 있다</li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">raise</code>로 예외를 직접 발생시켜 잘못된 상태를 즉시 알릴 수 있다</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">사용자 정의 예외 &amp; raise</div><pre><code>class CustomError(Exception):
+  <div class="sqlbox"><div class="sqlhead">사용자 정의 예외 &amp; raise</div><pre><code>class StockError(Exception):
     def __init__(self, message):
         self.message = message
     def __str__(self):
-        return f"CustomError: {self.message}"
+        return f"StockError: {self.message}"
 
-def check_age(age):
-    if age < 0:
-        raise ValueError("나이는 0 이상이어야 합니다.")
-    print("나이:", age)
+def check_stock(count):
+    if count < 0:
+        raise ValueError("재고 수량은 0 이상이어야 합니다.")
+    print("재고:", count)
 
 try:
-    check_age(-5)
+    check_stock(-3)
 except ValueError as e:
-    print("오류:", e)  # 오류: 나이는 0 이상이어야 합니다.</code></pre></div>
+    print("오류:", e)  # 오류: 재고 수량은 0 이상이어야 합니다.</code></pre></div>
 
   <h4>디버깅 — logging, traceback, assert, pdb</h4>
   <ul class="b">
@@ -741,22 +832,22 @@ except ValueError as e:
   </ul>
   <div class="sqlbox"><div class="sqlhead">logging &amp; traceback &amp; assert</div><pre><code>import logging
 logging.basicConfig(level=logging.DEBUG)
-logging.debug("디버깅 메시지")
-logging.info("정보 메시지")
-logging.warning("경고 메시지")
-logging.error("에러 메시지")
+logging.debug("접속 시도")
+logging.info("로그인 성공")
+logging.warning("세션 만료 임박")
+logging.error("서버 응답 없음")
 
 import traceback
 try:
-    result = 10 / 0
+    ratio = 5 / 0
 except Exception as e:
     print("에러 발생:", e)
     traceback.print_exc()  # 전체 스택 출력
 
-def divide(a, b):
-    assert b != 0, "b는 0이 될 수 없습니다!"
-    return a / b
-# divide(10, 0)  # AssertionError 발생</code></pre></div>
+def split_evenly(total, groups):
+    assert groups != 0, "groups는 0이 될 수 없습니다!"
+    return total / groups
+# split_evenly(100, 0)  # AssertionError 발생</code></pre></div>
 </section>
 
 
@@ -843,41 +934,41 @@ def divide(a, b):
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">self</code>는 "현재 만들어진 객체 자신"을 가리키며, 인스턴스 속성(<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">self.속성 = 값</code>)과 메서드를 정의할 때 첫 번째 인자로 항상 필요</li>
     <li>같은 클래스에서 만든 객체(인스턴스)들은 서로 독립적인 속성 값을 가진다</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">클래스 정의 · 생성자 · 메서드</div><pre><code>class Car:
-    def __init__(self, brand, color):
-        self.brand = brand
-        self.color = color
-    def drive(self):
-        print(f"{self.brand} 자동차가 주행 중입니다.")
+  <div class="sqlbox"><div class="sqlhead">클래스 정의 · 생성자 · 메서드</div><pre><code>class Drone:
+    def __init__(self, model, battery):
+        self.model = model
+        self.battery = battery
+    def fly(self):
+        print(f"{self.model} 드론이 비행 중입니다.")
 
-car1 = Car("Hyundai", "Red")
-car2 = Car("Tesla", "Blue")
-print(car1.brand, car1.color)  # Hyundai Red
-car1.drive()  # Hyundai 자동차가 주행 중입니다.</code></pre></div>
+drone1 = Drone("SkyX", 80)
+drone2 = Drone("AeroMini", 65)
+print(drone1.model, drone1.battery)  # SkyX 80
+drone1.fly()  # SkyX 드론이 비행 중입니다.</code></pre></div>
 
-  <h4>클래스 활용 예제 — 계좌 관리</h4>
+  <h4>클래스 활용 예제 — 포인트 지갑 관리</h4>
   <ul class="b">
     <li>클래스는 상태(속성)와 행위(메서드)를 하나로 묶어 재사용 가능한 코드 단위를 만든다</li>
-    <li>메서드 안에서 조건 분기로 잔액 검증 같은 도메인 규칙을 캡슐화할 수 있다</li>
+    <li>메서드 안에서 조건 분기로 포인트 검증 같은 도메인 규칙을 캡슐화할 수 있다</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">BankAccount 클래스 예제</div><pre><code>class BankAccount:
-    def __init__(self, owner, balance=0):
+  <div class="sqlbox"><div class="sqlhead">PointWallet 클래스 예제</div><pre><code>class PointWallet:
+    def __init__(self, owner, points=0):
         self.owner = owner
-        self.balance = balance
-    def deposit(self, amount):
-        self.balance += amount
-        print(f"{amount}원 입금, 잔액: {self.balance}원")
-    def withdraw(self, amount):
-        if amount > self.balance:
-            print("잔액이 부족합니다!")
+        self.points = points
+    def earn(self, amount):
+        self.points += amount
+        print(f"{amount}점 적립, 잔여: {self.points}점")
+    def use(self, amount):
+        if amount > self.points:
+            print("포인트가 부족합니다!")
         else:
-            self.balance -= amount
-            print(f"{amount}원 출금, 잔액: {self.balance}원")
+            self.points -= amount
+            print(f"{amount}점 사용, 잔여: {self.points}점")
 
-account = BankAccount("김철수", 10000)
-account.deposit(5000)    # 잔액: 15000원
-account.withdraw(12000)  # 잔액: 3000원
-account.withdraw(5000)   # 잔액이 부족합니다!</code></pre></div>
+wallet = PointWallet("박나래", 8000)
+wallet.earn(2000)   # 잔여: 10000점
+wallet.use(9500)    # 잔여: 500점
+wallet.use(3000)    # 포인트가 부족합니다!</code></pre></div>
 
   <h4>상속과 메서드 오버라이딩</h4>
   <ul class="b">
@@ -885,25 +976,25 @@ account.withdraw(5000)   # 잔액이 부족합니다!</code></pre></div>
     <li><b>오버라이딩</b>: 자식 클래스에서 부모와 같은 이름의 메서드를 다시 정의해 동작을 덮어씀</li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">super().메서드()</code>를 호출하면 부모의 동작을 유지하면서 자식에서 기능을 추가할 수 있다</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">상속 · 오버라이딩 · super()</div><pre><code>class Animal:
+  <div class="sqlbox"><div class="sqlhead">상속 · 오버라이딩 · super()</div><pre><code>class Instrument:
     def __init__(self, name):
         self.name = name
-    def speak(self):
+    def play(self):
         return "소리를 낸다."
 
-class Dog(Animal):          # Animal을 상속
-    def speak(self):        # 오버라이딩
-        sound = super().speak()          # 부모 메서드 호출
-        return sound + " 하지만 나는 멍멍 짖는다!"
+class Guitar(Instrument):          # Instrument를 상속
+    def play(self):        # 오버라이딩
+        sound = super().play()          # 부모 메서드 호출
+        return sound + " 하지만 나는 튕겨서 소리를 낸다!"
 
-class Cat(Animal):
-    def speak(self):
-        return "야옹!"
+class Drum(Instrument):
+    def play(self):
+        return "쿵쿵!"
 
-dog = Dog("바둑이")
-print(dog.name)     # 바둑이 (부모 속성 사용 가능)
-print(dog.speak())  # 소리를 낸다. 하지만 나는 멍멍 짖는다!
-print(Cat("나비").speak())  # 야옹!</code></pre></div>
+guitar = Guitar("통기타")
+print(guitar.name)     # 통기타 (부모 속성 사용 가능)
+print(guitar.play())   # 소리를 낸다. 하지만 나는 튕겨서 소리를 낸다!
+print(Drum("스네어").play())  # 쿵쿵!</code></pre></div>
   <div class="note">오버라이딩 시 super()를 호출하지 않으면 부모의 동작은 완전히 사라지고 자식의 새 동작으로 대체된다. "부모 기능을 유지하며 확장"하려면 반드시 super()를 사용해야 한다.</div>
 </section>
 
@@ -922,13 +1013,13 @@ print(Cat("나비").speak())  # 야옹!</code></pre></div>
     <li><b>deque</b>(collections.deque)는 이중 연결 리스트 구조라 양쪽 끝 모두 O(1) — 슬라이딩 윈도우, 큐/스택 구현에 적합</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">deque — 양방향 O(1) 큐</div><pre><code>from collections import deque
-dq = deque([1, 2, 3])
-dq.append(4)       # 오른쪽 추가, O(1)
-dq.appendleft(0)    # 왼쪽 추가, O(1)
-print(dq)  # deque([0, 1, 2, 3, 4])
-dq.pop()            # 오른쪽 제거
-dq.popleft()        # 왼쪽 제거
-print(dq)  # deque([1, 2, 3])</code></pre></div>
+line = deque([10, 20, 30])
+line.append(40)       # 오른쪽 추가, O(1)
+line.appendleft(5)    # 왼쪽 추가, O(1)
+print(line)  # deque([5, 10, 20, 30, 40])
+line.pop()             # 오른쪽 제거
+line.popleft()         # 왼쪽 제거
+print(line)  # deque([10, 20, 30])</code></pre></div>
 
   <h4>Counter, defaultdict, OrderedDict</h4>
   <ul class="b">
@@ -937,13 +1028,13 @@ print(dq)  # deque([1, 2, 3])</code></pre></div>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">OrderedDict</code>: 삽입 순서를 보장하는 dict(Python 3.7+ 기본 dict와 동일하게 동작하지만 의도를 명시할 때 사용)</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">Counter · defaultdict</div><pre><code>from collections import Counter, defaultdict
-count = Counter("hello world")
-print(count)  # {'l':3, 'o':2, 'h':1, ...}
+tally = Counter("mississippi")
+print(tally)  # {'i':4, 's':4, 'p':2, 'm':1}
 
-word_count = defaultdict(int)  # 기본값 0
-word_count["apple"] += 1
-word_count["banana"] += 2
-print(word_count)  # {'apple': 1, 'banana': 2}</code></pre></div>
+visit_count = defaultdict(int)  # 기본값 0
+visit_count["home"] += 1
+visit_count["cart"] += 3
+print(visit_count)  # {'home': 1, 'cart': 3}</code></pre></div>
 
   <h4>heapq — 우선순위 큐(최소 힙)</h4>
   <ul class="b">
@@ -952,20 +1043,20 @@ print(word_count)  # {'apple': 1, 'banana': 2}</code></pre></div>
   </ul>
   <div class="sqlbox"><div class="sqlhead">heapq — 최소 힙 / 최대 힙</div><pre><code>import heapq
 heap = []
-for v in [5, 2, 8, 1]:
+for v in [9, 3, 7, 2]:
     heapq.heappush(heap, v)
-print(heapq.heappop(heap))  # 1 (가장 작은 값)
+print(heapq.heappop(heap))  # 2 (가장 작은 값)
 
 max_heap = []
-for v in [5, 1, 10]:
+for v in [4, 12, 6]:
     heapq.heappush(max_heap, -v)  # 부호 반전
-print(-heapq.heappop(max_heap))  # 10 (가장 큰 값)
+print(-heapq.heappop(max_heap))  # 12 (가장 큰 값)
 
 # 다익스트라 알고리즘: (거리, 노드) 튜플을 힙에 넣어 최단거리 노드를 먼저 처리
-def dijkstra(graph, start):
+def shortest_paths(graph, source):
     distances = {node: float('inf') for node in graph}
-    distances[start] = 0
-    pq = [(0, start)]
+    distances[source] = 0
+    pq = [(0, source)]
     while pq:
         d, node = heapq.heappop(pq)
         if d > distances[node]:
@@ -983,11 +1074,11 @@ def dijkstra(graph, start):
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">bisect.insort(list, x)</code>는 정렬 순서를 유지하면서 값을 자동으로 삽입</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">bisect 이진 탐색 삽입</div><pre><code>import bisect
-numbers = [1, 3, 5, 7, 9]
-pos = bisect.bisect_left(numbers, 6)
-print(pos)  # 3 (6이 들어갈 인덱스)
-bisect.insort(numbers, 6)
-print(numbers)  # [1, 3, 5, 6, 7, 9]</code></pre></div>
+scores = [15, 30, 45, 60, 75]
+pos = bisect.bisect_left(scores, 50)
+print(pos)  # 3 (50이 들어갈 인덱스)
+bisect.insort(scores, 50)
+print(scores)  # [15, 30, 45, 50, 60, 75]</code></pre></div>
 
   <h4>고급 자료구조 요약 비교</h4>
   <table class="t"><thead><tr>
@@ -1014,22 +1105,22 @@ print(numbers)  # [1, 3, 5, 6, 7, 9]</code></pre></div>
     <li>데코레이터는 함수를 인자로 받아 새로운 함수(wrapper)를 반환하는 함수 — <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">@데코레이터이름</code>을 함수 위에 붙여 적용</li>
     <li>내부 wrapper 함수는 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">*args, **kwargs</code>로 원래 함수의 인자를 그대로 전달받아야 범용적으로 쓸 수 있다</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">기본 데코레이터 패턴</div><pre><code>def my_decorator(func):
+  <div class="sqlbox"><div class="sqlhead">기본 데코레이터 패턴</div><pre><code>def announce(func):
     def wrapper(*args, **kwargs):
-        print("함수 실행 전")
+        print("작업 시작")
         result = func(*args, **kwargs)
-        print("함수 실행 후")
+        print("작업 종료")
         return result
     return wrapper
 
-@my_decorator
-def add(a, b):
-    return a + b
+@announce
+def multiply(a, b):
+    return a * b
 
-print(add(3, 5))
-# 함수 실행 전
-# 함수 실행 후
-# 8</code></pre></div>
+print(multiply(4, 6))
+# 작업 시작
+# 작업 종료
+# 24</code></pre></div>
 
   <h4>실용적인 데코레이터 — @timer, @require_login</h4>
   <ul class="b">
@@ -1045,34 +1136,34 @@ def timer(func):
     return wrapper
 
 @timer
-def slow_function():
-    time.sleep(2)
-    print("작업 완료!")
+def heavy_task():
+    time.sleep(1.5)
+    print("연산 완료!")
 
 def require_login(func):
-    def wrapper(user):
-        if user.get("is_logged_in"):
-            return func(user)
+    def wrapper(member):
+        if member.get("is_logged_in"):
+            return func(member)
         print("로그인이 필요합니다.")
     return wrapper
 
 @require_login
-def dashboard(user):
-    print(f"{user['name']}님의 대시보드입니다.")</code></pre></div>
+def my_page(member):
+    print(f"{member['name']}님의 마이페이지입니다.")</code></pre></div>
 
   <h4>클로저(Closure) — 외부 변수를 기억하는 내부 함수</h4>
   <ul class="b">
     <li>클로저는 내부 함수가 자신을 감싸는 외부 함수의 지역 변수를 <b>참조·기억</b>하는 특성 — 데코레이터의 wrapper가 바로 클로저다</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">클로저 예제</div><pre><code>def make_multiplier(n):
-    def multiply(x):
-        return x * n     # 바깥 함수의 n을 계속 기억
-    return multiply
+  <div class="sqlbox"><div class="sqlhead">클로저 예제</div><pre><code>def make_power(exp):
+    def power(base):
+        return base ** exp     # 바깥 함수의 exp를 계속 기억
+    return power
 
-double = make_multiplier(2)
-triple = make_multiplier(3)
-print(double(5))  # 10
-print(triple(5))  # 15 — 각자 다른 n을 독립적으로 기억</code></pre></div>
+square = make_power(2)
+cube = make_power(3)
+print(square(4))  # 16
+print(cube(4))    # 64 — 각자 다른 exp를 독립적으로 기억</code></pre></div>
 
   <h4>데코레이터 체이닝과 functools.wraps</h4>
   <ul class="b">
@@ -1101,15 +1192,15 @@ def decorator2(func):
 
 @decorator1
 @decorator2
-def say_hello():
-    """이 함수는 인사를 합니다."""
-    print("안녕하세요!")
+def greet_guest():
+    """이 함수는 방문자를 환영합니다."""
+    print("환영합니다!")
 
-say_hello()
-# [decorator1] 실행 전 → [decorator2] 실행 전 → 안녕하세요!
+greet_guest()
+# [decorator1] 실행 전 → [decorator2] 실행 전 → 환영합니다!
 # → [decorator2] 실행 후 → [decorator1] 실행 후
-print(say_hello.__name__)  # say_hello (wraps 덕분에 이름 유지)</code></pre></div>
-  <div class="note">functools.wraps를 빼먹으면 say_hello.__name__이 "wrapper"로 나와, 디버깅·로깅·문서화 도구가 함수를 잘못 인식하게 된다. 데코레이터를 만들 때는 항상 @functools.wraps(func)를 습관처럼 붙이자.</div>
+print(greet_guest.__name__)  # greet_guest (wraps 덕분에 이름 유지)</code></pre></div>
+  <div class="note">functools.wraps를 빼먹으면 greet_guest.__name__이 "wrapper"로 나와, 디버깅·로깅·문서화 도구가 함수를 잘못 인식하게 된다. 데코레이터를 만들 때는 항상 @functools.wraps(func)를 습관처럼 붙이자.</div>
 </section>
 
 
@@ -1128,16 +1219,16 @@ print(say_hello.__name__)  # say_hello (wraps 덕분에 이름 유지)</code></p
   </ul>
   <div class="sqlbox"><div class="sqlhead">threading — 두 작업을 동시에</div><pre><code>import threading, time
 
-def print_numbers():
-    for i in range(1, 6):
-        print(i); time.sleep(1)
+def brew_coffee():
+    for i in range(1, 4):
+        print("커피", i); time.sleep(1)
 
-def print_letters():
-    for c in "ABCDE":
+def toast_bread():
+    for c in "빵굽는중":
         print(c); time.sleep(1)
 
-t1 = threading.Thread(target=print_numbers)
-t2 = threading.Thread(target=print_letters)
+t1 = threading.Thread(target=brew_coffee)
+t2 = threading.Thread(target=toast_bread)
 t1.start(); t2.start()
 t1.join(); t2.join()   # 두 스레드가 끝날 때까지 대기</code></pre></div>
 
@@ -1148,16 +1239,16 @@ t1.join(); t2.join()   # 두 스레드가 끝날 때까지 대기</code></pre></
   </ul>
   <div class="sqlbox"><div class="sqlhead">multiprocessing — 완전 독립 병렬 실행</div><pre><code>import multiprocessing, time
 
-def print_numbers():
-    for i in range(1, 6):
-        print(i); time.sleep(1)
+def crunch_numbers():
+    for i in range(1, 4):
+        print("계산", i); time.sleep(1)
 
-def print_letters():
-    for c in "ABCDE":
+def render_frames():
+    for c in "프레임렌더링":
         print(c); time.sleep(1)
 
-p1 = multiprocessing.Process(target=print_numbers)
-p2 = multiprocessing.Process(target=print_letters)
+p1 = multiprocessing.Process(target=crunch_numbers)
+p2 = multiprocessing.Process(target=render_frames)
 p1.start(); p2.start()
 p1.join(); p2.join()</code></pre></div>
 
@@ -1188,63 +1279,63 @@ p1.join(); p2.join()</code></pre></div>
   <ul class="b">
     <li>피보나치 수열 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">fib(n) = fib(n-1) + fib(n-2)</code>를 그대로 재귀로 구현하면 같은 하위 문제를 지수적으로 반복 계산해 n이 커질수록 급격히 느려진다</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">순수 재귀 (비효율)</div><pre><code>def fib(n):
+  <div class="sqlbox"><div class="sqlhead">순수 재귀 (비효율)</div><pre><code>def fib_naive(n):
     if n <= 1:
         return n
-    return fib(n-1) + fib(n-2)
-print(fib(10))  # 55 (n이 커지면 매우 느려짐)</code></pre></div>
+    return fib_naive(n-1) + fib_naive(n-2)
+print(fib_naive(12))  # 144 (n이 커지면 매우 느려짐)</code></pre></div>
 
   <h4>메모이제이션(Memoization) — 위에서 아래로(Top-down)</h4>
   <ul class="b">
     <li>계산한 결과를 딕셔너리 등에 저장해두고, 다음에 같은 입력이 들어오면 재계산 없이 바로 반환</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">메모이제이션 — dict에 결과 캐싱</div><pre><code>def fib_memo(n, memo={}):
-    if n in memo:
-        return memo[n]
+  <div class="sqlbox"><div class="sqlhead">메모이제이션 — dict에 결과 캐싱</div><pre><code>def fib_cached(n, cache={}):
+    if n in cache:
+        return cache[n]
     if n <= 1:
         return n
-    memo[n] = fib_memo(n-1, memo) + fib_memo(n-2, memo)
-    return memo[n]
-print(fib_memo(50))  # 즉시 계산 완료</code></pre></div>
+    cache[n] = fib_cached(n-1, cache) + fib_cached(n-2, cache)
+    return cache[n]
+print(fib_cached(60))  # 즉시 계산 완료</code></pre></div>
 
   <h4>타뷸레이션(Tabulation) — 아래에서 위로(Bottom-up)</h4>
   <ul class="b">
     <li>작은 문제부터 순서대로 배열(dp)에 저장하며 반복문으로 쌓아 올리는 방식 — 재귀 호출 스택이 없어 더 안전하고 빠르다</li>
     <li>공간을 더 절약하려면 직전 두 값만 유지하는 방식(<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">a, b = b, a+b</code>)으로 최적화할 수 있다</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">타뷸레이션 &amp; 공간 최적화</div><pre><code>def fib_tab(n):
-    dp = [0] * (n+1)
-    dp[1] = 1
+  <div class="sqlbox"><div class="sqlhead">타뷸레이션 &amp; 공간 최적화</div><pre><code>def fib_table(n):
+    table = [0] * (n+1)
+    table[1] = 1
     for i in range(2, n+1):
-        dp[i] = dp[i-1] + dp[i-2]   # 점화식
-    return dp[n]
+        table[i] = table[i-1] + table[i-2]   # 점화식
+    return table[n]
 
-def fib_optimized(n):      # 공간 복잡도 O(1)
-    a, b = 0, 1
+def fib_slim(n):      # 공간 복잡도 O(1)
+    prev, curr = 0, 1
     for _ in range(n):
-        a, b = b, a + b
-    return a</code></pre></div>
+        prev, curr = curr, prev + curr
+    return prev</code></pre></div>
 
   <h4>DP 응용 예제 — 계단 오르기, 동전 교환</h4>
   <ul class="b">
     <li>"계단 오르기"는 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">dp[i] = dp[i-1] + dp[i-2]</code> 형태로 피보나치와 동일한 점화식 구조</li>
     <li>"최소 동전 개수"는 각 금액에 대해 사용 가능한 동전 단위마다 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">min()</code>으로 최적값을 갱신</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">계단 오르기 &amp; 최소 동전 개수</div><pre><code>def count_ways(n):   # 계단 오르기 경우의 수
-    dp = [0] * (n+1)
-    dp[0], dp[1] = 1, 1
+  <div class="sqlbox"><div class="sqlhead">계단 오르기 &amp; 최소 동전 개수</div><pre><code>def climb_ways(n):   # 계단 오르기 경우의 수
+    ways = [0] * (n+1)
+    ways[0], ways[1] = 1, 1
     for i in range(2, n+1):
-        dp[i] = dp[i-1] + dp[i-2]
-    return dp[n]
+        ways[i] = ways[i-1] + ways[i-2]
+    return ways[n]
 
-def min_coins(n):    # 1,3,4원 동전으로 n원 만들 최소 개수
-    dp = [float('inf')] * (n+1)
-    dp[0] = 0
+def min_coins(n):    # 1,2,5원 동전으로 n원 만들 최소 개수
+    best = [float('inf')] * (n+1)
+    best[0] = 0
     for i in range(1, n+1):
-        if i >= 1: dp[i] = min(dp[i], dp[i-1] + 1)
-        if i >= 3: dp[i] = min(dp[i], dp[i-3] + 1)
-        if i >= 4: dp[i] = min(dp[i], dp[i-4] + 1)
-    return dp[n]</code></pre></div>
+        if i >= 1: best[i] = min(best[i], best[i-1] + 1)
+        if i >= 2: best[i] = min(best[i], best[i-2] + 1)
+        if i >= 5: best[i] = min(best[i], best[i-5] + 1)
+    return best[n]</code></pre></div>
 
   <h4>동적 프로그래밍 문제 푸는 순서</h4>
   <ul class="b">
@@ -1337,63 +1428,63 @@ def min_coins(n):    # 1,3,4원 동전으로 n원 만들 최소 개수
     <li><b>큐</b>는 FIFO(First In First Out) — 먼저 넣은 것이 먼저 나감, <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">collections.deque</code>의 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">append()</code>/<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">popleft()</code>로 구현(리스트의 pop(0)은 O(n)이라 비효율적)</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">스택(list) &amp; 큐(deque)</div><pre><code># 스택 — LIFO
-stack = []
-stack.append(10); stack.append(20)   # push
-print(stack.pop())  # 20 (나중에 넣은 게 먼저 나감)
+plates = []
+plates.append("접시1"); plates.append("접시2")   # push
+print(plates.pop())  # 접시2 (나중에 넣은 게 먼저 나감)
 
 # 큐 — FIFO
 from collections import deque
-queue = deque()
-queue.append(10); queue.append(20)   # enqueue
-print(queue.popleft())  # 10 (먼저 넣은 게 먼저 나감)</code></pre></div>
+ticket_line = deque()
+ticket_line.append("손님A"); ticket_line.append("손님B")   # enqueue
+print(ticket_line.popleft())  # 손님A (먼저 넣은 게 먼저 나감)</code></pre></div>
 
   <h4>링크드 리스트(Linked List)</h4>
   <ul class="b">
     <li>각 노드(Node)가 데이터와 "다음 노드를 가리키는 포인터(next)"를 가지고 있는 구조 — 배열과 달리 메모리가 연속적이지 않아도 됨</li>
     <li>중간 삽입/삭제가 배열보다 유리하지만(포인터만 바꾸면 됨), 인덱스로 바로 접근할 수 없어 탐색은 O(n)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">단일 링크드 리스트 구현</div><pre><code>class Node:
-    def __init__(self, data):
-        self.data = data
+  <div class="sqlbox"><div class="sqlhead">단일 링크드 리스트 구현</div><pre><code>class Carriage:
+    def __init__(self, cargo):
+        self.cargo = cargo
         self.next = None
 
-class LinkedList:
+class Train:
     def __init__(self):
         self.head = None
-    def append(self, data):
-        new_node = Node(data)
+    def attach(self, cargo):
+        new_car = Carriage(cargo)
         if not self.head:
-            self.head = new_node
+            self.head = new_car
             return
-        temp = self.head
-        while temp.next:
-            temp = temp.next
-        temp.next = new_node
+        cur = self.head
+        while cur.next:
+            cur = cur.next
+        cur.next = new_car
 
-ll = LinkedList()
-ll.append(10)
-ll.append(20)</code></pre></div>
+train = Train()
+train.attach("화물1")
+train.attach("화물2")</code></pre></div>
 
   <h4>Python 리스트 vs NumPy 배열 &amp; 벡터화 연산</h4>
   <ul class="b">
     <li>Python 리스트는 서로 다른 자료형을 섞어 담을 수 있지만, NumPy 배열(<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">np.array</code>)은 모두 같은 타입이라 수치 계산·대규모 데이터 처리에 훨씬 빠르고 효율적</li>
     <li><b>벡터화 연산</b>: 반복문 없이 배열 전체를 한 번에 연산 — 내부적으로 C 레벨에서 처리되어 for 루프보다 훨씬 빠름</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">반복문 vs 벡터화 연산 비교</div><pre><code>list1, list2 = [1, 2, 3], [4, 5, 6]
-result = [list1[i] + list2[i] for i in range(len(list1))]  # 반복문
-print(result)  # [5, 7, 9]
+  <div class="sqlbox"><div class="sqlhead">반복문 vs 벡터화 연산 비교</div><pre><code>vals_a, vals_b = [2, 4, 6], [1, 3, 5]
+combined = [vals_a[i] + vals_b[i] for i in range(len(vals_a))]  # 반복문
+print(combined)  # [3, 7, 11]
 
 import numpy as np
-arr1, arr2 = np.array([1, 2, 3]), np.array([4, 5, 6])
-result = arr1 + arr2   # 벡터화 연산 — 훨씬 빠름
-print(result)  # [5 7 9]
+arr_a, arr_b = np.array([2, 4, 6]), np.array([1, 3, 5])
+combined = arr_a + arr_b   # 벡터화 연산 — 훨씬 빠름
+print(combined)  # [3 7 11]
 
-# 100만개 원소 제곱: 리스트 컴프리헨션 vs NumPy 벡터화 속도 비교
-size = 1_000_000
+# 50만개 원소 세제곱: 리스트 컴프리헨션 vs NumPy 벡터화 속도 비교
+size = 500_000
 py_list = list(range(size))
 numpy_array = np.arange(size)
-py_squared = [x**2 for x in py_list]      # 느림
-numpy_squared = numpy_array ** 2           # 훨씬 빠름</code></pre></div>
+py_cubed = [x**3 for x in py_list]        # 느림
+numpy_cubed = numpy_array ** 3             # 훨씬 빠름</code></pre></div>
 </section>
 
 
@@ -1417,15 +1508,15 @@ numpy_squared = numpy_array ** 2           # 훨씬 빠름</code></pre></div>
       <a href="https://commons.wikimedia.org/wiki/File:Binary_search_tree.svg" target="_blank" rel="noopener">Wikimedia Commons</a>
     </figcaption>
   </figure>
-  <div class="sqlbox"><div class="sqlhead">이진 트리 &amp; BST 구현</div><pre><code>class Node:
+  <div class="sqlbox"><div class="sqlhead">이진 트리 &amp; BST 구현</div><pre><code>class TreeNode:
     def __init__(self, value):
         self.value = value
         self.left = None
         self.right = None
 
-root = Node(1)
-root.left = Node(2)
-root.right = Node(3)
+top = TreeNode(100)
+top.left = TreeNode(50)
+top.right = TreeNode(150)
 
 class BST:
     def __init__(self, value):
@@ -1440,52 +1531,52 @@ class BST:
             if self.right: self.right.insert(value)
             else: self.right = BST(value)
 
-root = BST(10)
-root.insert(5)   # 왼쪽 (10보다 작음)
-root.insert(15)  # 오른쪽 (10보다 큼)</code></pre></div>
+root = BST(30)
+root.insert(12)   # 왼쪽 (30보다 작음)
+root.insert(45)   # 오른쪽 (30보다 큼)</code></pre></div>
 
   <h4>그래프(Graph)와 힙(Heap)</h4>
   <ul class="b">
     <li>그래프는 파이썬에서 흔히 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">{노드: [인접노드, ...]}</code> 형태의 딕셔너리로 표현</li>
     <li>힙은 항상 가장 작은(또는 큰) 값이 루트에 위치하는 완전 이진 트리 — Day 2에서 배운 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">heapq</code>가 바로 이 구조를 구현한다</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">그래프(dict 표현) &amp; heapq</div><pre><code>graph = {1: [2, 3], 2: [4, 5], 3: [6], 4: [], 5: [], 6: []}
-print(graph[1])  # [2, 3]
+  <div class="sqlbox"><div class="sqlhead">그래프(dict 표현) &amp; heapq</div><pre><code>network = {"A": ["B", "C"], "B": ["D", "E"], "C": ["F"], "D": [], "E": [], "F": []}
+print(network["A"])  # ['B', 'C']
 
 import heapq
 heap = []
-for v in [10, 5, 20]:
+for v in [17, 4, 9]:
     heapq.heappush(heap, v)
-print(heapq.heappop(heap))  # 5 (가장 작은 값)</code></pre></div>
+print(heapq.heappop(heap))  # 4 (가장 작은 값)</code></pre></div>
 
   <h4>그래프 탐색 — DFS vs BFS</h4>
   <ul class="b">
     <li><b>DFS(깊이 우선 탐색)</b>: 한 방향으로 끝까지 파고든 뒤 되돌아오는 방식(재귀 또는 스택), 백트래킹 방식으로 동작하며 미로 탐색 같은 경로 문제에 적합</li>
     <li><b>BFS(너비 우선 탐색)</b>: 가까운 노드부터 계층적으로 탐색(큐 사용), 최단 경로 문제에 유용</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">DFS(재귀) &amp; BFS(큐)</div><pre><code>def dfs(graph, node, visited):
+  <div class="sqlbox"><div class="sqlhead">DFS(재귀) &amp; BFS(큐)</div><pre><code>def dfs(network, node, visited):
     visited.add(node)
     print(node, end=" ")
-    for neighbor in graph[node]:
+    for neighbor in network[node]:
         if neighbor not in visited:
-            dfs(graph, neighbor, visited)
+            dfs(network, neighbor, visited)
 
-graph = {1: [2, 3], 2: [4, 5], 3: [6], 4: [], 5: [], 6: []}
-dfs(graph, 1, set())  # 1 2 4 5 3 6
+network = {"A": ["B", "C"], "B": ["D", "E"], "C": ["F"], "D": [], "E": [], "F": []}
+dfs(network, "A", set())  # A B D E C F
 
 from collections import deque
-def bfs(graph, start):
+def bfs(network, start):
     queue = deque([start])
     visited = {start}
     while queue:
         node = queue.popleft()
         print(node, end=" ")
-        for neighbor in graph[node]:
+        for neighbor in network[node]:
             if neighbor not in visited:
                 queue.append(neighbor)
                 visited.add(neighbor)
 
-bfs(graph, 1)  # 1 2 3 4 5 6</code></pre></div>
+bfs(network, "A")  # A B C D E F</code></pre></div>
 
   <h4>DFS vs BFS 비교</h4>
   <table class="t"><thead><tr><th>구분</th><th>DFS</th><th>BFS</th></tr></thead><tbody>
@@ -1518,16 +1609,16 @@ bfs(graph, 1)  # 1 2 3 4 5 6</code></pre></div>
       <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>
     </figcaption>
   </figure>
-  <div class="sqlbox"><div class="sqlhead">O(1) vs O(n) vs O(n²) 예시</div><pre><code>arr = [1, 2, 3, 4, 5]
-print(arr[-1])  # O(1) — 인덱스 접근은 크기와 무관
+  <div class="sqlbox"><div class="sqlhead">O(1) vs O(n) vs O(n²) 예시</div><pre><code>items = [3, 1, 4, 1, 5]
+print(items[-1])  # O(1) — 인덱스 접근은 크기와 무관
 
-def print_all(arr):        # O(n) — 선형 시간
-    for x in arr:
+def show_all(items):        # O(n) — 선형 시간
+    for x in items:
         print(x)
 
-def print_pairs(arr):      # O(n^2) — 이중 반복문
-    for i in arr:
-        for j in arr:
+def show_combinations(items):      # O(n^2) — 이중 반복문
+    for i in items:
+        for j in items:
             print(i, j)</code></pre></div>
 
   <h4>탐색 알고리즘 — 선형 탐색 vs 이진 탐색</h4>
@@ -1535,52 +1626,52 @@ def print_pairs(arr):      # O(n^2) — 이중 반복문
     <li><b>선형 탐색</b>은 처음부터 끝까지 하나씩 비교 — O(n), 정렬 여부와 무관하게 사용 가능</li>
     <li><b>이진 탐색</b>은 <b>정렬된</b> 리스트에서 중간값과 비교해 탐색 범위를 절반씩 줄여나감 — O(log n)으로 훨씬 빠름</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">선형 탐색 &amp; 이진 탐색</div><pre><code>def linear_search(arr, target):
-    for i in range(len(arr)):
-        if arr[i] == target:
+  <div class="sqlbox"><div class="sqlhead">선형 탐색 &amp; 이진 탐색</div><pre><code>def linear_search(data, target):
+    for i in range(len(data)):
+        if data[i] == target:
             return i
     return -1
 
-def binary_search(arr, target):   # arr는 반드시 정렬되어 있어야 함
-    left, right = 0, len(arr) - 1
-    while left <= right:
-        mid = (left + right) // 2
-        if arr[mid] == target:
+def binary_search(data, target):   # data는 반드시 정렬되어 있어야 함
+    low, high = 0, len(data) - 1
+    while low <= high:
+        mid = (low + high) // 2
+        if data[mid] == target:
             return mid
-        elif arr[mid] < target:
-            left = mid + 1
+        elif data[mid] < target:
+            low = mid + 1
         else:
-            right = mid - 1
+            high = mid - 1
     return -1
 
-numbers = [10, 20, 30, 40, 50]
-print(binary_search(numbers, 30))  # 2</code></pre></div>
+prices = [1000, 2000, 3000, 4000, 5000]
+print(binary_search(prices, 3000))  # 2</code></pre></div>
 
   <h4>정렬 알고리즘 — 버블 정렬 vs 퀵 정렬</h4>
   <ul class="b">
     <li><b>버블 정렬</b>: 인접한 두 원소를 비교해 자리를 바꾸는 방식을 반복 — 구현은 쉽지만 O(n²)로 느림</li>
     <li><b>퀵 정렬</b>: 기준값(pivot)보다 작은 값/큰 값으로 나눈 뒤 재귀적으로 정렬 — 평균 O(n log n)로 실무에서 널리 사용</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">버블 정렬 &amp; 퀵 정렬</div><pre><code>def bubble_sort(arr):
-    n = len(arr)
+  <div class="sqlbox"><div class="sqlhead">버블 정렬 &amp; 퀵 정렬</div><pre><code>def bubble_sort(data):
+    n = len(data)
     for i in range(n):
         for j in range(n - i - 1):
-            if arr[j] > arr[j + 1]:
-                arr[j], arr[j+1] = arr[j+1], arr[j]
-    return arr
+            if data[j] > data[j + 1]:
+                data[j], data[j+1] = data[j+1], data[j]
+    return data
 
-def quick_sort(arr):
-    if len(arr) <= 1:
-        return arr
-    pivot = arr[len(arr) // 2]
-    left = [x for x in arr if x < pivot]
-    middle = [x for x in arr if x == pivot]
-    right = [x for x in arr if x > pivot]
-    return quick_sort(left) + middle + quick_sort(right)
+def quick_sort(data):
+    if len(data) <= 1:
+        return data
+    pivot = data[len(data) // 2]
+    smaller = [x for x in data if x < pivot]
+    equal = [x for x in data if x == pivot]
+    larger = [x for x in data if x > pivot]
+    return quick_sort(smaller) + equal + quick_sort(larger)
 
-numbers = [5, 3, 8, 4, 2]
-print(bubble_sort(numbers.copy()))
-print(quick_sort(numbers))</code></pre></div>
+readings = [42, 17, 63, 29, 8]
+print(bubble_sort(readings.copy()))
+print(quick_sort(readings))</code></pre></div>
 
   <h4>정렬 알고리즘 비교</h4>
   <table class="t"><thead><tr><th>알고리즘</th><th>평균 시간복잡도</th><th>공간복잡도</th><th>특징</th></tr></thead><tbody>
@@ -1595,16 +1686,16 @@ print(quick_sort(numbers))</code></pre></div>
     <li>기존 배열을 직접 수정하면(in-place) 공간 복잡도 O(1), 새로운 배열을 만들어 저장하면 O(n)</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">공간 복잡도 O(1) vs O(n) 비교</div><pre><code># 시간 O(n), 공간 O(1) — 추가 메모리 거의 없음
-def print_elements(arr):
-    for element in arr:
-        print(element)
+def show_items(items):
+    for item in items:
+        print(item)
 
 # 시간 O(n), 공간 O(n) — 새 리스트를 만들어 메모리 추가 사용
-def duplicate_elements(arr):
-    result = []
-    for element in arr:
-        result.append(element)
-    return result</code></pre></div>
+def clone_items(items):
+    copied = []
+    for item in items:
+        copied.append(item)
+    return copied</code></pre></div>
 </section>
 
 
@@ -1693,20 +1784,20 @@ def duplicate_elements(arr):
     <li><b>Seaborn</b>: Matplotlib을 기반으로 더 통계적이고 예쁜 시각화를 손쉽게 제공</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">4대 라이브러리 한눈에 보기</div><pre><code>import numpy as np
-arr = np.array([1, 2, 3, 4])
-print(arr.mean())          # 평균 계산
+temps = np.array([21, 24, 19, 27])
+print(temps.mean())          # 평균 계산
 
 import pandas as pd
-df = pd.read_csv('data.csv')
-print(df.head())           # 처음 몇 행 출력
+df = pd.DataFrame({'day': ['Mon','Tue','Wed','Thu'], 'temp': [21, 24, 19, 27]})
+print(df.head())             # 처음 몇 행 출력
 
 import matplotlib.pyplot as plt
-plt.plot([1, 2, 3], [4, 5, 6])
-plt.title("Simple Line Plot")
+plt.plot([1, 2, 3], [21, 24, 19])
+plt.title("Weekly Temperature")
 plt.show()
 
 import seaborn as sns
-sns.boxplot(data=[7, 8, 9])
+sns.boxplot(data=[12, 15, 11])
 plt.show()</code></pre></div>
 
   <h4>데이터 분석 → 머신러닝으로 이어지는 흐름</h4>
@@ -1722,22 +1813,22 @@ plt.show()</code></pre></div>
   </ul>
   <div class="sqlbox"><div class="sqlhead">선 그래프 · 막대 그래프 · 파이 차트</div><pre><code>import matplotlib.pyplot as plt
 
-months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
-sales = [100, 120, 150, 130, 170, 160]
-plt.plot(months, sales)
-plt.title('Monthly Sales'); plt.xlabel('Month'); plt.ylabel('Sales')
+weeks = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6']
+signups = [40, 55, 60, 50, 75, 90]
+plt.plot(weeks, signups)
+plt.title('Weekly Signups'); plt.xlabel('Week'); plt.ylabel('Signups')
 plt.show()
 
-age_groups = ['0-18', '19-35', '36-50', '51+']
-population = [5000, 8000, 6000, 4000]
-plt.bar(age_groups, population)
-plt.title('Population by Age Group')
+genres = ['Action', 'Drama', 'Comedy', 'SF']
+watch_count = [3200, 2600, 4100, 1800]
+plt.bar(genres, watch_count)
+plt.title('Watch Count by Genre')
 plt.show()
 
-pages = ['Home', 'Products', 'Contact', 'Blog']
-visitors = [1500, 1200, 800, 600]
-plt.pie(visitors, labels=pages, autopct='%1.1f%%')
-plt.title('Website Visitors by Page')
+devices = ['Mobile', 'Desktop', 'Tablet', 'TV']
+usage = [4500, 2300, 900, 1100]
+plt.pie(usage, labels=devices, autopct='%1.1f%%')
+plt.title('Usage by Device Type')
 plt.show()</code></pre></div>
 </section>
 
@@ -1755,60 +1846,60 @@ plt.show()</code></pre></div>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">np.array([...])</code>로 배열 생성(1차원·2차원 모두 가능), <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">np.zeros()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">np.ones()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">np.arange(start,stop,step)</code>로 초기화</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">배열 생성</div><pre><code>import numpy as np
-a = np.array([1, 2, 3])           # 1차원 배열
-b = np.array([[1, 2], [3, 4]])    # 2차원 배열
-z = np.zeros((2, 3))              # [[0,0,0],[0,0,0]]
-o = np.ones((3, 2))               # 1로 채운 배열
-r = np.arange(0, 10, 2)           # [0 2 4 6 8]</code></pre></div>
+v = np.array([4, 8, 15])              # 1차원 배열
+m = np.array([[2, 4], [6, 8]])        # 2차원 배열
+z = np.zeros((3, 2))                  # [[0,0],[0,0],[0,0]]
+o = np.ones((2, 4))                   # 1로 채운 배열
+r = np.arange(1, 15, 3)               # [1 4 7 10 13]</code></pre></div>
 
   <h4>인덱싱 · 슬라이싱 · 산술 연산과 브로드캐스팅</h4>
   <ul class="b">
     <li>1차원은 리스트와 동일하게 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">arr[1:4]</code>, 2차원은 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">b[:2, :]</code>처럼 행,열을 콤마로 구분해 슬라이싱</li>
     <li><b>브로드캐스팅</b>: shape이 다른 두 배열도 규칙(더 작은 차원 쪽을 자동으로 확장)에 맞으면 연산 가능 — 예: (3,1) 배열 + (2,) 배열</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">인덱싱/슬라이싱 &amp; 브로드캐스팅</div><pre><code>arr = np.array([10, 20, 30, 40, 50])
-print(arr[1:4])   # [20 30 40]
-print(arr[-1])    # 50
+  <div class="sqlbox"><div class="sqlhead">인덱싱/슬라이싱 &amp; 브로드캐스팅</div><pre><code>readings = np.array([5, 15, 25, 35, 45])
+print(readings[1:4])   # [15 25 35]
+print(readings[-1])    # 45
 
-b = np.array([[1, 2], [3, 4], [5, 6]])
-print(b[:2, :])    # 첫 두 행
+grid = np.array([[1, 2], [3, 4], [5, 6]])
+print(grid[:2, :])    # 첫 두 행
 
-a = np.array([1, 2])
-b = np.array([3, 4])
-print(a + b)  # [4 6]
-print(a * b)  # [3 8]
+p = np.array([2, 3])
+q = np.array([5, 7])
+print(p + q)  # [7 10]
+print(p * q)  # [10 21]
 
-c = np.array([[1], [2], [3]])   # shape (3,1)
-d = np.array([10, 20])          # shape (2,)
-print(c + d)   # 브로드캐스팅으로 (3,2) 결과 생성
-# [[11 21], [12 22], [13 23]]</code></pre></div>
+col = np.array([[1], [2], [3]])   # shape (3,1)
+row = np.array([100, 200])        # shape (2,)
+print(col + row)   # 브로드캐스팅으로 (3,2) 결과 생성
+# [[101 201], [102 202], [103 203]]</code></pre></div>
 
   <h4>배열 형태 변환 — reshape vs ravel</h4>
   <ul class="b">
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">reshape(행,열)</code>은 원소 개수를 유지하며 형태를 바꾼다(<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">-1</code>을 주면 해당 축 크기를 자동 계산)</li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">ravel()</code>은 다차원 배열을 1차원으로 평탄화(flatten)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">reshape / ravel</div><pre><code>arr = np.array([1, 2, 3, 4, 5, 6])
-reshaped = arr.reshape(2, 3)      # 2행 3열
-reshaped2 = arr.reshape(2, -1)    # 열 개수 자동 계산
+  <div class="sqlbox"><div class="sqlhead">reshape / ravel</div><pre><code>seq = np.array([10, 20, 30, 40, 50, 60])
+reshaped = seq.reshape(3, 2)      # 3행 2열
+reshaped2 = seq.reshape(3, -1)    # 열 개수 자동 계산
 
-arr2d = np.array([[1, 2, 3], [4, 5, 6]])
-flattened = arr2d.ravel()          # [1 2 3 4 5 6]</code></pre></div>
+grid2d = np.array([[10, 20, 30], [40, 50, 60]])
+flattened = grid2d.ravel()          # [10 20 30 40 50 60]</code></pre></div>
 
   <h4>통계 함수 — mean / sum / max / min</h4>
   <ul class="b">
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">.mean()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">.sum()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">.max()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">.min()</code>은 데이터 분석에서 가장 자주 쓰는 통계 함수</li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">axis=0</code>은 열 방향(세로) 집계, <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">axis=1</code>은 행 방향(가로) 집계</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">통계 함수 &amp; axis</div><pre><code>data = np.array([1, 2, 3])
-print(data.mean())  # 2.0
-print(data.sum())   # 6
-print(data.max())   # 3
-print(data.min())   # 1
+  <div class="sqlbox"><div class="sqlhead">통계 함수 &amp; axis</div><pre><code>scores = np.array([70, 85, 95])
+print(scores.mean())  # 83.333...
+print(scores.sum())   # 250
+print(scores.max())   # 95
+print(scores.min())   # 70
 
-data2 = np.array([[1, 2], [3, 4]])
-print(data2.sum(axis=0))   # 열 기준: [4 6]
-print(data2.mean(axis=1))  # 행 기준: [1.5 3.5]</code></pre></div>
+table = np.array([[2, 4], [6, 8]])
+print(table.sum(axis=0))   # 열 기준: [8 12]
+print(table.mean(axis=1))  # 행 기준: [3. 7.]</code></pre></div>
 </section>
 
 
@@ -1826,18 +1917,18 @@ print(data2.mean(axis=1))  # 행 기준: [1.5 3.5]</code></pre></div>
     <li><b>DataFrame</b>: 여러 Series(컬럼)가 모인 2차원 테이블 — 딕셔너리로도 쉽게 생성 가능</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">Series &amp; DataFrame 생성</div><pre><code>import pandas as pd
-s = pd.Series([10, 20, 30], index=['a', 'b', 'c'])
+s = pd.Series([7, 14, 21], index=['x', 'y', 'z'])
 print(s)
-# a 10
-# b 20
-# c 30
+# x 7
+# y 14
+# z 21
 
-data = {'Name': ['Alice', 'Bob'], 'Age': [25, 30]}
+data = {'City': ['Busan', 'Daegu'], 'Population': [3400, 2400]}
 df = pd.DataFrame(data)
 print(df)
-#     Name  Age
-# 0  Alice   25
-# 1    Bob   30</code></pre></div>
+#     City  Population
+# 0  Busan        3400
+# 1  Daegu        2400</code></pre></div>
 
   <h4>CSV 파일 읽기/쓰기와 DataFrame 기본 조작</h4>
   <ul class="b">
@@ -1845,11 +1936,13 @@ print(df)
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">df['컬럼명']</code>으로 열 선택, <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">df[df['Age'] &gt; 18]</code>처럼 불리언 인덱싱으로 행 필터링</li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">df['Age'] = df['Age'].astype(float)</code>로 타입 변환</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">CSV 입출력 &amp; 필터링</div><pre><code>df = pd.read_csv('data.csv')
-print(df.head())              # 상위 5개 행
-df.to_csv('output.csv', index=False)
+  <div class="sqlbox"><div class="sqlhead">CSV 입출력 &amp; 필터링</div><pre><code>pd.DataFrame({'Name': ['Mina','Jun','Sora'], 'Age': [17, 25, 31], 'City': ['Seoul','Busan','Daejeon']}).to_csv('members.csv', index=False)  # 읽기 예제를 위해 먼저 파일을 만들어둠
 
-print(df['Name'])              # 컬럼 선택
+df = pd.read_csv('members.csv')
+print(df.head())              # 상위 5개 행
+df.to_csv('members_clean.csv', index=False)
+
+print(df['City'])              # 컬럼 선택
 adults = df[df['Age'] > 18]    # 조건 필터링
 df['Age'] = df['Age'].astype(float)  # 타입 변환</code></pre></div>
 
@@ -1858,39 +1951,44 @@ df['Age'] = df['Age'].astype(float)  # 타입 변환</code></pre></div>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">isnull()</code>은 각 값이 NaN인지 True/False로, <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">isnull().sum()</code>은 컬럼별 결측치 개수를 확인</li>
     <li>제거는 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">dropna()</code>, 채우기는 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">fillna(값)</code> — 평균값·0·앞/뒤 값(ffill/bfill)으로 채울 수 있다</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">결측치 확인·삭제·채우기</div><pre><code>print(df.isnull().sum())        # 컬럼별 결측치 개수
+  <div class="sqlbox"><div class="sqlhead">결측치 확인·삭제·채우기</div><pre><code>import numpy as np
+df = pd.DataFrame({'이름': ['가영','나래','다솜'], '구매액': [12000, np.nan, 8000]})
 
-df_dropped = df.dropna()                      # 결측치 있는 행 삭제
-df_dropped_col = df.dropna(subset=['나이'])     # 특정 열 기준 삭제
+print(df.isnull().sum())        # 컬럼별 결측치 개수
 
-df_filled = df.fillna(0)                       # 0으로 채우기
-df['나이'] = df['나이'].fillna(df['나이'].mean())  # 평균으로 채우기
-df_filled = df.fillna(method='ffill')          # 직전 값으로 채우기</code></pre></div>
+df_dropped = df.dropna()                        # 결측치 있는 행 삭제
+df_dropped_col = df.dropna(subset=['구매액'])     # 특정 열 기준 삭제
+
+df_filled = df.fillna(0)                         # 0으로 채우기
+df['구매액'] = df['구매액'].fillna(df['구매액'].mean())  # 평균으로 채우기
+df_filled = df.fillna(method='ffill')            # 직전 값으로 채우기</code></pre></div>
 
   <h4>DataFrame 결합 — merge와 join</h4>
   <ul class="b">
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">pd.merge(df1, df2, on='ID', how='inner')</code>는 SQL JOIN처럼 특정 <b>컬럼값</b>을 기준으로 결합(how: inner/outer/left/right)</li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">df1.join(df2)</code>는 <b>인덱스</b>를 기준으로 결합 — 기준이 컬럼이냐 인덱스냐가 merge와 join의 핵심 차이</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">merge (컬럼 기준) vs join (인덱스 기준)</div><pre><code>df1 = pd.DataFrame({'ID': [1, 2, 3], 'Name': ['Alice', 'Bob', 'Charlie']})
-df2 = pd.DataFrame({'ID': [1, 2, 4], 'Age': [25, 30, 22]})
+  <div class="sqlbox"><div class="sqlhead">merge (컬럼 기준) vs join (인덱스 기준)</div><pre><code>orders = pd.DataFrame({'CustID': [1, 2, 3], 'Item': ['Mug', 'Pen', 'Bag']})
+customers = pd.DataFrame({'CustID': [1, 2, 4], 'Grade': ['Gold', 'Silver', 'Bronze']})
 
-result = pd.merge(df1, df2, on='ID')                 # inner join (기본)
-result_outer = pd.merge(df1, df2, on='ID', how='outer')
+result = pd.merge(orders, customers, on='CustID')                 # inner join (기본)
+result_outer = pd.merge(orders, customers, on='CustID', how='outer')
 
-df3 = pd.DataFrame({'Name': ['Alice','Bob'], 'Age':[25,30]}, index=[1,2])
-df4 = pd.DataFrame({'Salary': [50000, 60000]}, index=[1,2])
+df3 = pd.DataFrame({'Item': ['Mug','Pen'], 'Grade':['Gold','Silver']}, index=[1,2])
+df4 = pd.DataFrame({'Points': [300, 150]}, index=[1,2])
 result_join = df3.join(df4)   # 인덱스를 기준으로 결합</code></pre></div>
 
   <h4>그룹화 및 집계 — groupby</h4>
   <ul class="b">
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">df.groupby('컬럼')['대상컬럼'].집계함수()</code> 형태 — <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">sum()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">mean()</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">count()</code></li>
-    <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">.agg(['sum','mean','count'])</code>로 여러 집계를 한 번에, 여러 컬럼으로 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">groupby(['이름','학년'])</code>도 가능</li>
+    <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">.agg(['sum','mean','count'])</code>로 여러 집계를 한 번에, 여러 컬럼으로 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">groupby(['이름','부서'])</code>도 가능</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">groupby 집계</div><pre><code>grouped_mean = df.groupby('학년')['점수'].mean()
-grouped_count = df.groupby('학년')['이름'].count()
-grouped_agg = df.groupby('학년')['점수'].agg(['sum', 'mean', 'count'])
-grouped_multi = df.groupby(['이름', '학년'])['점수'].mean()</code></pre></div>
+  <div class="sqlbox"><div class="sqlhead">groupby 집계</div><pre><code>df = pd.DataFrame({'이름': ['가영','나래','다솜','라온'], '부서': ['영업','영업','개발','개발'], '급여': [3000, 3200, 4000, 4100]})
+
+grouped_mean = df.groupby('부서')['급여'].mean()
+grouped_count = df.groupby('부서')['이름'].count()
+grouped_agg = df.groupby('부서')['급여'].agg(['sum', 'mean', 'count'])
+grouped_multi = df.groupby(['이름', '부서'])['급여'].mean()</code></pre></div>
 </section>
 
 
@@ -1908,37 +2006,44 @@ grouped_multi = df.groupby(['이름', '학년'])['점수'].mean()</code></pre></
   </ul>
   <div class="sqlbox"><div class="sqlhead">선 그래프 &amp; 막대 그래프</div><pre><code>import matplotlib.pyplot as plt
 
-x = [1, 2, 3, 4]
-y = [10, 20, 25, 30]
-plt.plot(x, y)
-plt.title("Line Graph"); plt.xlabel("X-axis"); plt.ylabel("Y-axis")
+hours = [1, 2, 3, 4, 5]
+speed = [12, 18, 22, 19, 27]
+plt.plot(hours, speed)
+plt.title("Line Graph"); plt.xlabel("Hour"); plt.ylabel("Speed")
 plt.show()
 
-categories = ['A', 'B', 'C']
-values = [5, 7, 3]
-plt.bar(categories, values)
+teams = ['Red', 'Blue', 'Green']
+wins = [8, 5, 11]
+plt.bar(teams, wins)
 plt.title("Bar Chart")
 plt.show()</code></pre></div>
 
   <h4>Seaborn — 통계 시각화</h4>
   <ul class="b">
-    <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">sns.load_dataset('tips')</code>처럼 내장 데이터셋으로 바로 실습 가능</li>
+    <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">sns.load_dataset('penguins')</code>처럼 내장 데이터셋으로 바로 실습 가능</li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">histplot</code>(분포), <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">boxplot</code>(사분위 분포), <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">barplot</code>(그룹 평균), <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">scatterplot</code>(상관관계) — <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">hue</code> 옵션으로 그룹별 색상 구분</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">Seaborn 주요 그래프</div><pre><code>import seaborn as sns
 import matplotlib.pyplot as plt
+import pandas as pd
 
-tips = sns.load_dataset('tips')
-sns.histplot(data=tips, x='total_bill', bins=10)
-plt.title("Histogram of Total Bill")
+penguins = pd.DataFrame({
+    'species': ['Adelie','Adelie','Chinstrap','Chinstrap','Gentoo','Gentoo'],
+    'island': ['Torgersen','Torgersen','Dream','Dream','Biscoe','Biscoe'],
+    'bill_length_mm': [39.1, 38.2, 46.5, 50.0, 47.8, 49.5],
+    'bill_depth_mm': [18.7, 17.5, 17.9, 19.5, 15.0, 15.2],
+    'sex': ['Male','Female','Male','Female','Male','Female']
+})
+sns.histplot(data=penguins, x='bill_length_mm', bins=10)
+plt.title("Histogram of Bill Length")
 plt.show()
 
-sns.boxplot(data=tips, x='day', y='total_bill', hue='sex')
+sns.boxplot(data=penguins, x='island', y='bill_length_mm', hue='sex')
 plt.title("Boxplot with Hue")
 plt.show()
 
-sns.scatterplot(data=tips, x='total_bill', y='tip', hue='time')
-plt.title("Scatterplot of Total Bill vs Tip")
+sns.scatterplot(data=penguins, x='bill_length_mm', y='bill_depth_mm', hue='species')
+plt.title("Scatterplot of Bill Length vs Depth")
 plt.show()</code></pre></div>
 
   <h4>다중 그래프(subplots)와 스타일 설정</h4>
@@ -1947,13 +2052,25 @@ plt.show()</code></pre></div>
     <li>Seaborn 그래프도 <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">ax=axes[i,j]</code> 인자로 subplot 안에 배치 가능, <code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">plt.tight_layout()</code>으로 간격 자동 조정</li>
     <li><code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">sns.set_style('whitegrid')</code>·<code style="background:none;border:none;padding:0;font-size:inherit;color:inherit;">plt.style.use('ggplot')</code>로 전체 그래프 스타일을 통일</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">subplots로 4개 그래프 한 화면에 배치</div><pre><code>fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+  <div class="sqlbox"><div class="sqlhead">subplots로 4개 그래프 한 화면에 배치</div><pre><code>import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
 
-sns.scatterplot(x="total_bill", y="tip", data=tips, ax=axes[0, 0])
-sns.boxplot(x="day", y="total_bill", data=tips, ax=axes[0, 1])
-corr = tips.select_dtypes(include=["float64", "int64"]).corr()
+penguins = pd.DataFrame({
+    'species': ['Adelie','Adelie','Chinstrap','Chinstrap','Gentoo','Gentoo'],
+    'island': ['Torgersen','Torgersen','Dream','Dream','Biscoe','Biscoe'],
+    'bill_length_mm': [39.1, 38.2, 46.5, 50.0, 47.8, 49.5],
+    'bill_depth_mm': [18.7, 17.5, 17.9, 19.5, 15.0, 15.2],
+    'sex': ['Male','Female','Male','Female','Male','Female']
+})
+
+fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+
+sns.scatterplot(x="bill_length_mm", y="bill_depth_mm", data=penguins, ax=axes[0, 0])
+sns.boxplot(x="island", y="bill_length_mm", data=penguins, ax=axes[0, 1])
+corr = penguins.select_dtypes(include=["float64", "int64"]).corr()
 sns.heatmap(corr, annot=True, cmap="coolwarm", ax=axes[1, 0])
-sns.barplot(x="day", y="total_bill", data=tips, ax=axes[1, 1])
+sns.barplot(x="island", y="bill_length_mm", data=penguins, ax=axes[1, 1])
 
 plt.tight_layout()
 plt.show()
@@ -2036,6 +2153,63 @@ plt.style.use('ggplot')        # matplotlib 자체 스타일</code></pre></div>
 </div>
 <button class="top-btn" id="topBtn" title="맨 위로">↑</button>
 
+<button id="pyToggle">🐍 Python 연습장</button>
+<div id="pyDrawer">
+  <div class="py-head">
+    <h3>🐍 Python 연습장 — 브라우저에서 직접 실행되는 실습용 Python(Pyodide)</h3>
+    <div class="py-actions">
+      <span class="pg-info" id="pyStatus">엔진 로딩 중...</span>
+      <button class="py-close" id="pyClose">×</button>
+    </div>
+  </div>
+  <div class="py-body">
+    <div class="py-side">
+      <div class="py-tabs">
+        <button class="py-tab active" id="pyTabGuide">📖 가이드</button>
+        <button class="py-tab" id="pyTabExercise">✏️ 연습문제</button>
+      </div>
+      <div id="pyGuidePanel">
+        <h4>사용법</h4>
+        <div>① 에디터에 Python 코드 입력 → ② 실행 버튼(또는 Ctrl+Enter) → ③ 결과 확인.</div>
+        <h4>참고</h4>
+        <div>본문의 <b>"▶ 연습장에서 실행"</b> 버튼을 누르면 그 예제가 자동으로 채워지고 바로 실행돼요.</div>
+        <div style="margin-top:8px;">numpy/pandas/matplotlib/seaborn을 import하면 필요한 패키지를 자동으로 불러와요(처음 한 번은 시간이 좀 걸려요).</div>
+        <div style="margin-top:8px;">⚠️ 브라우저 환경 특성상 threading/multiprocessing의 실제 병렬 실행은 지원하지 않아요.</div>
+      </div>
+      <div id="pyExercisePanel" class="ex-list" style="display:none;"><div style="font-size:11px;color:var(--muted);margin:10px 0 4px;">Day 1</div>
+<button class="ex-item" data-idx="0"><span class="tag">Day1 · #1</span>합계 구하기</button>
+<button class="ex-item" data-idx="1"><span class="tag">Day1 · #2</span>함수 기본</button>
+<button class="ex-item" data-idx="2"><span class="tag">Day1 · #3</span>파일 쓰기/읽기</button>
+<button class="ex-item" data-idx="3"><span class="tag">Day1 · #4</span>예외 처리</button>
+<div style="font-size:11px;color:var(--muted);margin:10px 0 4px;">Day 2</div>
+<button class="ex-item" data-idx="4"><span class="tag">Day2 · #5</span>클래스 기본</button>
+<button class="ex-item" data-idx="5"><span class="tag">Day2 · #6</span>Counter 활용</button>
+<button class="ex-item" data-idx="6"><span class="tag">Day2 · #7</span>데코레이터</button>
+<button class="ex-item" data-idx="7"><span class="tag">Day2 · #8</span>스레드 문법(참고용)</button>
+<button class="ex-item" data-idx="8"><span class="tag">Day2 · #9</span>메모이제이션</button>
+<div style="font-size:11px;color:var(--muted);margin:10px 0 4px;">Day 3</div>
+<button class="ex-item" data-idx="9"><span class="tag">Day3 · #10</span>deque 활용</button>
+<button class="ex-item" data-idx="10"><span class="tag">Day3 · #11</span>그래프 표현</button>
+<button class="ex-item" data-idx="11"><span class="tag">Day3 · #12</span>이진 탐색</button>
+<div style="font-size:11px;color:var(--muted);margin:10px 0 4px;">Day 4</div>
+<button class="ex-item" data-idx="12"><span class="tag">Day4 · #13</span>평균 구하기</button>
+<button class="ex-item" data-idx="13"><span class="tag">Day4 · #14</span>Numpy 배열 연산</button>
+<button class="ex-item" data-idx="14"><span class="tag">Day4 · #15</span>Pandas DataFrame</button>
+<button class="ex-item" data-idx="15"><span class="tag">Day4 · #16</span>그래프 그리기</button></div>
+    </div>
+    <div class="py-main">
+      <div id="pyExerciseCurrent" class="ex-current" style="display:none;"></div>
+      <textarea id="pyEditor" spellcheck="false">print("hello, python!")</textarea>
+      <div class="py-btnrow">
+        <button class="py-run" id="pyRun">▶ 실행 (Ctrl+Enter)</button>
+        <button class="py-clear" id="pyClear">지우기</button>
+      </div>
+      <div class="py-result" id="pyResult"><div class="pg-info">코드를 실행하면 결과가 여기 표시됩니다.</div></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 <script>
   const links = document.querySelectorAll('.navlink');
   const sections = document.querySelectorAll('.sec');
@@ -2111,6 +2285,18 @@ plt.style.use('ggplot')        # matplotlib 자체 스타일</code></pre></div>
     code.innerHTML = highlightPy(code.textContent);
   });
 
+  // ---- shared header-actions wrapper for copy/run buttons ----
+  function getSqlheadActions(head){
+    let actions = head.querySelector('.sqlhead-actions');
+    if(!actions){
+      actions = document.createElement('span');
+      actions.className = 'sqlhead-actions';
+      actions.style.cssText = 'display:flex; gap:6px;';
+      head.appendChild(actions);
+    }
+    return actions;
+  }
+
   // ---- Copy button for code boxes ----
   document.querySelectorAll('.sqlbox').forEach(box=>{
     const head = box.querySelector('.sqlhead');
@@ -2128,7 +2314,7 @@ plt.style.use('ggplot')        # matplotlib 자체 스타일</code></pre></div>
       btn.classList.add('copied');
       setTimeout(()=>{ btn.textContent = '복사'; btn.classList.remove('copied'); }, 1500);
     });
-    head.appendChild(btn);
+    getSqlheadActions(head).appendChild(btn);
   });
 
   // ---- Quiz interactivity ----
@@ -2213,6 +2399,185 @@ plt.style.use('ggplot')        # matplotlib 자체 스타일</code></pre></div>
     }
     btn.addEventListener('click', check);
     input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); });
+  });
+
+  // ---- Python 연습장 (Pyodide) ----
+  const PY_EXERCISES = [
+    {"day": 1, "title": "합계 구하기", "prompt": "1부터 10까지의 합을 구하는 코드를 완성하세요.", "starter": "total = 0\nfor i in range(1, ___):\n    total += i\nprint(total)", "answer": "total = 0\nfor i in range(1, 11):\n    total += i\nprint(total)"},
+    {"day": 1, "title": "함수 기본", "prompt": "두 수를 받아 더 큰 값을 반환하는 함수를 완성하세요.", "starter": "def bigger(a, b):\n    if a > b:\n        return ___\n    return ___\nprint(bigger(3, 7))", "answer": "def bigger(a, b):\n    if a > b:\n        return a\n    return b\nprint(bigger(3, 7))"},
+    {"day": 1, "title": "파일 쓰기/읽기", "prompt": "파일에 문자열을 쓰고 다시 읽어서 출력하세요.", "starter": "with open('memo.txt', 'w') as f:\n    f.write('hello pyodide')\nwith open('memo.txt', ___) as f:\n    print(f.read())", "answer": "with open('memo.txt', 'w') as f:\n    f.write('hello pyodide')\nwith open('memo.txt', 'r') as f:\n    print(f.read())"},
+    {"day": 1, "title": "예외 처리", "prompt": "0으로 나눌 때 발생하는 예외를 처리하세요.", "starter": "try:\n    x = 10 / 0\nexcept ___:\n    print('0으로 나눌 수 없어요')", "answer": "try:\n    x = 10 / 0\nexcept ZeroDivisionError:\n    print('0으로 나눌 수 없어요')"},
+    {"day": 2, "title": "클래스 기본", "prompt": "이름을 받아 짖는 메서드를 가진 Dog 클래스를 완성하세요.", "starter": "class Dog:\n    def __init__(self, name):\n        self.name = ___\n    def bark(self):\n        print(self.name + '가 짖습니다')\nDog('초코').bark()", "answer": "class Dog:\n    def __init__(self, name):\n        self.name = name\n    def bark(self):\n        print(self.name + '가 짖습니다')\nDog('초코').bark()"},
+    {"day": 2, "title": "Counter 활용", "prompt": "collections의 Counter로 문자 빈도수를 세어보세요.", "starter": "from collections import ___\nc = Counter('banana')\nprint(c)", "answer": "from collections import Counter\nc = Counter('banana')\nprint(c)"},
+    {"day": 2, "title": "데코레이터", "prompt": "함수 호출을 로깅하는 데코레이터를 완성하세요.", "starter": "def log_call(func):\n    def wrapper(*args, **kwargs):\n        print('호출:', func.__name__)\n        return ___\n    return wrapper\n\n@log_call\ndef greet():\n    print('안녕')\ngreet()", "answer": "def log_call(func):\n    def wrapper(*args, **kwargs):\n        print('호출:', func.__name__)\n        return func(*args, **kwargs)\n    return wrapper\n\n@log_call\ndef greet():\n    print('안녕')\ngreet()"},
+    {"day": 2, "title": "스레드 문법 (참고용)", "prompt": "threading으로 함수를 실행하는 문법을 채워보세요. (브라우저 환경은 진짜 병렬 스레드를 지원하지 않아 실행하면 에러가 날 수 있어요 — 문법 학습용으로만 활용하세요)", "starter": "import threading\ndef work():\n    print('작업 실행')\nt = threading.___(target=work)\nt.start()\nt.join()", "answer": "import threading\ndef work():\n    print('작업 실행')\nt = threading.Thread(target=work)\nt.start()\nt.join()"},
+    {"day": 2, "title": "메모이제이션", "prompt": "dict를 캐시로 사용해 피보나치를 빠르게 구하세요.", "starter": "cache = {}\ndef fib(n):\n    if n <= 1:\n        return n\n    if n in cache:\n        return cache[n]\n    result = fib(n-1) + fib(n-2)\n    cache[___] = result\n    return result\nprint(fib(20))", "answer": "cache = {}\ndef fib(n):\n    if n <= 1:\n        return n\n    if n in cache:\n        return cache[n]\n    result = fib(n-1) + fib(n-2)\n    cache[n] = result\n    return result\nprint(fib(20))"},
+    {"day": 3, "title": "deque 활용", "prompt": "collections.deque로 양쪽에 값을 추가해보세요.", "starter": "from collections import deque\nq = deque([2, 3])\nq.appendleft(1)\nq.___(4)\nprint(q)", "answer": "from collections import deque\nq = deque([2, 3])\nq.appendleft(1)\nq.append(4)\nprint(q)"},
+    {"day": 3, "title": "그래프 표현", "prompt": "딕셔너리로 그래프를 표현하고 이웃 노드를 출력하세요.", "starter": "graph = {'A': ['B', 'C'], 'B': ['D'], 'C': [], 'D': []}\nprint(graph[___])", "answer": "graph = {'A': ['B', 'C'], 'B': ['D'], 'C': [], 'D': []}\nprint(graph['A'])"},
+    {"day": 3, "title": "이진 탐색", "prompt": "정렬된 리스트에서 이진 탐색을 완성하세요.", "starter": "def binary_search(arr, target):\n    lo, hi = 0, len(arr) - 1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            lo = mid + 1\n        else:\n            hi = ___\n    return -1\nprint(binary_search([1,3,5,7,9], 7))", "answer": "def binary_search(arr, target):\n    lo, hi = 0, len(arr) - 1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return -1\nprint(binary_search([1,3,5,7,9], 7))"},
+    {"day": 4, "title": "평균 구하기", "prompt": "리스트의 평균값을 구하세요.", "starter": "scores = [88, 92, 76, 95, 60]\navg = sum(scores) / ___\nprint(avg)", "answer": "scores = [88, 92, 76, 95, 60]\navg = sum(scores) / len(scores)\nprint(avg)"},
+    {"day": 4, "title": "Numpy 배열 연산", "prompt": "numpy 배열의 합계와 평균을 구하세요.", "starter": "import numpy as np\narr = np.array([10, 20, 30, 40])\nprint(arr.sum(), arr.___())", "answer": "import numpy as np\narr = np.array([10, 20, 30, 40])\nprint(arr.sum(), arr.mean())"},
+    {"day": 4, "title": "Pandas DataFrame", "prompt": "DataFrame을 만들고 한 컬럼의 평균을 구하세요.", "starter": "import pandas as pd\ndf = pd.DataFrame({'name': ['A','B','C'], 'score': [80, 90, 70]})\nprint(df['score'].___())", "answer": "import pandas as pd\ndf = pd.DataFrame({'name': ['A','B','C'], 'score': [80, 90, 70]})\nprint(df['score'].mean())"},
+    {"day": 4, "title": "그래프 그리기", "prompt": "matplotlib로 선 그래프를 그리고 제목을 붙이세요.", "starter": "import matplotlib.pyplot as plt\nplt.plot([1,2,3],[10,20,15])\nplt.___('월별 방문자 수')\nplt.show()", "answer": "import matplotlib.pyplot as plt\nplt.plot([1,2,3],[10,20,15])\nplt.title('월별 방문자 수')\nplt.show()"}
+  ];
+
+  let pyodideInstance = null;
+  let pyReady = false;
+  let seabornLoaded = false;
+  const pyOutBuf = [];
+
+  const pyToggle = document.getElementById('pyToggle');
+  const pyDrawer = document.getElementById('pyDrawer');
+  const pyClose = document.getElementById('pyClose');
+  const pyStatus = document.getElementById('pyStatus');
+  const pyEditor = document.getElementById('pyEditor');
+  const pyRun = document.getElementById('pyRun');
+  const pyClear = document.getElementById('pyClear');
+  const pyResult = document.getElementById('pyResult');
+  const pyTabGuide = document.getElementById('pyTabGuide');
+  const pyTabExercise = document.getElementById('pyTabExercise');
+  const guidePanel = document.getElementById('pyGuidePanel');
+  const exercisePanel = document.getElementById('pyExercisePanel');
+  const exerciseCurrent = document.getElementById('pyExerciseCurrent');
+
+  function openPyDrawer(){ pyDrawer.classList.add('open'); }
+  function closePyDrawer(){ pyDrawer.classList.remove('open'); }
+  pyToggle.addEventListener('click', ()=>{
+    pyDrawer.classList.contains('open') ? closePyDrawer() : openPyDrawer();
+  });
+  pyClose.addEventListener('click', closePyDrawer);
+  document.getElementById('exerciseNavBtn').addEventListener('click', ()=>{
+    openPyDrawer();
+    pyTabExercise.click();
+  });
+
+  pyTabGuide.addEventListener('click', ()=>{
+    pyTabGuide.classList.add('active'); pyTabExercise.classList.remove('active');
+    guidePanel.style.display=''; exercisePanel.style.display='none';
+  });
+  pyTabExercise.addEventListener('click', ()=>{
+    pyTabExercise.classList.add('active'); pyTabGuide.classList.remove('active');
+    guidePanel.style.display='none'; exercisePanel.style.display='';
+  });
+
+  function loadPyExercise(idx){
+    const ex = PY_EXERCISES[idx];
+    document.querySelectorAll('#pyExercisePanel .ex-item').forEach(b=>b.classList.toggle('active', b.dataset.idx==idx));
+    exerciseCurrent.style.display = '';
+    exerciseCurrent.innerHTML = '<b>Day ' + ex.day + ' · ' + ex.title + '</b><br>' + ex.prompt +
+      '<div class="ex-btnrow"><button class="ex-answer-btn" id="pyShowAnswerBtn">정답 보기</button></div>';
+    pyEditor.value = ex.starter;
+    document.getElementById('pyShowAnswerBtn').addEventListener('click', ()=>{
+      pyEditor.value = ex.answer;
+    });
+    openPyDrawer();
+    pyTabExercise.click();
+  }
+  document.querySelectorAll('#pyExercisePanel .ex-item').forEach(btn=>{
+    btn.addEventListener('click', ()=> loadPyExercise(parseInt(btn.dataset.idx)));
+  });
+
+  async function initPyodideEngine(){
+    pyodideInstance = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/' });
+    pyodideInstance.setStdout({ batched: (msg) => pyOutBuf.push(msg) });
+    pyodideInstance.setStderr({ batched: (msg) => {
+      if(/Matplotlib is currently using agg/.test(msg)) return;
+      if(/Glyph \d+.*missing from current font/.test(msg)) return;
+      pyOutBuf.push(msg);
+    }});
+    pyReady = true;
+    pyStatus.textContent = '준비 완료 ✓';
+  }
+  initPyodideEngine().catch(()=>{ pyStatus.textContent = '로딩 실패 (인터넷 연결을 확인하세요)'; });
+
+  async function ensurePyPackages(code){
+    const needed = [];
+    if(/\bnumpy\b/.test(code)) needed.push('numpy');
+    if(/\bpandas\b/.test(code)) needed.push('pandas');
+    if(/\bmatplotlib\b/.test(code)) needed.push('matplotlib');
+    if(needed.length){
+      pyStatus.textContent = '패키지 로딩 중(' + needed.join(', ') + ')...';
+      await pyodideInstance.loadPackage(needed);
+    }
+    if(/\bseaborn\b/.test(code) && !seabornLoaded){
+      pyStatus.textContent = '패키지 로딩 중(seaborn)...';
+      await pyodideInstance.loadPackage('micropip');
+      const micropip = pyodideInstance.pyimport('micropip');
+      await micropip.install('seaborn');
+      seabornLoaded = true;
+    }
+    pyStatus.textContent = '준비 완료 ✓';
+  }
+
+  async function runPyCode(){
+    if(!pyReady){ pyResult.innerHTML = '<div class="pg-info">엔진이 아직 로딩 중이에요. 잠시 후 다시 시도해주세요.</div>'; return; }
+    const code = pyEditor.value;
+    pyOutBuf.length = 0;
+    let errMsg = '', imgs = [], lastExpr = '';
+    try{
+      await ensurePyPackages(code);
+      if(/matplotlib/.test(code)){
+        pyodideInstance.runPython("import matplotlib\nmatplotlib.use('Agg')");
+      }
+      const lastResult = await pyodideInstance.runPythonAsync(code);
+      if(lastResult !== undefined){
+        try{ lastExpr = lastResult.toString(); }catch(e){}
+        if(lastResult && typeof lastResult.destroy === 'function') lastResult.destroy();
+      }
+      if(/matplotlib/.test(code)){
+        try{
+          const figsJson = pyodideInstance.runPython(
+            "import matplotlib.pyplot as _plt, io as _io, base64 as _b64, json as _json\n" +
+            "_figs = []\n" +
+            "for _n in _plt.get_fignums():\n" +
+            "    _f = _plt.figure(_n)\n" +
+            "    _buf = _io.BytesIO()\n" +
+            "    _f.savefig(_buf, format='png', bbox_inches='tight')\n" +
+            "    _buf.seek(0)\n" +
+            "    _figs.append(_b64.b64encode(_buf.read()).decode('ascii'))\n" +
+            "_plt.close('all')\n" +
+            "_json.dumps(_figs)\n"
+          );
+          imgs = JSON.parse(figsJson);
+        }catch(e){ /* figure capture is best-effort */ }
+      }
+    }catch(e){
+      errMsg = e.message;
+    }
+    let html = '';
+    const text = pyOutBuf.join('\n');
+    if(text) html += '<pre>' + escapeHtml(text) + '</pre>';
+    if(lastExpr) html += '<pre class="py-outexpr">Out: ' + escapeHtml(lastExpr) + '</pre>';
+    imgs.forEach(b64 => { html += '<img class="py-figure" src="data:image/png;base64,' + b64 + '">'; });
+    if(errMsg) html += '<div class="pg-error">오류:\n' + escapeHtml(errMsg) + '</div>';
+    if(!text && !errMsg && !lastExpr && imgs.length===0) html = '<div class="pg-info">실행 완료 — 출력이 없습니다.</div>';
+    pyResult.innerHTML = html;
+  }
+  pyRun.addEventListener('click', runPyCode);
+  pyEditor.addEventListener('keydown', (e)=>{
+    if((e.ctrlKey || e.metaKey) && e.key==='Enter'){ runPyCode(); }
+  });
+  pyClear.addEventListener('click', ()=>{ pyEditor.value=''; pyEditor.focus(); });
+
+  // ---- inject "▶ 연습장에서 실행" buttons into code boxes ----
+  document.querySelectorAll('.sqlbox').forEach(box=>{
+    const head = box.querySelector('.sqlhead');
+    const code = box.querySelector('code');
+    if(!head || !code) return;
+    const text = code.textContent;
+    const usesRealConcurrency = /\b(threading|multiprocessing)\b/.test(text) && /\.start\(\)/.test(text);
+    if(usesRealConcurrency) return;
+    const actions = getSqlheadActions(head);
+    const btn = document.createElement('button');
+    btn.className = 'run-btn';
+    btn.textContent = '▶ 연습장에서 실행';
+    btn.addEventListener('click', ()=>{
+      pyEditor.value = code.textContent;
+      openPyDrawer();
+      pyTabGuide.click();
+      runPyCode();
+    });
+    actions.appendChild(btn);
   });
 </script>
 </body>

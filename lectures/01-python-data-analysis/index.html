@@ -173,6 +173,92 @@
   .copy-btn:hover{border-color:var(--accent2); color:var(--accent2);}
   .copy-btn.copied{border-color:var(--accent2); color:var(--accent2);}
 
+  /* ===== Python 연습장 ===== */
+  #pyToggle{
+    position:fixed; right:24px; bottom:80px; z-index:40; background:var(--accent2); color:#0b0d14;
+    border:none; border-radius:999px; padding:12px 18px; font-size:13px; font-weight:700; cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,.35); display:flex; align-items:center; gap:6px;
+  }
+  #pyDrawer{
+    position:fixed; left:0; right:0; bottom:-70vh; height:66vh; background:var(--panel);
+    border-top:1px solid var(--border); z-index:39; transition:bottom .25s ease;
+    box-shadow:0 -8px 30px rgba(0,0,0,.4); display:flex; flex-direction:column;
+  }
+  #pyDrawer.open{bottom:0;}
+  .py-head{
+    display:flex; align-items:center; justify-content:space-between; padding:10px 18px;
+    border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .py-head h3{margin:0; font-size:14px; max-width:70%;}
+  .py-head .py-actions{display:flex; gap:8px; align-items:center; flex-shrink:0;}
+  .py-close{background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; line-height:1;}
+  .py-body{display:flex; flex:1; overflow:hidden;}
+  .py-side{
+    width:230px; flex-shrink:0; border-right:1px solid var(--border); overflow-y:auto; padding:12px 14px;
+    font-size:12px; color:var(--muted);
+  }
+  .py-side h4{color:var(--accent2); font-size:11.5px; margin:10px 0 4px;}
+  .py-main{flex:1; display:flex; flex-direction:column; padding:14px 18px; overflow:hidden;}
+  #pyEditor{
+    width:100%; flex:1; min-height:90px; max-height:160px; resize:vertical; background:var(--code-bg);
+    color:var(--code-text); border:1px solid var(--border); border-radius:8px; padding:10px 12px;
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:13px; line-height:1.6; white-space:pre;
+  }
+  .py-btnrow{display:flex; gap:8px; margin:10px 0;}
+  .py-run{
+    background:var(--accent2); color:#0b0d14; border:none; border-radius:7px; padding:8px 18px;
+    font-weight:700; font-size:13px; cursor:pointer;
+  }
+  .py-clear, .py-example{
+    background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:7px;
+    padding:8px 14px; font-size:12.5px; cursor:pointer;
+  }
+  .py-result{flex:1; overflow:auto; border:1px solid var(--border); border-radius:8px; padding:10px 12px; background:var(--code-bg);}
+  .py-result pre{margin:0; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:12.5px; white-space:pre-wrap; color:var(--code-text);}
+  .py-result pre.py-outexpr{margin-top:6px; color:var(--accent2);}
+  .py-figure{max-width:100%; margin-top:8px; border-radius:6px; border:1px solid var(--border); background:#fff;}
+  .pg-error{color:#ff8080; font-family:monospace; font-size:12.5px; white-space:pre-wrap;}
+  .pg-info{color:var(--muted); font-size:12.5px;}
+  @media (max-width:900px){
+    .py-side{display:none;}
+    #pyDrawer{height:80vh;}
+  }
+  .py-guide{
+    background:rgba(79,209,197,.08); border:1px solid rgba(79,209,197,.3); border-radius:10px;
+    padding:10px 14px; margin-bottom:12px; font-size:12.5px; line-height:1.7; color:var(--text);
+  }
+  .py-guide b{color:var(--accent2);}
+  .py-tabs{display:flex; gap:6px; margin-bottom:10px;}
+  .py-tab{
+    padding:6px 12px; border-radius:7px; border:1px solid var(--border); background:var(--panel2);
+    color:var(--muted); font-size:12px; cursor:pointer;
+  }
+  .py-tab.active{background:var(--accent); color:#0b0d14; border-color:var(--accent); font-weight:700;}
+  .ex-list{display:flex; flex-direction:column; gap:6px; max-height:100%; overflow-y:auto;}
+  .ex-item{
+    text-align:left; background:var(--panel2); border:1px solid var(--border); border-radius:8px;
+    padding:8px 10px; color:var(--text); font-size:12.5px; cursor:pointer; width:100%;
+  }
+  .ex-item:hover{border-color:var(--accent);}
+  .ex-item.active{border-color:var(--accent); background:rgba(124,157,255,.1);}
+  .ex-item .tag{color:var(--muted); font-size:10.5px; display:block; margin-bottom:2px;}
+  .ex-current{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:10px;
+    font-size:13px; line-height:1.6;
+  }
+  .ex-current b{color:var(--accent2);}
+  .ex-btnrow{display:flex; gap:8px; margin-top:8px;}
+  .ex-answer-btn{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:7px;
+    padding:6px 12px; font-size:12px; cursor:pointer;
+  }
+  .ex-answer-btn:hover{border-color:var(--accent2);}
+  .run-btn{
+    background:none; border:1px solid var(--border); color:var(--accent2); border-radius:6px;
+    padding:3px 9px; font-size:11px; cursor:pointer; margin-left:8px;
+  }
+  .run-btn:hover{border-color:var(--accent2); background:rgba(79,209,197,.1);}
+
   /* ===== Width upgrade (full monitor) ===== */
   main{ max-width: 1180px; padding:40px 56px 160px; }
   @media (min-width:1500px){ main{ max-width: 1320px; } }
@@ -259,6 +345,7 @@
     <p class="sub">이해 및 활용 · 복습노트</p>
     <div class="toolbar">
       <button class="theme-btn" id="themeBtn">🌙 다크 모드</button>
+      <button class="theme-btn" id="exerciseNavBtn">✏️ 연습문제</button>
     </div>
     <input class="search" id="searchBox" type="text" placeholder="검색 (예: 컴프리헨션, Pydantic, DuckDB...)">
     <div class="day-group"><div class="day-title d1">Day 1 — 실행구조·자료구조·함수·타입·품질·비동기</div>
@@ -457,6 +544,7 @@ cols = [row[1] for row in grid]  # [20,40,60]</code></pre></div>
   <div class="sqlbox"><div class="sqlhead">Counter / defaultdict / set 연산</div><pre><code>from collections import Counter, defaultdict
 c = Counter(['홍대','성수','홍대','합정','홍대'])
 c.most_common(3)  # [('홍대',3),...]
+rows = [{'branch': '홍대', 'revenue': 1200}, {'branch': '성수', 'revenue': 900}, {'branch': '홍대', 'revenue': 1500}]
 group = defaultdict(list)
 for row in rows:
     group[row['branch']].append(row['revenue'])
@@ -470,7 +558,15 @@ a - b  # 차집합: {'성수','합정'}</code></pre></div>
     <li>리스트 컴프리헨션(변환+필터 동시), 딕셔너리 컴프리헨션(키-값 매핑), 집합 컴프리헨션(중복 제거)</li>
     <li>중첩 컴프리헨션(2D→1D flatten), for 루프보다 2–3배 빠름(바이트코드 최적화)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">컴프리헨션 전체 패턴</div><pre><code>evens = [n for n in nums if n % 2 == 0]
+  <div class="sqlbox"><div class="sqlhead">컴프리헨션 전체 패턴</div><pre><code>nums = [1, 2, 3, 4, 5, 6]
+prices = [1000, 2000, 3000]
+words = ['sky', 'sea']
+mapping = {'a': 1, 'b': 2}
+rows = [{'branch': '홍대'}, {'branch': '성수'}]
+grid = [[1, 2], [3, 4]]
+codes = [3, -1, 5, -2]
+
+evens = [n for n in nums if n % 2 == 0]
 scaled = [p * 1.05 for p in prices]
 name_len = {w: len(w) for w in words}
 inv_map = {v: k for k,v in mapping.items()}
@@ -483,12 +579,18 @@ labels = ['정상' if x&gt;0 else '이상' for x in codes]</code></pre></div>
     <li>yield(값을 하나씩 생성, 일시 중단) — 전체 데이터를 메모리에 올리지 않음</li>
     <li>CSV 수백만 행 스트리밍 처리에 핵심, generator expression(() 괄호 사용), itertools.islice/chain 등과 조합</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">제너레이터 — 메모리 비교</div><pre><code>def stream_rows(path):
+  <div class="sqlbox"><div class="sqlhead">제너레이터 — 메모리 비교</div><pre><code>with open('daily.csv', 'w') as f:
+    f.write('date,branch,amount\n2024-01-01,홍대,1200\n2024-01-02,강남,3400\n')  # 예제를 위해 먼저 작은 파일을 만들어둠
+
+def process(row):
+    print(row)
+
+def stream_rows(path):
     with open(path) as f:
         next(f)  # 헤더 스킵
         for line in f:
             yield line.strip().split(',')
-for row in stream_rows('bigfile.csv'):
+for row in stream_rows('daily.csv'):
     process(row)
 total = sum(float(r[2]) for r in stream_rows('daily.csv'))
 import sys
@@ -593,16 +695,19 @@ def cached_summary(key): ...</code></pre></div>
     <li>csv.DictReader(헤더를 키로 행 읽기), json.load/json.dump(API 응답 처리)</li>
     <li>Parquet(컬럼형 포맷, CSV보다 10× 빠른 읽기)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">pathlib + CSV/JSON/Parquet</div><pre><code>from pathlib import Path
+  <div class="sqlbox"><div class="sqlhead">pathlib + CSV/JSON</div><pre><code>from pathlib import Path
 import json, csv
 data_dir = Path('data')
+data_dir.mkdir(exist_ok=True)
+(data_dir/'payload.json').write_text(json.dumps({'branch': '홍대', 'revenue': 1200}))  # 예제를 위해 먼저 파일을 만들어둠
+with open(data_dir/'orders.csv', 'w') as f:
+    f.write('branch,revenue\n홍대,1200\n강남,3400\n')
+
 with open(data_dir/'payload.json') as f:
     data = json.load(f)
 with open(data_dir/'orders.csv') as f:
     rows = list(csv.DictReader(f))
-import pandas as pd
-df = pd.read_parquet(data_dir/'orders.parquet')
-df.to_parquet(data_dir/'orders_clean.parquet')</code></pre></div>
+print(data, rows)</code></pre></div>
 
   <h4>예외 처리 — 파이프라인 안정성 패턴</h4>
   <ul class="b">
@@ -637,11 +742,12 @@ logger = logging.getLogger('etl')
 logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
-fh = TimedRotatingFileHandler('logs/etl.log', when='midnight', backupCount=14, encoding='utf-8')
+fh = TimedRotatingFileHandler('etl.log', when='midnight', backupCount=14, encoding='utf-8')
 fh.setLevel(logging.DEBUG)
 fmt = logging.Formatter('%(asctime)s|%(levelname)s|%(message)s')
 [h.setFormatter(fmt) for h in [ch,fh]]
-[logger.addHandler(h) for h in [ch,fh]]</code></pre></div>
+[logger.addHandler(h) for h in [ch,fh]]
+logger.info('ETL 시작')</code></pre></div>
 
   <h4>.env 기반 환경변수 — 보안과 이식성</h4>
   <ul class="b">
@@ -734,6 +840,9 @@ class OrderRow(BaseModel):
     date: str
     revenue: float
     branch: str
+with open('orders.csv', 'w') as f:
+    f.write('date,revenue,branch\n2024-01-01,1200,홍대\n2024-01-02,not_a_number,강남\n')  # 검증 예제를 위해 먼저 파일을 만들어둠(두 번째 행은 일부러 오류 데이터)
+
 valid, errors = [], []
 with open('orders.csv') as f:
     for i, row in enumerate(csv.DictReader(f)):
@@ -947,8 +1056,12 @@ with ProcessPoolExecutor(max_workers=n_cores) as exe:
     <li>VS Code — cProfile 결과를 시각화 확장으로 활용</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">timeit / cProfile / getsizeof</div><pre><code>import timeit, cProfile, sys
+
+def run_analysis(n):
+    return sum(i * i for i in range(n))
+
 t = timeit.timeit("''.join(chars)", setup="chars=['a']*2000", number=5000)
-cProfile.run('run_analysis(df)', sort='cumtime')
+cProfile.run('run_analysis(20000)', sort='cumtime')
 lst = list(range(20000))
 gen = (n for n in range(20000))
 print(sys.getsizeof(lst))  # ~164KB
@@ -1054,6 +1167,8 @@ print(sys.getsizeof(gen))  # ~112B</code></pre></div>
     <li>head/tail/sample()(행 샘플 확인), dtypes(타입 확인)/astype()(타입 변환)</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">기초 EDA 패턴</div><pre><code>import pandas as pd
+pd.DataFrame({'date': ['2024-01-01','2024-01-02','2024-01-03'], 'revenue': [1200, 1800, 900], 'branch': ['홍대','강남','홍대']}).to_csv('orders.csv', index=False)  # EDA 예제를 위해 먼저 파일을 만들어둠
+
 df = pd.read_csv('orders.csv')
 df.shape
 df.info()
@@ -1071,7 +1186,10 @@ df.loc[df['revenue']&gt;1500]</code></pre></div>
     <li>fillna(수치=평균/중앙값, 범주형=최빈값), dropna(subset 지정으로 특정 컬럼만)</li>
     <li>IQR(사분위 범위로 이상치 탐지·제거)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">결측치 처리 &amp; IQR 이상치 제거</div><pre><code>df.isna().sum()
+  <div class="sqlbox"><div class="sqlhead">결측치 처리 &amp; IQR 이상치 제거</div><pre><code>import pandas as pd, numpy as np
+df = pd.DataFrame({'date': ['2024-01-01','2024-01-05','2024-02-01','2024-02-15'], 'revenue': [1200, np.nan, 9800, 1500], 'category': ['음료','음식', None, '음료']})
+
+df.isna().sum()
 df.isna().sum() / len(df) * 100
 df['revenue'].fillna(df['revenue'].median())
 df['category'].fillna(df['category'].mode()[0])
@@ -1087,7 +1205,12 @@ df_clean = df[df['revenue'].between(lo, hi)]</code></pre></div>
     <li>groupby+agg()(다중 집계 한 번에), named aggregation(결과 컬럼명 지정)</li>
     <li>pivot_table(엑셀 피벗 테이블과 동일), merge(SQL JOIN: inner/left/right/outer), join(인덱스 기준 결합, merge 간편 버전)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">groupby named aggregation / pivot_table / merge</div><pre><code>monthly = df.groupby('month').agg(
+  <div class="sqlbox"><div class="sqlhead">groupby named aggregation / pivot_table / merge</div><pre><code>import pandas as pd
+df = pd.DataFrame({'month': [1,1,2,2], 'branch': ['홍대','강남','홍대','강남'], 'category': ['음료','음식','음료','음식'], 'revenue': [1200, 3400, 900, 2200]})
+df_orders = pd.DataFrame({'member_id': [1, 2, 3], 'amount': [1000, 2000, 1500]})
+df_members = pd.DataFrame({'member_id': [1, 2], 'grade': ['Gold', 'Silver']})
+
+monthly = df.groupby('month').agg(
     revenue=('revenue','sum'), cnt=('revenue','count'), avg=('revenue','mean')
 ).reset_index()
 pivot = df.pivot_table(values='revenue', index='branch', columns='category', aggfunc='sum', fill_value=0)
@@ -1095,7 +1218,10 @@ result = pd.merge(df_orders, df_members, on='member_id', how='left')</code></pre
 
   <h4>Pandas 2.x — Copy-on-Write(CoW) 동작 이해</h4>
   <p>2.0부터 기본 활성화. 뷰(View)를 수정하면 경고/오류 → 명시적 copy() 또는 assign() 사용이 필요하다.</p>
-  <div class="sqlbox"><div class="sqlhead">CoW 경고 발생 vs 안전한 패턴</div><pre><code>df_hongdae = df[df['branch'] == '홍대']
+  <div class="sqlbox"><div class="sqlhead">CoW 경고 발생 vs 안전한 패턴</div><pre><code>import pandas as pd
+df = pd.DataFrame({'branch': ['홍대','강남','홍대'], 'revenue': [1200.0, 3400.0, 900.0]})
+
+df_hongdae = df[df['branch'] == '홍대']
 df_hongdae['revenue'] = df_hongdae['revenue'] * 1.1  # 경고!
 df_hongdae = df[df['branch'] == '홍대'].copy()
 df_hongdae['revenue'] *= 1.1
@@ -1107,7 +1233,10 @@ df.loc[df['branch'] == '홍대', 'revenue'] *= 1.1</code></pre></div>
     <li>apply()(행/열 단위로 Python 함수 적용), 벡터화 연산(NumPy 수준 속도, C 레벨)</li>
     <li>apply()는 편리하지만 느림(Python 루프), str 접근자(.str.lower()/.str.contains()), dt 접근자(.dt.year/.dt.month 날짜 처리)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">apply() vs 벡터화 연산 (str/dt 접근자)</div><pre><code>df['upper'] = df['item'].apply(lambda x: x.upper())  # 느림
+  <div class="sqlbox"><div class="sqlhead">apply() vs 벡터화 연산 (str/dt 접근자)</div><pre><code>import pandas as pd
+df = pd.DataFrame({'item': ['coffee','tea','latte'], 'date': ['2024-01-01','2024-02-15','2024-03-20']})
+
+df['upper'] = df['item'].apply(lambda x: x.upper())  # 느림
 df['upper'] = df['item'].str.upper()  # 빠름
 df['date'] = pd.to_datetime(df['date'])
 df['year'] = df['date'].dt.year
@@ -1247,6 +1376,11 @@ duckdb.sql("""
     <li>subplot()으로 여러 차트 나란히, 색상·스타일·범례·제목·그리드 설정, savefig()로 PNG/PDF 고해상도 저장</li>
   </ul>
   <div class="sqlbox"><div class="sqlhead">Matplotlib 서브플롯 예시</div><pre><code>import matplotlib.pyplot as plt
+months = ['1월','2월','3월','4월']
+revenue = [1200, 1800, 1500, 2100]
+branches = ['홍대','강남','성수']
+values = [3200, 4100, 2600]
+
 fig, axes = plt.subplots(1,2,figsize=(12,5))
 axes[0].plot(months, revenue, color='darkorange', lw=2, marker='o', label='매출')
 axes[0].set_title('월별 매출 추이')
@@ -1261,7 +1395,10 @@ plt.savefig('summary.png', dpi=150, bbox_inches='tight')</code></pre></div>
     <li>Matplotlib 기반의 high-level 인터페이스, hue·size·style로 다차원 정보 인코딩</li>
     <li>boxplot·violinplot(분포 비교), heatmap(상관행렬·결측치 패턴), pairplot(모든 변수 쌍 산점도 한번에)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">Seaborn heatmap / boxplot / histplot</div><pre><code>import seaborn as sns
+  <div class="sqlbox"><div class="sqlhead">Seaborn heatmap / boxplot / histplot</div><pre><code>import pandas as pd, matplotlib.pyplot as plt
+import seaborn as sns
+df = pd.DataFrame({'branch': ['홍대','강남','홍대','강남','홍대','강남'], 'category': ['음료','음식','음식','음료','음료','음식'], 'revenue': [1200, 3400, 900, 2200, 1500, 2800], 'visits': [30, 55, 20, 40, 35, 48]})
+
 corr = df.select_dtypes('number').corr()
 fig, axes = plt.subplots(2,2,figsize=(12,10))
 sns.heatmap(corr, annot=True, cmap='viridis', fmt='.2f', ax=axes[0,0])
@@ -1313,8 +1450,11 @@ chart.save('viz.html')
     <li>중심 경향(평균·중앙값·최빈값 차이), 산포도(분산·표준편차·IQR·범위)</li>
     <li>분포 모양(왜도skewness·첨도kurtosis), 상관계수(-1~+1, 선형 관계 강도), Pandas describe()+corr() 실전</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">기술통계 &amp; 정규분포 검정</div><pre><code>import numpy as np
+  <div class="sqlbox"><div class="sqlhead">기술통계 &amp; 정규분포 검정</div><pre><code>import numpy as np, pandas as pd
 from scipy import stats
+np.random.seed(0)
+df = pd.DataFrame({'revenue': np.random.normal(2000, 400, 30), 'visits': np.random.randint(10, 60, 30), 'age': np.random.randint(20, 50, 30)})
+
 df.describe()
 df['revenue'].skew()
 df['revenue'].kurt()
@@ -1330,7 +1470,16 @@ print(f'정규분포 검정 p값: {p:.4f}')</code></pre></div>
     <li>귀무가설(H0) vs 대립가설(H1) 설정, 유의수준 α=0.05(p값 기준)</li>
     <li>t-test(두 그룹 평균 차이 검정), 카이제곱(범주형 변수 독립성 검정), p&lt;0.05 → H0 기각(통계적 유의)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">t-test / chi2_contingency</div><pre><code>from scipy import stats
+  <div class="sqlbox"><div class="sqlhead">t-test / chi2_contingency</div><pre><code>import numpy as np, pandas as pd
+from scipy import stats
+np.random.seed(0)
+df = pd.DataFrame({
+    'cohort': ['A']*15 + ['B']*15,
+    'revenue': list(np.random.normal(2000, 300, 15)) + list(np.random.normal(2300, 300, 15)),
+    'branch': ['홍대','강남']*15,
+    'purchased': np.random.randint(0, 2, 30)
+})
+
 group_a = df[df['cohort']=='A']['revenue']
 group_b = df[df['cohort']=='B']['revenue']
 t, p = stats.ttest_ind(group_a, group_b)
@@ -1349,11 +1498,21 @@ chi2, p, dof, expected = chi2_contingency(ct)</code></pre></div>
     <li>Pipeline(전처리→모델을 하나의 객체로), ColumnTransformer(수치·범주 컬럼 분리 처리)</li>
     <li>fit()(학습)/predict()(예측)/transform()(변환), joblib.dump/load(파이프라인 직렬화)</li>
   </ul>
-  <div class="sqlbox"><div class="sqlhead">ColumnTransformer + Pipeline + joblib</div><pre><code>from sklearn.pipeline import Pipeline
+  <div class="sqlbox"><div class="sqlhead">ColumnTransformer + Pipeline + joblib</div><pre><code>import pandas as pd
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import Ridge
+from sklearn.model_selection import train_test_split
 import joblib
+
+numeric_cols = ['visits', 'age']
+category_cols = ['branch']
+df = pd.DataFrame({'visits': [30,55,20,40,35,48,60,15], 'age': [25,34,41,29,33,45,38,22],
+                    'branch': ['홍대','강남','홍대','강남','홍대','강남','홍대','강남'],
+                    'revenue': [1200,3400,900,2200,1500,2800,3900,700]})
+X_train, X_test, y_train, y_test = train_test_split(df[numeric_cols+category_cols], df['revenue'], test_size=0.25, random_state=0)
+
 preproc = ColumnTransformer([
     ('num', StandardScaler(), numeric_cols),
     ('cat', OneHotEncoder(), category_cols)])
@@ -1789,6 +1948,57 @@ $ jupyter nbconvert --to html notebooks/01_explore.ipynb
 </div>
 <button class="top-btn" id="topBtn" title="맨 위로">↑</button>
 
+<button id="pyToggle">🐍 Python 연습장</button>
+<div id="pyDrawer">
+  <div class="py-head">
+    <h3>🐍 Python 연습장 — 브라우저에서 직접 실행되는 실습용 Python(Pyodide)</h3>
+    <div class="py-actions">
+      <span class="pg-info" id="pyStatus">엔진 로딩 중...</span>
+      <button class="py-close" id="pyClose">×</button>
+    </div>
+  </div>
+  <div class="py-body">
+    <div class="py-side">
+      <div class="py-tabs">
+        <button class="py-tab active" id="pyTabGuide">📖 가이드</button>
+        <button class="py-tab" id="pyTabExercise">✏️ 연습문제</button>
+      </div>
+      <div id="pyGuidePanel">
+        <h4>사용법</h4>
+        <div>① 에디터에 Python 코드 입력 → ② 실행 버튼(또는 Ctrl+Enter) → ③ 결과 확인.</div>
+        <h4>참고</h4>
+        <div>본문의 <b>"▶ 연습장에서 실행"</b> 버튼을 누르면 그 예제가 자동으로 채워지고 바로 실행돼요.</div>
+        <div style="margin-top:8px;">numpy/pandas/matplotlib/scipy/scikit-learn/seaborn/pydantic/duckdb를 import하면 필요한 패키지를 자동으로 불러와요(처음 한 번은 시간이 좀 걸려요).</div>
+        <div style="margin-top:8px;">⚠️ 브라우저 환경 특성상 threading/multiprocessing의 실제 병렬 실행, Polars, 실제 네트워크 호출(httpx 등)은 지원하지 않아요.</div>
+      </div>
+      <div id="pyExercisePanel" class="ex-list" style="display:none;"><div style="font-size:11px;color:var(--muted);margin:10px 0 4px;">Day 1</div>
+<button class="ex-item" data-idx="0"><span class="tag">#1</span>dis 모듈</button>
+<button class="ex-item" data-idx="1"><span class="tag">#2</span>컴프리헨션</button>
+<button class="ex-item" data-idx="2"><span class="tag">#3</span>파일 예외 처리</button>
+<button class="ex-item" data-idx="3"><span class="tag">#4</span>Pydantic 모델</button>
+<button class="ex-item" data-idx="4"><span class="tag">#5</span>assert 테스트</button>
+<button class="ex-item" data-idx="5"><span class="tag">#6</span>asyncio.gather</button>
+<div style="font-size:11px;color:var(--muted);margin:10px 0 4px;">Day 2</div>
+<button class="ex-item" data-idx="6"><span class="tag">#7</span>Pandas groupby</button>
+<button class="ex-item" data-idx="7"><span class="tag">#8</span>DuckDB SQL</button>
+<button class="ex-item" data-idx="8"><span class="tag">#9</span>그래프 그리기</button>
+<button class="ex-item" data-idx="9"><span class="tag">#10</span>Numpy 통계</button>
+<button class="ex-item" data-idx="10"><span class="tag">#11</span>함수 파이프라인</button>
+<button class="ex-item" data-idx="11"><span class="tag">#12</span>클래스 모듈화</button></div>
+    </div>
+    <div class="py-main">
+      <div id="pyExerciseCurrent" class="ex-current" style="display:none;"></div>
+      <textarea id="pyEditor" spellcheck="false">print("hello, python!")</textarea>
+      <div class="py-btnrow">
+        <button class="py-run" id="pyRun">▶ 실행 (Ctrl+Enter)</button>
+        <button class="py-clear" id="pyClear">지우기</button>
+      </div>
+      <div class="py-result" id="pyResult"><div class="pg-info">코드를 실행하면 결과가 여기 표시됩니다.</div></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 <script>
   const links = document.querySelectorAll('.navlink');
   const sections = document.querySelectorAll('.sec');
@@ -1864,6 +2074,18 @@ $ jupyter nbconvert --to html notebooks/01_explore.ipynb
     code.innerHTML = highlightPy(code.textContent);
   });
 
+  // ---- shared header-actions wrapper for copy/run buttons ----
+  function getSqlheadActions(head){
+    let actions = head.querySelector('.sqlhead-actions');
+    if(!actions){
+      actions = document.createElement('span');
+      actions.className = 'sqlhead-actions';
+      actions.style.cssText = 'display:flex; gap:6px;';
+      head.appendChild(actions);
+    }
+    return actions;
+  }
+
   // ---- Copy button for code boxes ----
   document.querySelectorAll('.sqlbox').forEach(box=>{
     const head = box.querySelector('.sqlhead');
@@ -1881,7 +2103,7 @@ $ jupyter nbconvert --to html notebooks/01_explore.ipynb
       btn.classList.add('copied');
       setTimeout(()=>{ btn.textContent = '복사'; btn.classList.remove('copied'); }, 1500);
     });
-    head.appendChild(btn);
+    getSqlheadActions(head).appendChild(btn);
   });
 
   // ---- Quiz interactivity ----
@@ -1966,6 +2188,207 @@ $ jupyter nbconvert --to html notebooks/01_explore.ipynb
     }
     btn.addEventListener('click', check);
     input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); });
+  });
+
+  // ---- Python 연습장 (Pyodide) ----
+  const PY_EXERCISES = [
+    {"title": "dis 모듈", "prompt": "dis 모듈로 함수의 바이트코드를 확인하세요.", "starter": "import dis\ndef add(a, b):\n    return a + b\ndis.___(add)", "answer": "import dis\ndef add(a, b):\n    return a + b\ndis.dis(add)"},
+    {"title": "컴프리헨션", "prompt": "짝수만 골라 제곱한 리스트를 컴프리헨션으로 만드세요.", "starter": "nums = [1, 2, 3, 4, 5]\nsquares = [n**2 for n in nums if n % 2 ___ 0]\nprint(squares)", "answer": "nums = [1, 2, 3, 4, 5]\nsquares = [n**2 for n in nums if n % 2 == 0]\nprint(squares)"},
+    {"title": "파일 예외 처리", "prompt": "존재하지 않는 파일을 열 때 발생하는 예외를 처리하세요.", "starter": "try:\n    with open('missing.txt') as f:\n        print(f.read())\nexcept ___:\n    print('파일이 없어요')", "answer": "try:\n    with open('missing.txt') as f:\n        print(f.read())\nexcept FileNotFoundError:\n    print('파일이 없어요')"},
+    {"title": "Pydantic 모델", "prompt": "revenue 필드를 실수형으로 검증하는 Pydantic 모델을 완성하세요.", "starter": "from pydantic import BaseModel\nclass Order(BaseModel):\n    branch: str\n    revenue: ___\no = Order(branch='홍대', revenue=1200)\nprint(o)", "answer": "from pydantic import BaseModel\nclass Order(BaseModel):\n    branch: str\n    revenue: float\no = Order(branch='홍대', revenue=1200)\nprint(o)"},
+    {"title": "assert 테스트", "prompt": "assert로 함수 결과를 검증하는 테스트를 완성하세요.", "starter": "def add(a, b):\n    return a + b\n\ndef test_add():\n    assert add(2, 3) ___ 5\n    print('테스트 통과')\ntest_add()", "answer": "def add(a, b):\n    return a + b\n\ndef test_add():\n    assert add(2, 3) == 5\n    print('테스트 통과')\ntest_add()"},
+    {"title": "asyncio.gather", "prompt": "asyncio.gather로 여러 코루틴을 동시에 실행하세요. (브라우저에서는 asyncio.run() 대신 await로 직접 실행)", "starter": "import asyncio\nasync def fetch(n):\n    await asyncio.sleep(0.1)\n    return n * 2\nasync def main():\n    results = await asyncio.___(fetch(1), fetch(2), fetch(3))\n    print(results)\nawait main()", "answer": "import asyncio\nasync def fetch(n):\n    await asyncio.sleep(0.1)\n    return n * 2\nasync def main():\n    results = await asyncio.gather(fetch(1), fetch(2), fetch(3))\n    print(results)\nawait main()"},
+    {"title": "Pandas groupby", "prompt": "지점별 매출 합계를 groupby로 구하세요.", "starter": "import pandas as pd\ndf = pd.DataFrame({'branch': ['홍대','강남','홍대'], 'revenue': [1200, 3400, 900]})\nresult = df.groupby('branch')['revenue'].___()\nprint(result)", "answer": "import pandas as pd\ndf = pd.DataFrame({'branch': ['홍대','강남','홍대'], 'revenue': [1200, 3400, 900]})\nresult = df.groupby('branch')['revenue'].sum()\nprint(result)"},
+    {"title": "DuckDB SQL", "prompt": "DuckDB로 간단한 SQL을 실행하세요.", "starter": "import duckdb\nresult = duckdb.sql(\"SELECT ___ AS greeting\").fetchone()\nprint(result)", "answer": "import duckdb\nresult = duckdb.sql(\"SELECT 'hello duckdb' AS greeting\").fetchone()\nprint(result)"},
+    {"title": "그래프 그리기", "prompt": "지점별 매출을 막대그래프로 그리세요.", "starter": "import matplotlib.pyplot as plt\nbranches = ['홍대','강남','성수']\nvalues = [1200, 3400, 900]\nplt.___(branches, values)\nplt.title('지점별 매출')\nplt.show()", "answer": "import matplotlib.pyplot as plt\nbranches = ['홍대','강남','성수']\nvalues = [1200, 3400, 900]\nplt.bar(branches, values)\nplt.title('지점별 매출')\nplt.show()"},
+    {"title": "Numpy 통계", "prompt": "numpy 배열의 평균과 표준편차를 구하세요.", "starter": "import numpy as np\nrevenue = np.array([1200, 3400, 900, 2200])\nprint(revenue.mean(), revenue.___())", "answer": "import numpy as np\nrevenue = np.array([1200, 3400, 900, 2200])\nprint(revenue.mean(), revenue.std())"},
+    {"title": "함수 파이프라인", "prompt": "여러 함수를 순서대로 적용하는 파이프라인을 완성하세요.", "starter": "def clean(x):\n    return x.strip()\ndef upper(x):\n    return x.upper()\ndef pipeline(*funcs):\n    def run(x):\n        for f in funcs:\n            x = f(x)\n        return x\n    return run\nprocess = pipeline(clean, ___)\nprint(process('  hello  '))", "answer": "def clean(x):\n    return x.strip()\ndef upper(x):\n    return x.upper()\ndef pipeline(*funcs):\n    def run(x):\n        for f in funcs:\n            x = f(x)\n        return x\n    return run\nprocess = pipeline(clean, upper)\nprint(process('  hello  '))"},
+    {"title": "클래스 모듈화", "prompt": "음수를 제거하는 메서드를 가진 클래스를 완성하세요.", "starter": "class DataCleaner:\n    def __init__(self, data):\n        self.data = data\n    def drop_negative(self):\n        self.data = [x for x in self.data if x ___ 0]\n        return self\ncleaner = DataCleaner([1, -2, 3, -4]).drop_negative()\nprint(cleaner.data)", "answer": "class DataCleaner:\n    def __init__(self, data):\n        self.data = data\n    def drop_negative(self):\n        self.data = [x for x in self.data if x >= 0]\n        return self\ncleaner = DataCleaner([1, -2, 3, -4]).drop_negative()\nprint(cleaner.data)"}
+  ];
+
+  let pyodideInstance = null;
+  let pyReady = false;
+  let seabornLoaded = false;
+  let dotenvLoaded = false;
+  const pyOutBuf = [];
+
+  const pyToggle = document.getElementById('pyToggle');
+  const pyDrawer = document.getElementById('pyDrawer');
+  const pyClose = document.getElementById('pyClose');
+  const pyStatus = document.getElementById('pyStatus');
+  const pyEditor = document.getElementById('pyEditor');
+  const pyRun = document.getElementById('pyRun');
+  const pyClear = document.getElementById('pyClear');
+  const pyResult = document.getElementById('pyResult');
+  const pyTabGuide = document.getElementById('pyTabGuide');
+  const pyTabExercise = document.getElementById('pyTabExercise');
+  const guidePanel = document.getElementById('pyGuidePanel');
+  const exercisePanel = document.getElementById('pyExercisePanel');
+  const exerciseCurrent = document.getElementById('pyExerciseCurrent');
+
+  function openPyDrawer(){ pyDrawer.classList.add('open'); }
+  function closePyDrawer(){ pyDrawer.classList.remove('open'); }
+  pyToggle.addEventListener('click', ()=>{
+    pyDrawer.classList.contains('open') ? closePyDrawer() : openPyDrawer();
+  });
+  pyClose.addEventListener('click', closePyDrawer);
+  document.getElementById('exerciseNavBtn').addEventListener('click', ()=>{
+    openPyDrawer();
+    pyTabExercise.click();
+  });
+
+  pyTabGuide.addEventListener('click', ()=>{
+    pyTabGuide.classList.add('active'); pyTabExercise.classList.remove('active');
+    guidePanel.style.display=''; exercisePanel.style.display='none';
+  });
+  pyTabExercise.addEventListener('click', ()=>{
+    pyTabExercise.classList.add('active'); pyTabGuide.classList.remove('active');
+    guidePanel.style.display='none'; exercisePanel.style.display='';
+  });
+
+  function loadPyExercise(idx){
+    const ex = PY_EXERCISES[idx];
+    document.querySelectorAll('#pyExercisePanel .ex-item').forEach(b=>b.classList.toggle('active', b.dataset.idx==idx));
+    exerciseCurrent.style.display = '';
+    exerciseCurrent.innerHTML = '<b>' + ex.title + '</b><br>' + ex.prompt +
+      '<div class="ex-btnrow"><button class="ex-answer-btn" id="pyShowAnswerBtn">정답 보기</button></div>';
+    pyEditor.value = ex.starter;
+    document.getElementById('pyShowAnswerBtn').addEventListener('click', ()=>{
+      pyEditor.value = ex.answer;
+    });
+    openPyDrawer();
+    pyTabExercise.click();
+  }
+  document.querySelectorAll('#pyExercisePanel .ex-item').forEach(btn=>{
+    btn.addEventListener('click', ()=> loadPyExercise(parseInt(btn.dataset.idx)));
+  });
+
+  async function initPyodideEngine(){
+    pyodideInstance = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/' });
+    pyodideInstance.setStdout({ batched: (msg) => pyOutBuf.push(msg) });
+    pyodideInstance.setStderr({ batched: (msg) => {
+      if(/Matplotlib is currently using agg/.test(msg)) return;
+      if(/Glyph \d+.*missing from current font/.test(msg)) return;
+      pyOutBuf.push(msg);
+    }});
+    pyReady = true;
+    pyStatus.textContent = '준비 완료 ✓';
+  }
+  initPyodideEngine().catch(()=>{ pyStatus.textContent = '로딩 실패 (인터넷 연결을 확인하세요)'; });
+
+  async function ensurePyPackages(code){
+    const needed = [];
+    if(/\bnumpy\b/.test(code)) needed.push('numpy');
+    if(/\bpandas\b/.test(code)) needed.push('pandas');
+    if(/\bmatplotlib\b/.test(code)) needed.push('matplotlib');
+    if(/\bscipy\b/.test(code)) needed.push('scipy');
+    if(/\bsklearn\b/.test(code)) needed.push('scikit-learn');
+    if(/\bpydantic\b/.test(code)) needed.push('pydantic');
+    if(/\bduckdb\b/.test(code)) needed.push('duckdb');
+    if(needed.length){
+      pyStatus.textContent = '패키지 로딩 중(' + needed.join(', ') + ')...';
+      await pyodideInstance.loadPackage(needed);
+    }
+    if(/\bseaborn\b/.test(code) && !seabornLoaded){
+      pyStatus.textContent = '패키지 로딩 중(seaborn)...';
+      await pyodideInstance.loadPackage('micropip');
+      const micropip = pyodideInstance.pyimport('micropip');
+      await micropip.install('seaborn');
+      seabornLoaded = true;
+    }
+    if(/\bdotenv\b/.test(code) && !dotenvLoaded){
+      pyStatus.textContent = '패키지 로딩 중(python-dotenv)...';
+      await pyodideInstance.loadPackage('micropip');
+      const micropip = pyodideInstance.pyimport('micropip');
+      await micropip.install('python-dotenv');
+      dotenvLoaded = true;
+    }
+    pyStatus.textContent = '준비 완료 ✓';
+  }
+
+  async function runPyCode(){
+    if(!pyReady){ pyResult.innerHTML = '<div class="pg-info">엔진이 아직 로딩 중이에요. 잠시 후 다시 시도해주세요.</div>'; return; }
+    const code = pyEditor.value;
+    pyOutBuf.length = 0;
+    let errMsg = '', imgs = [], lastExpr = '';
+    try{
+      await ensurePyPackages(code);
+      if(/matplotlib/.test(code)){
+        pyodideInstance.runPython("import matplotlib\nmatplotlib.use('Agg')");
+      }
+      const lastResult = await pyodideInstance.runPythonAsync(code);
+      if(lastResult !== undefined){
+        try{ lastExpr = lastResult.toString(); }catch(e){}
+        if(lastResult && typeof lastResult.destroy === 'function') lastResult.destroy();
+      }
+      if(/matplotlib/.test(code)){
+        try{
+          const figsJson = pyodideInstance.runPython(
+            "import matplotlib.pyplot as _plt, io as _io, base64 as _b64, json as _json\n" +
+            "_figs = []\n" +
+            "for _n in _plt.get_fignums():\n" +
+            "    _f = _plt.figure(_n)\n" +
+            "    _buf = _io.BytesIO()\n" +
+            "    _f.savefig(_buf, format='png', bbox_inches='tight')\n" +
+            "    _buf.seek(0)\n" +
+            "    _figs.append(_b64.b64encode(_buf.read()).decode('ascii'))\n" +
+            "_plt.close('all')\n" +
+            "_json.dumps(_figs)\n"
+          );
+          imgs = JSON.parse(figsJson);
+        }catch(e){ /* figure capture is best-effort */ }
+      }
+    }catch(e){
+      errMsg = e.message;
+    }
+    let html = '';
+    const text = pyOutBuf.join('\n');
+    if(text) html += '<pre>' + escapeHtml(text) + '</pre>';
+    if(lastExpr) html += '<pre class="py-outexpr">Out: ' + escapeHtml(lastExpr) + '</pre>';
+    imgs.forEach(b64 => { html += '<img class="py-figure" src="data:image/png;base64,' + b64 + '">'; });
+    if(errMsg) html += '<div class="pg-error">오류:\n' + escapeHtml(errMsg) + '</div>';
+    if(!text && !errMsg && !lastExpr && imgs.length===0) html = '<div class="pg-info">실행 완료 — 출력이 없습니다.</div>';
+    pyResult.innerHTML = html;
+  }
+  pyRun.addEventListener('click', runPyCode);
+  pyEditor.addEventListener('keydown', (e)=>{
+    if((e.ctrlKey || e.metaKey) && e.key==='Enter'){ runPyCode(); }
+  });
+  pyClear.addEventListener('click', ()=>{ pyEditor.value=''; pyEditor.focus(); });
+
+  // ---- inject "▶ 연습장에서 실행" buttons into code boxes ----
+  function isUnrunnable(code){
+    if(/\.start\(\)/.test(code) && /\b(threading|multiprocessing)\b/.test(code)) return true;
+    if(/ProcessPoolExecutor|ThreadPoolExecutor/.test(code)) return true;
+    if(/\bpolars\b|\bpl\.(read_csv|scan_csv|DataFrame|col)\(/.test(code)) return true;
+    if(/\bduckdb\.sql\(/.test(code) && /\*\.csv|\.parquet|FROM\s+'/.test(code)) return true;
+    if(/\bhttpx\.|aiohttp\.|requests\.(get|post)/.test(code)) return true;
+    if(/\bplotly\b|\baltair\b/.test(code)) return true;
+    if(/\bimport schedule\b/.test(code)) return true;
+    if(/FileSystemLoader/.test(code)) return true;
+    if(/\bimport pytest\b|\bfrom pytest\b/.test(code)) return true;
+    if(/^\s*\$\s/m.test(code)) return true;               // 셸 커맨드(터미널 세션) 예시
+    if(/[├└│─]/.test(code)) return true;                   // 폴더 구조 다이어그램
+    if(/^\s*\[tool\.|^\s*\[\[/.test(code)) return true;     // TOML/설정 파일
+    return false;
+  }
+  document.querySelectorAll('.sqlbox').forEach(box=>{
+    const head = box.querySelector('.sqlhead');
+    const code = box.querySelector('code');
+    if(!head || !code) return;
+    const text = code.textContent;
+    if(isUnrunnable(text)) return;
+    const actions = getSqlheadActions(head);
+    const btn = document.createElement('button');
+    btn.className = 'run-btn';
+    btn.textContent = '▶ 연습장에서 실행';
+    btn.addEventListener('click', ()=>{
+      pyEditor.value = code.textContent;
+      openPyDrawer();
+      pyTabGuide.click();
+      runPyCode();
+    });
+    actions.appendChild(btn);
   });
 </script>
 </body>
