@@ -1,0 +1,2973 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKALA | Java·Spring Boot·REST API - 복습노트</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#161925; --panel2:#1c2030; --border:#2a2f42;
+    --text:#e6e8ef; --muted:#9aa0b4; --accent:#7c9dff; --accent2:#4fd1c5;
+    --code-bg:#10131c; --code-text:#c9e6ff;
+    --day1:#7c9dff; --day2:#4fd1c5; --day3:#f6ad55; --day4:#f687b3; --day5:#b794f6;
+    --warn:#f6ad55;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6;
+  }
+  .layout{display:flex; min-height:100vh;}
+  .sidebar{
+    width:300px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--border);
+    position:sticky; top:0; height:100vh; overflow-y:auto; padding:20px 14px;
+  }
+  .sidebar h1{font-size:15px; margin:0 6px 4px; color:var(--text); font-weight:700;}
+  .sidebar .sub{font-size:11.5px; color:var(--muted); margin:0 6px 16px;}
+  .search{
+    width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:13px; margin-bottom:14px;
+  }
+  .search:focus{outline:none; border-color:var(--accent);}
+  .day-group{margin-bottom:10px;}
+  .day-title{
+    font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
+    padding:8px 6px 4px; font-weight:700;
+  }
+  .day-title.d1{color:var(--day1);} .day-title.d2{color:var(--day2);}
+  .day-title.d3{color:var(--day3);} .day-title.d4{color:var(--day4);} .day-title.d5{color:var(--day5);}
+  .navlink{
+    display:block; padding:6px 8px; border-radius:6px; color:var(--muted); text-decoration:none;
+    font-size:13px; margin:1px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .navlink:hover{background:var(--panel2); color:var(--text);}
+  .navlink.active{background:rgba(124,157,255,.15); color:var(--accent); font-weight:600;}
+  main{flex:1; padding:32px 40px 120px; max-width:980px;}
+  .page-head{margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border);}
+  .page-head h1{font-size:26px; margin:0 0 8px;}
+  .page-head p{color:var(--muted); font-size:14px; margin:0;}
+  .badges{margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;}
+  .badges span{font-size:11.5px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted);}
+  .sec{margin-bottom:56px; padding-top:8px; scroll-margin-top:20px;}
+  .sec-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .day-badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; color:#0b0d14;}
+  .day-badge.day1{background:var(--day1);} .day-badge.day2{background:var(--day2);}
+  .day-badge.day3{background:var(--day3);} .day-badge.day4{background:var(--day4);} .day-badge.day5{background:var(--day5);}
+  .sec h2{font-size:21px; margin:0; display:flex; gap:8px; align-items:baseline;}
+  .sec h2 .num{color:var(--muted); font-weight:500;}
+  .subtitle{color:var(--muted); font-size:13.5px; margin:6px 0 18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .sec h3{font-size:16px; margin:22px 0 8px; color:var(--text);}
+  .sec h4{font-size:13.5px; margin:14px 0 6px; color:var(--accent2); font-weight:700;}
+  .b{margin:4px 0 14px; padding-left:20px;}
+  .b li{margin:4px 0; font-size:14px;}
+  .b li::marker{color:var(--accent);}
+  p{font-size:14px; margin:8px 0;}
+  .sqlbox{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:10px;
+    margin:12px 0; overflow:hidden;
+  }
+  .sqlhead{
+    font-size:11px; color:var(--muted); padding:7px 12px; border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,.02); letter-spacing:.03em; text-transform:uppercase;
+  }
+  .sqlbox pre{margin:0; padding:12px 14px; overflow-x:auto;}
+  .sqlbox code{
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:13.5px; color:var(--code-text);
+    line-height:1.85; white-space:pre-wrap; word-break:break-word;
+  }
+  .cp{
+    background:rgba(79,209,197,.07); border:1px solid rgba(79,209,197,.3); border-radius:10px;
+    padding:10px 14px; margin:14px 0;
+  }
+  .cphead{color:var(--accent2); font-size:12.5px; font-weight:700; margin-bottom:6px;}
+  .cp ul{margin:0; padding-left:18px;}
+  .cp li{font-size:13px; margin:3px 0; color:#d5f5f0;}
+  table.t{border-collapse:collapse; width:100%; margin:12px 0; font-size:13px;}
+  table.t th{
+    background:var(--panel2); text-align:left; padding:8px 10px; border:1px solid var(--border);
+    color:var(--accent2); font-size:12px;
+  }
+  table.t td{padding:8px 10px; border:1px solid var(--border); color:var(--text); vertical-align:top;}
+  .note{
+    font-size:12.5px; color:var(--warn); background:rgba(246,173,85,.08);
+    border-left:3px solid var(--warn); padding:8px 12px; margin:12px 0; border-radius:4px;
+  }
+  .divider{border:none; border-top:1px solid var(--border); margin:40px 0;}
+  .day-header{
+    margin:60px 0 24px; padding:14px 0; border-bottom:2px solid var(--border);
+  }
+  .day-header h1{font-size:22px; margin:0 0 4px;}
+  .day-header p{color:var(--muted); font-size:13px; margin:0;}
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-thumb{background:#333850; border-radius:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  .top-btn{
+    position:fixed; bottom:24px; right:24px; background:var(--accent); color:#0b0d14;
+    border:none; border-radius:999px; width:44px; height:44px; font-size:18px; cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,.4); display:none;
+  }
+  @media (max-width:900px){
+    .sidebar{position:fixed; z-index:20; transform:translateX(-100%); transition:transform .2s;}
+    .sidebar.open{transform:translateX(0);}
+    main{padding:20px;}
+  }
+  body{ font-size:15px; }
+  main{ padding:36px 48px 160px; max-width:900px; }
+  .sec{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:22px 26px 26px; margin-bottom:28px; box-shadow:0 1px 0 rgba(255,255,255,.02) inset;
+  }
+  .sec-head{margin-bottom:2px;}
+  .sec h2{font-size:20px;}
+  .subtitle{font-size:13.5px; line-height:1.55; margin-bottom:16px;}
+  p, .b li, .cp li, table.t td{font-size:14.5px; line-height:1.75;}
+  .b{padding-left:22px;}
+  .b li{margin:6px 0;}
+  h4{letter-spacing:.01em;}
+  .day-header{
+    background:linear-gradient(180deg, rgba(124,157,255,.08), transparent);
+    border-radius:12px; padding:20px 22px; border-bottom:none; border:1px solid var(--border);
+  }
+  .day-header h1{font-size:23px;}
+
+  body.light{
+    --bg:#f7f8fc; --panel:#ffffff; --panel2:#f0f2f9; --border:#e2e5f0;
+    --text:#20232e; --muted:#6b7180; --accent:#3f5fd6; --accent2:#0f9488;
+    --code-bg:#f4f6fb; --code-text:#1d3b6b; --warn:#b45309;
+  }
+  body.light .sec{box-shadow:0 1px 3px rgba(20,25,50,.06);}
+  body.light .cp{background:rgba(15,148,136,.07); border-color:rgba(15,148,136,.28);}
+  body.light .cp li{color:#0d4b45;}
+  body.light .sqlbox{border-color:#dde1ee;}
+  body.light table.t th{background:#eef1fa;}
+  body.light .day-header{background:linear-gradient(180deg, rgba(63,95,214,.06), transparent);}
+
+  .toolbar{display:flex; gap:8px; margin-bottom:14px;}
+  .theme-btn{
+    flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:12.5px; cursor:pointer;
+  }
+  .theme-btn:hover{border-color:var(--accent);}
+
+  main{ max-width: 1180px; padding:40px 56px 160px; }
+  @media (min-width:1500px){ main{ max-width: 1320px; } }
+  @media (min-width:1800px){ main{ max-width: 1440px; } }
+
+  .tldr{
+    display:flex; gap:12px; align-items:flex-start; background:rgba(124,157,255,.09);
+    border:1px solid rgba(124,157,255,.35); border-radius:12px; padding:14px 16px; margin:14px 0 18px;
+  }
+  .tldr .icon{font-size:18px; line-height:1.4;}
+  .tldr .txt{font-size:14px; line-height:1.7; color:var(--text);}
+  .tldr .txt b{color:var(--accent);}
+  body.light .tldr{background:rgba(63,95,214,.06); border-color:rgba(63,95,214,.25);}
+
+  .callout{
+    border:1px solid var(--border); background:var(--panel2); border-radius:11px;
+    padding:12px 15px; margin:14px 0;
+  }
+  .callout .ctitle{display:block; font-size:12.5px; font-weight:800; margin-bottom:6px; letter-spacing:.02em;}
+  .callout p{margin:5px 0; font-size:14px; line-height:1.75;}
+  .callout ul{margin:6px 0 2px; padding-left:20px;}
+  .callout li{font-size:14px; line-height:1.7; margin:4px 0;}
+  .callout.goal{background:rgba(79,209,197,.07); border-color:rgba(79,209,197,.3);}
+  .callout.goal .ctitle{color:var(--accent2);}
+  .callout.deep{background:rgba(124,157,255,.07); border-color:rgba(124,157,255,.32);}
+  .callout.deep .ctitle{color:var(--accent);}
+  .callout.myth{background:rgba(246,173,85,.08); border-color:rgba(246,173,85,.32);}
+  .callout.myth .ctitle{color:var(--warn);}
+
+  .faq{margin:12px 0 4px;}
+  .faq details{
+    border:1px solid var(--border); border-radius:10px; background:var(--panel2); margin:8px 0;
+  }
+  .faq summary{
+    cursor:pointer; padding:11px 15px; font-size:14px; font-weight:600; color:var(--text);
+    list-style:none; line-height:1.6;
+  }
+  .faq summary::-webkit-details-marker{display:none;}
+  .faq summary::before{content:"Q. "; color:var(--accent); font-weight:800;}
+  .faq summary:hover{color:var(--accent);}
+  .faq details[open] summary{border-bottom:1px solid var(--border);}
+  .faq .fa{padding:11px 15px 13px; font-size:14px; line-height:1.85;}
+  .faq .fa::before{content:"A. "; color:var(--accent2); font-weight:800;}
+
+  p code, .b li code, table.t td code, .callout code, .faq code{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:.88em; color:var(--code-text);
+  }
+
+  .formula{
+    background:var(--panel2); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin:14px 0; text-align:center;
+  }
+  .formula .expr{
+    font-family:"SF Mono",Menlo,Consolas,monospace;
+    font-size:14.5px; color:var(--text); line-height:2; letter-spacing:.01em;
+  }
+  .formula .expr b{color:var(--accent);}
+  .formula .cap{font-size:12px; color:var(--muted); margin-top:6px; font-style:normal;}
+  body.light .formula{background:#eef1fb;}
+
+  .quiz-wrap{
+    margin:36px 0 60px; background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:24px 28px 28px;
+  }
+  .quiz-wrap h2{font-size:19px; margin:0 0 4px; display:flex; align-items:center; gap:8px;}
+  .quiz-wrap > p{color:var(--muted); font-size:13px; margin:0 0 18px;}
+  .quiz-score{
+    display:inline-block; background:var(--panel2); border:1px solid var(--border); border-radius:999px;
+    padding:4px 14px; font-size:12.5px; color:var(--accent2); font-weight:700; margin-bottom:16px;
+  }
+  .quiz-q{
+    border-top:1px dashed var(--border); padding:16px 0;
+  }
+  .quiz-q:first-of-type{border-top:none;}
+  .quiz-qtext{font-size:14.5px; margin:0 0 10px; font-weight:600;}
+  .quiz-qtext .qtype{
+    font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:5px; margin-right:8px;
+    background:var(--panel2); color:var(--muted); vertical-align:middle;
+  }
+  .quiz-opts{display:flex; flex-wrap:wrap; gap:8px;}
+  .quiz-opt{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:8px 14px; font-size:13px; cursor:pointer; text-align:left;
+  }
+  .quiz-opt:hover{border-color:var(--accent);}
+  .quiz-opt.correct{background:rgba(79,209,197,.18); border-color:var(--accent2); color:var(--accent2); font-weight:700;}
+  .quiz-opt.incorrect{background:rgba(246,135,179,.15); border-color:#f687b3; color:#f687b3;}
+  .quiz-opt[disabled]{cursor:default;}
+  .quiz-short{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .quiz-short input{
+    flex:1; min-width:180px; padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--code-bg); color:var(--text); font-size:13px;
+  }
+  .quiz-check{
+    background:var(--accent); color:#0b0d14; border:none; border-radius:7px; padding:8px 16px;
+    font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+  .quiz-feedback{font-size:12.5px; margin-top:8px; font-weight:600;}
+  .quiz-feedback.ok{color:var(--accent2);}
+  .quiz-feedback.no{color:#f687b3;}
+  .quiz-exp{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-weight:400; font-size:12.5px;
+    line-height:1.6; color:var(--text); background:var(--panel2); border:1px solid var(--border);
+  }
+
+  .site-topbar{
+    display:flex; align-items:center; gap:10px; padding:9px 18px; background:var(--panel2);
+    border-bottom:1px solid var(--border); font-size:12.5px; position:sticky; top:0; z-index:30;
+  }
+  .site-topbar a{color:var(--muted); text-decoration:none;}
+  .site-topbar a:hover{color:var(--accent);}
+  .site-topbar .crumb-sep{color:var(--border);}
+  .site-topbar .crumb-cur{color:var(--text); font-weight:600;}
+
+  /* ===== REST API 연습장 (요청/응답 시뮬레이터) ===== */
+  #rpToggle{
+    position:fixed; right:24px; bottom:80px; z-index:40; background:var(--accent2); color:#0b0d14;
+    border:none; border-radius:999px; padding:12px 18px; font-size:13px; font-weight:700; cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,.35); display:flex; align-items:center; gap:6px;
+  }
+  #rpDrawer{
+    position:fixed; left:0; right:0; bottom:-70vh; height:66vh; background:var(--panel);
+    border-top:1px solid var(--border); z-index:39; transition:bottom .25s ease;
+    box-shadow:0 -8px 30px rgba(0,0,0,.4); display:flex; flex-direction:column;
+  }
+  #rpDrawer.open{bottom:0;}
+  .rp-head{
+    display:flex; align-items:center; justify-content:space-between; padding:10px 18px;
+    border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .rp-head h3{margin:0; font-size:14px;}
+  .rp-head .rp-actions{display:flex; gap:8px; align-items:center;}
+  .rp-close{background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; line-height:1;}
+  .rp-body{display:flex; flex:1; overflow:hidden;}
+  .rp-side{
+    width:250px; flex-shrink:0; border-right:1px solid var(--border); overflow-y:auto; padding:12px 14px;
+    font-size:12px; color:var(--muted);
+  }
+  .rp-side h4{color:var(--accent2); font-size:11.5px; margin:10px 0 6px;}
+  .rp-ex{
+    display:block; width:100%; text-align:left; background:var(--panel2); border:1px solid var(--border);
+    color:var(--text); border-radius:7px; padding:7px 9px; font-size:11.5px; margin-bottom:6px; cursor:pointer;
+  }
+  .rp-ex:hover{border-color:var(--accent);}
+  .rp-ex .m{font-weight:800; margin-right:5px;}
+  .rp-ex .m.GET{color:#4fd1c5;} .rp-ex .m.POST{color:#7c9dff;} .rp-ex .m.PUT{color:#f6ad55;} .rp-ex .m.DELETE{color:#f687b3;}
+  .rp-main{flex:1; display:flex; flex-direction:column; padding:14px 18px; overflow:hidden;}
+  .rp-reqrow{display:flex; gap:8px; margin-bottom:10px;}
+  #rpMethod{
+    padding:9px 10px; border-radius:8px; border:1px solid var(--border); background:var(--code-bg);
+    color:var(--text); font-weight:800; font-size:13px;
+  }
+  #rpPath{
+    flex:1; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--code-bg);
+    color:var(--code-text); font-family:"SF Mono",Menlo,Consolas,monospace; font-size:13px;
+  }
+  #rpBody{
+    width:100%; min-height:80px; max-height:140px; resize:vertical; background:var(--code-bg);
+    color:var(--code-text); border:1px solid var(--border); border-radius:8px; padding:10px 12px;
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:12.5px; line-height:1.6; margin-bottom:10px;
+  }
+  .rp-btnrow{display:flex; gap:8px; margin-bottom:10px;}
+  .rp-send{
+    background:var(--accent2); color:#0b0d14; border:none; border-radius:7px; padding:8px 18px;
+    font-weight:700; font-size:13px; cursor:pointer;
+  }
+  .rp-reset{
+    background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:7px;
+    padding:8px 14px; font-size:12.5px; cursor:pointer;
+  }
+  .rp-result{flex:1; overflow:auto; border:1px solid var(--border); border-radius:8px; padding:0; background:var(--code-bg);}
+  .rp-status{
+    display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid var(--border);
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:12.5px;
+  }
+  .rp-status .code{font-weight:800; padding:2px 8px; border-radius:5px;}
+  .rp-status .code.s2{background:rgba(79,209,197,.18); color:var(--accent2);}
+  .rp-status .code.s4{background:rgba(246,173,85,.18); color:var(--warn);}
+  .rp-status .code.s5{background:rgba(246,135,179,.18); color:#f687b3;}
+  .rp-result pre{margin:0; padding:12px 14px; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:12.5px; color:var(--code-text); white-space:pre-wrap; word-break:break-word;}
+  .rp-info{color:var(--muted); font-size:12.5px; padding:12px 14px;}
+  .rp-guide{
+    background:rgba(79,209,197,.08); border:1px solid rgba(79,209,197,.3); border-radius:10px;
+    padding:10px 14px; margin-bottom:12px; font-size:12.5px; line-height:1.7; color:var(--text);
+  }
+  .rp-guide b{color:var(--accent2);}
+  @media (max-width:900px){
+    .rp-side{display:none;}
+    #rpDrawer{height:80vh;}
+  }
+</style>
+</head>
+
+<body class="light">
+<div class="site-topbar">
+  <a href="../../index.html">🏠 Full-stack 학습 홈</a>
+  <span class="crumb-sep">/</span>
+  <span class="crumb-cur">Java·Spring Boot·REST API</span>
+</div>
+<div class="layout">
+  <nav class="sidebar" id="sidebar">
+    <h1>SKALA Spring Boot·REST API</h1>
+    <p class="sub">Java 기초부터 Spring Boot, JPA, 인증·배포까지 · 복습노트</p>
+    <div class="toolbar">
+      <button class="theme-btn" id="themeBtn">🌙 다크 모드</button>
+    </div>
+    <input class="search" id="searchBox" type="text" placeholder="검색 (예: DI, JPA, JWT, MSA...)">
+    <div class="day-group"><div class="day-title d1">Day 1 — Java 기초와 객체지향</div>
+<a class="navlink" href="#s1" data-sec="1">1. Java 실행 구조와 개발 환경</a>
+<a class="navlink" href="#s2" data-sec="2">2. 객체지향 프로그래밍과 SOLID</a>
+<a class="navlink" href="#s3" data-sec="3">3. Java 기초 문법 — 제어문·배열·메서드</a>
+<a class="navlink" href="#s4" data-sec="4">4. 컬렉션·제네릭·람다와 스트림</a>
+<a class="navlink" href="#quiz-day1" style="color:var(--accent2);">✅ Day1 퀴즈</a>
+</div>
+<div class="day-group"><div class="day-title d2">Day 2 — Spring Boot 시작하기</div>
+<a class="navlink" href="#s5" data-sec="5">5. RESTful API 설계 원칙</a>
+<a class="navlink" href="#s6" data-sec="6">6. Spring과 Spring Boot 개요</a>
+<a class="navlink" href="#s7" data-sec="7">7. Spring Boot 핵심 — IoC·DI·Bean</a>
+<a class="navlink" href="#s8" data-sec="8">8. Configuration과 Profile 관리</a>
+<a class="navlink" href="#quiz-day2" style="color:var(--accent2);">✅ Day2 퀴즈</a>
+</div>
+<div class="day-group"><div class="day-title d3">Day 3 — Spring MVC와 컨테이너</div>
+<a class="navlink" href="#s9" data-sec="9">9. Spring Boot MVC와 Actuator</a>
+<a class="navlink" href="#s10" data-sec="10">10. 컴포넌트 스캔과 Spring 컨테이너</a>
+<a class="navlink" href="#s11" data-sec="11">11. Controller와 HTTP 요청 처리</a>
+<a class="navlink" href="#s12" data-sec="12">12. Lombok과 입력값 검증</a>
+<a class="navlink" href="#s13" data-sec="13">13. 예외 처리(ExceptionHandler)</a>
+<a class="navlink" href="#quiz-day3" style="color:var(--accent2);">✅ Day3 퀴즈</a>
+</div>
+<div class="day-group"><div class="day-title d4">Day 4 — 공통 처리와 데이터 접근</div>
+<a class="navlink" href="#s14" data-sec="14">14. 자동 설정과 로그 관리</a>
+<a class="navlink" href="#s15" data-sec="15">15. AOP(Aspect Oriented Programming)</a>
+<a class="navlink" href="#s16" data-sec="16">16. JPA 기초 — 엔티티와 연관관계 매핑</a>
+<a class="navlink" href="#s17" data-sec="17">17. JPA Repository — 조회와 트랜잭션</a>
+<a class="navlink" href="#s18" data-sec="18">18. SQL Mapper(MyBatis)</a>
+<a class="navlink" href="#quiz-day4" style="color:var(--accent2);">✅ Day4 퀴즈</a>
+</div>
+<div class="day-group"><div class="day-title d5">Day 5 — 문서화·인증·배포</div>
+<a class="navlink" href="#s19" data-sec="19">19. REST API 문서화(OpenAPI/Swagger)</a>
+<a class="navlink" href="#s20" data-sec="20">20. JWT와 Spring Security</a>
+<a class="navlink" href="#s21" data-sec="21">21. 컨테이너 이해 — Docker와 Kubernetes</a>
+<a class="navlink" href="#s22" data-sec="22">22. MSA와 최신 트렌드</a>
+<a class="navlink" href="#quiz-day5" style="color:var(--accent2);">✅ Day5 퀴즈</a>
+</div>
+  </nav>
+  <main>
+    <div class="page-head">
+      <h1>Java·Spring Boot·REST API — 복습노트</h1>
+      <p>Full-stack Engineering(AI캠퍼스) · 5일 과정 · 객체지향/Java 기초부터 Spring Boot 핵심, JPA, 인증·배포·MSA까지 전체 22개 세션 요약</p>
+      <div class="badges">
+        <span>Java·OOP</span><span>Spring Boot</span><span>IoC/DI</span><span>JPA</span>
+        <span>JWT·Security</span><span>Docker·MSA</span><span>🖥 REST API 연습장</span><span>🖥 Day별 퀴즈 포함</span>
+      </div>
+    </div>
+
+    <div class="day-header" id="day1"><h1>Day 1 — Java 기초와 객체지향</h1><p>Java 실행 구조부터 객체지향 프로그래밍, 제어문·컬렉션·람다까지</p></div>
+
+<section class="sec" id="s1" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">1.</span> Java 실행 구조와 개발 환경</h2>
+  </div>
+  <p class="subtitle">JVM·JRE·JDK 관계 · 소스코드에서 실행까지 · IDE 세팅 · Gradle·Maven 빌드 도구</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 자바 코드는 컴퓨터가 바로 이해할 수 없어요. <b>.java → 바이트코드(.class) → JVM이 실행</b>이라는 3단계를 거치죠. 이번 장에서는 이 흐름을 만드는 JDK/JRE/JVM이 각각 뭘 하는 도구인지, 그리고 실무에서는 어떤 환경(IDE, 빌드 도구)으로 개발하는지를 정리해요.</div></div>
+
+  <h3>1) JVM · JRE · JDK — 셋의 관계</h3>
+  <p>자바 생태계를 처음 접하면 이 세 약어부터 헷갈리기 쉬워요. 포함 관계로 이해하면 간단해요: <b>JDK ⊃ JRE ⊃ JVM</b>.</p>
+  <ul class="b">
+  <li><b>JVM(Java Virtual Machine)</b> — 바이트코드(.class 파일)를 실제로 한 줄씩 해석·실행하는 가상 컴퓨터. 운영체제마다 JVM 구현체가 다르기 때문에, 같은 바이트코드가 Windows든 macOS든 리눅스든 동일하게 동작한다("Write Once, Run Anywhere").</li>
+  <li><b>JRE(Java Runtime Environment)</b> — JVM + 자바 표준 라이브러리(java.lang, java.util 등) + 실행에 필요한 파일들의 묶음. "이미 만들어진 자바 프로그램을 실행만 하고 싶다"면 JRE로 충분하다.</li>
+  <li><b>JDK(Java Development Kit)</b> — JRE + 컴파일러(javac), 디버거, 문서화 도구(javadoc) 등 개발에 필요한 도구 일체. 자바로 코드를 "작성하고 빌드"하려면 JDK가 필요하다.</li>
+  </ul>
+  <div class="note">🔑 요즘은 JRE를 따로 설치하는 경우가 드물어요. 개발자는 물론 실행만 하는 환경에서도 보통 JDK를 설치해서 쓰는 게 일반적이에요(버전 관리 도구인 sdkman, jenv 등으로 여러 JDK 버전을 바꿔가며 씁니다).</div>
+
+  <h3>2) 소스코드가 실행되기까지</h3>
+  <p>자바는 "컴파일 언어이면서 동시에 인터프리터 언어"라는 독특한 위치에 있어요. 흐름을 순서대로 따라가 볼게요.</p>
+  <div class="sqlbox"><div class="sqlhead">.java → .class → 실행 흐름</div><pre><code>1. Hello.java 작성 (사람이 읽을 수 있는 소스코드)
+2. javac Hello.java 실행 → Hello.class 생성 (바이트코드로 컴파일)
+3. java Hello 실행 → JVM이 Hello.class를 읽어들여 한 줄씩 해석·실행
+   (내부적으로는 JIT 컴파일러가 자주 실행되는 부분을 기계어로 즉석 변환해 최적화한다)</code></pre></div>
+  <p>즉, 자바는 한 번 <code>javac</code>로 <b>플랫폼에 독립적인 바이트코드</b>로 컴파일해두면, 이후에는 어떤 OS에서든 그 OS에 맞는 JVM만 있으면 똑같이 실행할 수 있어요. C언어처럼 OS별로 다시 컴파일할 필요가 없다는 게 핵심 장점이에요.</p>
+
+  <h3>3) 개발 환경 세팅 — IDE</h3>
+  <p>실무에서는 메모장이 아니라 IDE(통합 개발 환경)를 써요. 자동완성, 오류 표시, 디버깅, 리팩토링 도구가 한데 묶여 있어 생산성이 크게 올라가기 때문이에요.</p>
+  <table class="t"><thead><tr><th>IDE</th><th>특징</th></tr></thead>
+  <tbody>
+  <tr><td>IntelliJ IDEA</td><td>자바·스프링 개발에서 가장 널리 쓰이는 IDE. 강력한 리팩토링·디버깅 기능, Spring Boot 프로젝트 생성 마법사 내장.</td></tr>
+  <tr><td>VS Code</td><td>가벼운 에디터에 자바 확장팩(Extension Pack for Java)을 설치해서 사용. 다양한 언어를 함께 다루는 풀스택 개발에 유리하다.</td></tr>
+  <tr><td>Eclipse</td><td>오래된 오픈소스 자바 IDE. 여전히 많은 레거시 프로젝트와 교육 현장에서 쓰인다.</td></tr>
+  </tbody></table>
+
+  <h3>4) 프로젝트 빌드 도구 — Gradle과 Maven</h3>
+  <p>실무 프로젝트는 파일 하나로 끝나지 않아요. 여러 클래스, 외부 라이브러리(의존성), 컴파일·테스트·패키징 과정을 관리해야 하는데, 이걸 자동화해주는 게 <b>빌드 도구</b>예요.</p>
+  <ul class="b">
+  <li><b>Maven</b> — XML 기반(<code>pom.xml</code>)으로 의존성과 빌드 과정을 정의. 역사가 길고 규칙이 엄격해 예측 가능하다.</li>
+  <li><b>Gradle</b> — Groovy 또는 Kotlin DSL 기반(<code>build.gradle</code>)으로 더 유연하고 간결하게 작성 가능. 빌드 속도 최적화(캐싱, 증분 빌드)에 강점이 있어 최근 Spring Boot 프로젝트에서 기본값으로 많이 쓰인다.</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">build.gradle 예시 — 의존성 선언</div><pre><code>plugins {
+    id 'org.springframework.boot' version '3.3.0'
+    id 'java'
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}</code></pre></div>
+  <div class="cp"><div class="cphead">✔ 1장 핵심 요약</div><ul>
+  <li>JDK(개발) ⊃ JRE(실행) ⊃ JVM(바이트코드 실행기) 포함 관계로 기억하자.</li>
+  <li>자바는 .java → .class(바이트코드) → JVM 실행이라는 흐름 덕분에 "한 번 작성하면 어디서든 실행"된다.</li>
+  <li>빌드 도구(Gradle/Maven)는 의존성 관리와 빌드 자동화를 담당하며, Spring Boot는 둘 다 지원한다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s2" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">2.</span> 객체지향 프로그래밍과 SOLID</h2>
+  </div>
+  <p class="subtitle">클래스·객체·필드·메서드·생성자 · 캡슐화·상속·다형성·추상화 · SOLID 5원칙</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 객체지향은 <b>"세상을 객체(물건)들의 상호작용으로 표현하자"</b>는 프로그래밍 패러다임이에요. 클래스는 객체의 설계도이고, 캡슐화·상속·다형성·추상화는 그 설계도를 잘 쓰기 위한 4가지 원칙이죠. SOLID는 여기서 한 걸음 더 나아가 "변경에 강하고 유지보수하기 좋은" 클래스 설계를 위한 5가지 실전 가이드예요.</div></div>
+
+  <h3>1) 클래스와 객체 — 필드·메서드·생성자</h3>
+  <p><b>클래스(Class)</b>는 객체를 만들기 위한 설계도이고, <b>객체(Object)</b>는 그 설계도로 실제 메모리에 찍어낸 실체(인스턴스)예요. 클래스 안에는 상태를 담는 <b>필드(field)</b>, 동작을 정의하는 <b>메서드(method)</b>, 객체 생성 시 초기화를 담당하는 <b>생성자(constructor)</b>가 들어간다.</p>
+  <div class="sqlbox"><div class="sqlhead">Book.java — 클래스 기본 구조</div><pre><code>public class Book {
+    // 필드 (상태)
+    private String title;
+    private String author;
+    private int price;
+
+    // 생성자
+    public Book(String title, String author, int price) {
+        this.title = title;
+        this.author = author;
+        this.price = price;
+    }
+
+    // 메서드 (동작)
+    public String getTitle() {
+        return title;
+    }
+
+    public void applyDiscount(int percent) {
+        this.price = this.price - (this.price * percent / 100);
+    }
+}</code></pre></div>
+
+  <h3>2) 객체지향의 4대 특성</h3>
+  <ul class="b">
+  <li><b>캡슐화(Encapsulation)</b> — 필드를 <code>private</code>으로 감추고 <code>getter/setter</code> 같은 메서드로만 접근을 허용해, 내부 구현이 바뀌어도 외부 코드에 영향이 적도록 하는 것.</li>
+  <li><b>상속(Inheritance)</b> — 기존 클래스(부모)의 필드·메서드를 새로운 클래스(자식)가 물려받아 재사용하는 것. <code>extends</code> 키워드로 표현한다.</li>
+  <li><b>다형성(Polymorphism)</b> — 같은 이름의 메서드가 객체 타입에 따라 다르게 동작하는 것. 오버라이딩(재정의)과 오버로딩(같은 이름, 다른 파라미터)이 대표적이다.</li>
+  <li><b>추상화(Abstraction)</b> — 공통적인 특징만 뽑아 인터페이스나 추상 클래스로 표현하고, 세부 구현은 감추는 것.</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">상속과 다형성 예시</div><pre><code>abstract class Shape {
+    abstract double area(); // 추상 메서드 — 구현은 자식에게 위임
+}
+
+class Circle extends Shape {
+    private double radius;
+    Circle(double radius) { this.radius = radius; }
+
+    @Override
+    double area() { return Math.PI * radius * radius; }
+}
+
+class Rectangle extends Shape {
+    private double w, h;
+    Rectangle(double w, double h) { this.w = w; this.h = h; }
+
+    @Override
+    double area() { return w * h; }
+}
+
+// 다형성: Shape 타입 변수로 실제 객체 종류에 상관없이 처리
+List&lt;Shape&gt; shapes = List.of(new Circle(3), new Rectangle(4, 5));
+for (Shape s : shapes) {
+    System.out.println(s.area()); // 실제 객체 타입에 맞는 area()가 호출된다
+}</code></pre></div>
+
+  <h3>3) SOLID 원칙 — 왜 필요한가</h3>
+  <p>SOLID는 객체지향 설계에서 지켜야 할 5가지 원칙의 앞글자를 딴 것으로, Robert C. Martin이 정리한 개념이에요. 코드가 커질수록 "하나 고쳤더니 다른 데가 깨지는" 문제가 자주 생기는데, SOLID를 지키면 변경에 유연하고 테스트하기 쉬운 구조를 만들 수 있어요.</p>
+  <table class="t"><thead><tr><th>원칙</th><th>이름</th><th>한 줄 설명</th></tr></thead>
+  <tbody>
+  <tr><td>S</td><td>단일 책임 원칙 (SRP)</td><td>클래스는 하나의 책임(변경 이유)만 가져야 한다.</td></tr>
+  <tr><td>O</td><td>개방-폐쇄 원칙 (OCP)</td><td>확장에는 열려 있고, 변경에는 닫혀 있어야 한다.</td></tr>
+  <tr><td>L</td><td>리스코프 치환 원칙 (LSP)</td><td>자식 클래스는 부모 클래스를 대체할 수 있어야 한다.</td></tr>
+  <tr><td>I</td><td>인터페이스 분리 원칙 (ISP)</td><td>클라이언트가 쓰지 않는 메서드에 의존하지 않아야 한다.</td></tr>
+  <tr><td>D</td><td>의존관계 역전 원칙 (DIP)</td><td>구체적인 구현이 아니라 추상화(인터페이스)에 의존해야 한다.</td></tr>
+  </tbody></table>
+
+  <h3>4) SRP·OCP 코드로 보기</h3>
+  <div class="sqlbox"><div class="sqlhead">SRP 위반 → 개선</div><pre><code>// 나쁜 예: 도서 저장과 이메일 발송이라는 2가지 책임을 한 클래스가 담당
+class BookService {
+    void save(Book book) { /* DB 저장 로직 */ }
+    void sendNotificationEmail(Book book) { /* 이메일 발송 로직 */ }
+}
+
+// 개선: 책임을 클래스 단위로 분리
+class BookRepository {
+    void save(Book book) { /* DB 저장 로직 */ }
+}
+class NotificationService {
+    void sendNotificationEmail(Book book) { /* 이메일 발송 로직 */ }
+}</code></pre></div>
+  <div class="sqlbox"><div class="sqlhead">OCP 적용 — 할인 정책 확장</div><pre><code>interface DiscountPolicy {
+    int discount(int price);
+}
+
+class FixedDiscountPolicy implements DiscountPolicy {
+    public int discount(int price) { return price - 1000; }
+}
+
+class RateDiscountPolicy implements DiscountPolicy {
+    public int discount(int price) { return price - (price * 10 / 100); }
+}
+// 새로운 할인 정책이 필요하면 클래스만 추가하면 된다 — 기존 코드는 손대지 않는다(확장에 열려있음)</code></pre></div>
+
+  <h3>5) LSP·ISP·DIP 코드로 보기</h3>
+  <div class="sqlbox"><div class="sqlhead">DIP — 인터페이스에 의존하기</div><pre><code>// 나쁜 예: 구체 클래스(MySqlBookRepository)에 직접 의존
+class BookService {
+    private MySqlBookRepository repository = new MySqlBookRepository();
+}
+
+// 개선: 추상화(인터페이스)에 의존하고, 실제 구현은 외부에서 주입받는다
+interface BookRepository {
+    void save(Book book);
+}
+
+class BookService {
+    private final BookRepository repository; // 구체 타입이 아닌 인터페이스 타입
+
+    BookService(BookRepository repository) { // 생성자로 구현체를 주입받음
+        this.repository = repository;
+    }
+}</code></pre></div>
+  <p><b>LSP</b>는 "자식 클래스 객체를 부모 타입 변수에 넣어 써도 프로그램이 정상 동작해야 한다"는 뜻이에요. 예를 들어 <code>Rectangle</code>을 상속한 <code>Square</code>가 부모의 <code>setWidth/setHeight</code> 동작 규약을 깨버리면 LSP 위반이 된다. <b>ISP</b>는 하나의 거대한 인터페이스보다, 클라이언트별로 필요한 메서드만 모은 작은 인터페이스 여러 개로 쪼개는 게 낫다는 원칙이에요(예: <code>Readable</code>, <code>Writable</code>을 분리).</p>
+  <div class="note">🔑 DIP는 이후 배울 Spring의 DI(의존성 주입)와 IoC 컨테이너의 이론적 배경이 되는 원칙이에요. Day2에서 다시 만나게 됩니다.</div>
+  <div class="cp"><div class="cphead">✔ 2장 핵심 요약</div><ul>
+  <li>클래스=설계도, 객체=인스턴스, 필드=상태, 메서드=행동, 생성자=초기화.</li>
+  <li>캡슐화·상속·다형성·추상화는 객체지향의 4대 특성.</li>
+  <li>SOLID는 "변경에 강한 설계"를 위한 5원칙 — 특히 DIP는 Spring DI의 뿌리가 된다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s3" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">3.</span> Java 기초 문법 — 제어문·배열·메서드</h2>
+  </div>
+  <p class="subtitle">if·switch·for·while 제어문 · 배열 선언과 활용 · 메서드 오버로딩과 가변인자</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 아무리 객체지향이 화려해도, 결국 코드 한 줄 한 줄은 <b>조건 분기(if)</b>와 <b>반복(for/while)</b>으로 이루어져요. 이번 장은 자바 문법의 가장 기초 체력에 해당하는 제어문·배열·메서드를 다시 짚어봅니다.</div></div>
+
+  <h3>1) 조건문 — if / switch</h3>
+  <div class="sqlbox"><div class="sqlhead">if-else와 switch 예시</div><pre><code>int price = 32000;
+
+if (price >= 30000) {
+    System.out.println("무료 배송 대상");
+} else if (price >= 10000) {
+    System.out.println("배송비 2500원");
+} else {
+    System.out.println("배송비 5000원");
+}
+
+// Java 14+ switch expression (더 간결한 문법)
+String grade = switch (price / 10000) {
+    case 0, 1 -> "저가";
+    case 2, 3 -> "중가";
+    default -> "고가";
+};</code></pre></div>
+
+  <h3>2) 반복문 — for / while</h3>
+  <div class="sqlbox"><div class="sqlhead">for, 향상된 for, while</div><pre><code>int[] prices = {32000, 28000, 22000};
+
+// 기본 for문 — 인덱스가 필요할 때
+for (int i = 0; i < prices.length; i++) {
+    System.out.println(i + "번째 가격: " + prices[i]);
+}
+
+// 향상된 for문(for-each) — 인덱스가 필요 없을 때 더 간결
+for (int price : prices) {
+    System.out.println(price);
+}
+
+// while문 — 조건 기반 반복
+int sum = 0, idx = 0;
+while (idx < prices.length) {
+    sum += prices[idx];
+    idx++;
+}</code></pre></div>
+  <div class="note">🔑 for는 "몇 번 반복할지 알 때", while은 "조건이 언제 끝날지 모를 때(예: 사용자 입력을 계속 받는 경우)" 쓰는 게 일반적인 관례예요.</div>
+
+  <h3>3) 배열</h3>
+  <p>배열은 같은 타입의 값을 <b>고정된 크기</b>로 연속된 메모리에 저장하는 자료구조예요. 크기를 한 번 정하면 바꿀 수 없다는 게 다음 장에서 배울 <code>List</code>와 가장 큰 차이점이에요.</p>
+  <div class="sqlbox"><div class="sqlhead">배열 선언과 2차원 배열</div><pre><code>// 1차원 배열
+String[] titles = new String[3];
+titles[0] = "이펙티브 자바";
+titles[1] = "클린 코드";
+
+String[] titles2 = {"이펙티브 자바", "클린 코드", "객체지향의 사실과 오해"}; // 선언과 동시에 초기화
+
+// 2차원 배열 (표 형태 데이터)
+int[][] grid = new int[2][3]; // 2행 3열
+grid[0][0] = 1;</code></pre></div>
+
+  <h3>4) 메서드 — 오버로딩과 가변인자</h3>
+  <p><b>메서드 오버로딩(Overloading)</b>은 이름은 같지만 매개변수의 개수나 타입이 다른 메서드를 여러 개 정의하는 것이에요. <b>가변인자(Varargs)</b>는 매개변수 개수를 미리 정하지 않고 여러 개를 넘길 수 있게 하는 문법이다.</p>
+  <div class="sqlbox"><div class="sqlhead">오버로딩과 가변인자 예시</div><pre><code>class Calculator {
+    // 오버로딩: 매개변수 타입/개수가 다른 여러 add 메서드
+    int add(int a, int b) {
+        return a + b;
+    }
+    double add(double a, double b) {
+        return a + b;
+    }
+    int add(int a, int b, int c) {
+        return a + b + c;
+    }
+
+    // 가변인자: 개수 제한 없이 넘길 수 있음 (내부적으로는 배열)
+    int addAll(int... numbers) {
+        int sum = 0;
+        for (int n : numbers) {
+            sum += n;
+        }
+        return sum;
+    }
+}
+
+// 호출: addAll(1, 2), addAll(1, 2, 3, 4, 5) 모두 가능</code></pre></div>
+  <div class="cp"><div class="cphead">✔ 3장 핵심 요약</div><ul>
+  <li>if/switch는 조건 분기, for/while은 반복 — for는 횟수가 정해진 경우, while은 조건 기반 반복에 적합.</li>
+  <li>배열은 크기 고정, 같은 타입만 저장 가능.</li>
+  <li>오버로딩은 "같은 이름, 다른 시그니처", 가변인자는 인자 개수를 유연하게 받는 문법.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s4" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">4.</span> 컬렉션·제네릭·람다와 스트림</h2>
+  </div>
+  <p class="subtitle">List·Set·Map 차이 · 제네릭 기초 · 람다식 문법 · Stream API(filter·map·collect)</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 배열은 크기가 고정이라 불편했죠? <b>컬렉션(List/Set/Map)</b>은 크기가 자유롭게 늘어나는 "똑똑한 배열"이에요. 여기에 <b>제네릭</b>으로 타입 안전성을 더하고, <b>람다·스트림</b>으로 "무엇을 할지"만 선언하는 함수형 스타일까지 익히면 실무 자바 코드의 8할은 이 장의 내용이라고 봐도 돼요.</div></div>
+
+  <h3>1) List / Set / Map — 언제 뭘 쓸까</h3>
+  <table class="t"><thead><tr><th>컬렉션</th><th>특징</th><th>대표 구현체</th></tr></thead>
+  <tbody>
+  <tr><td>List</td><td>순서 있음, 중복 허용 — 인덱스로 접근 가능</td><td>ArrayList, LinkedList</td></tr>
+  <tr><td>Set</td><td>순서 없음(구현체에 따라 다름), 중복 불허 — "유일한 값들의 모음"</td><td>HashSet, LinkedHashSet, TreeSet</td></tr>
+  <tr><td>Map</td><td>Key-Value 쌍으로 저장, Key는 중복 불허</td><td>HashMap, LinkedHashMap, TreeMap</td></tr>
+  </tbody></table>
+  <div class="sqlbox"><div class="sqlhead">List / Set / Map 기본 사용</div><pre><code>List&lt;String&gt; titles = new ArrayList<>();
+titles.add("이펙티브 자바");
+titles.add("이펙티브 자바"); // 중복 저장 가능 → 크기 2
+
+Set&lt;String&gt; authors = new HashSet<>();
+authors.add("조슈아 블로크");
+authors.add("조슈아 블로크"); // 중복 무시 → 크기 1
+
+Map&lt;String, Integer&gt; priceByTitle = new HashMap<>();
+priceByTitle.put("이펙티브 자바", 32000);
+priceByTitle.put("클린 코드", 28000);
+int price = priceByTitle.get("클린 코드"); // 28000</code></pre></div>
+
+  <h3>2) 제네릭(Generics) 기초</h3>
+  <p>제네릭은 클래스나 메서드가 다룰 데이터 타입을 <b>사용하는 시점에 지정</b>할 수 있게 하는 문법이에요. 컴파일 시점에 타입을 체크해주기 때문에, <code>Object</code>를 쓰고 매번 형변환하던 방식보다 훨씬 안전하다.</p>
+  <div class="sqlbox"><div class="sqlhead">제네릭 클래스 예시</div><pre><code>class Box&lt;T&gt; {
+    private T content;
+    void set(T content) { this.content = content; }
+    T get() { return content; }
+}
+
+Box&lt;String&gt; stringBox = new Box<>();
+stringBox.set("이펙티브 자바");
+String value = stringBox.get(); // 형변환 없이 바로 String으로 꺼낼 수 있음
+
+// List&lt;Book&gt;처럼 컬렉션에서도 항상 제네릭을 함께 씀
+List&lt;Book&gt; books = new ArrayList<>();</code></pre></div>
+
+  <h3>3) 람다식(Lambda Expression) 문법</h3>
+  <p>람다식은 "이름 없는 함수"를 간결하게 표현하는 문법이에요. 인터페이스에 추상 메서드가 딱 하나만 있는 <b>함수형 인터페이스</b>(예: <code>Runnable</code>, <code>Comparator</code>)를 구현할 때 익명 클래스 대신 쓸 수 있다.</p>
+  <div class="sqlbox"><div class="sqlhead">람다식으로 정렬 기준 지정하기</div><pre><code>List&lt;Book&gt; books = new ArrayList<>(List.of(
+    new Book("이펙티브 자바", "조슈아 블로크", 32000),
+    new Book("클린 코드", "로버트 마틴", 28000)
+));
+
+// 익명 클래스 방식 (예전 스타일)
+books.sort(new Comparator&lt;Book&gt;() {
+    @Override
+    public int compare(Book a, Book b) {
+        return a.getPrice() - b.getPrice();
+    }
+});
+
+// 람다식 방식 (간결)
+books.sort((a, b) -> a.getPrice() - b.getPrice());
+
+// 메서드 참조로 더 간결하게
+books.sort(Comparator.comparingInt(Book::getPrice));</code></pre></div>
+
+  <h3>4) Stream API — filter / map / collect</h3>
+  <p>Stream은 컬렉션의 데이터를 <b>선언형(무엇을 할지)</b>으로 가공하는 API예요. "필터링 → 변환 → 수집"의 파이프라인을 체이닝으로 표현할 수 있어, for문을 여러 겹 중첩하는 것보다 읽기 쉬운 코드가 된다.</p>
+  <div class="sqlbox"><div class="sqlhead">filter → map → collect 파이프라인</div><pre><code>List&lt;Book&gt; books = List.of(
+    new Book("이펙티브 자바", "조슈아 블로크", 32000),
+    new Book("클린 코드", "로버트 마틴", 28000),
+    new Book("객체지향의 사실과 오해", "조영호", 22000)
+);
+
+// 3만원 이상인 책의 제목만 뽑아서 리스트로 만들기
+List&lt;String&gt; expensiveTitles = books.stream()
+    .filter(book -> book.getPrice() >= 30000)  // 조건에 맞는 요소만 통과
+    .map(Book::getTitle)                        // Book -> String 변환
+    .collect(Collectors.toList());              // 다시 List로 수집
+
+// 전체 가격 합계 구하기
+int total = books.stream()
+    .mapToInt(Book::getPrice)
+    .sum();</code></pre></div>
+  <div class="note">🔑 Stream은 원본 컬렉션을 변경하지 않아요(불변성). filter/map처럼 다른 스트림을 반환하는 연산을 "중간 연산", collect/sum처럼 최종 결과를 만드는 연산을 "종단 연산"이라고 부른다.</div>
+  <div class="callout deep"><span class="ctitle">🔎 심화 — List/Set/Map, 언제 어떤 걸 고를까?</span>
+  <p>순서가 중요하고 같은 값이 여러 번 있을 수 있으면 List, "중복 없는 집합"이 필요하면 Set, "이름으로 빠르게 찾기"가 필요하면 Map을 고르면 돼요. 실무에서는 대부분 ArrayList와 HashMap이 기본 선택지가 됩니다.</p></div>
+  <div class="cp"><div class="cphead">✔ 4장 핵심 요약</div><ul>
+  <li>List(순서·중복 허용), Set(중복 불허), Map(Key-Value) — 용도에 맞게 선택.</li>
+  <li>제네릭은 컴파일 시점에 타입 안전성을 보장해준다.</li>
+  <li>람다식 + Stream(filter/map/collect)으로 컬렉션을 선언형으로 가공할 수 있다.</li>
+  </ul></div>
+</section>
+<div class="quiz-wrap" id="quiz-day1">
+  <h2>✅ Day 1 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="1">0 / 7 정답</div>
+  <div class="quiz-q" data-qid="d1q0" data-type="ox" data-answer="true" data-exp="JDK는 JRE를 포함하고, JRE는 JVM을 포함하는 관계예요(JDK ⊃ JRE ⊃ JVM). 개발을 하려면 컴파일러(javac) 등이 포함된 JDK가 필요합니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>JDK는 JRE를 포함하고, JRE는 다시 JVM을 포함하는 관계다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q1" data-type="ox" data-answer="false" data-exp="배열은 생성할 때 크기가 고정되고 이후 변경할 수 없어요. 크기가 자유롭게 늘어나는 자료구조가 필요하면 ArrayList 같은 컬렉션을 써야 합니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>자바 배열은 한 번 생성한 이후에도 크기를 자유롭게 늘리거나 줄일 수 있다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q2" data-type="ox" data-answer="true" data-exp="DIP(의존관계 역전 원칙)는 구체적인 구현 클래스가 아니라 인터페이스 같은 추상화에 의존하라는 원칙이에요. 이는 이후 배울 Spring의 DI(의존성 주입) 개념의 이론적 배경이 됩니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>SOLID의 DIP(의존관계 역전 원칙)는 "구체적인 구현이 아니라 추상화에 의존해야 한다"는 원칙이다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q3" data-type="mc" data-answer="Set" data-exp="Set은 중복을 허용하지 않는 컬렉션이에요. List는 순서를 유지하며 중복을 허용하고, Map은 Key-Value 쌍으로 데이터를 저장합니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>같은 값을 중복해서 저장할 수 없는 컬렉션 타입은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="List">List</button>
+      <button class="quiz-opt" data-val="Set">Set</button>
+      <button class="quiz-opt" data-val="Map">Map</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q4" data-type="mc" data-answer="클래스는 하나의 책임(변경 이유)만 가져야 한다" data-exp="SRP(단일 책임 원칙)는 클래스가 오직 하나의 책임만 갖도록 설계하라는 원칙이에요. '확장에는 열려있고 변경에는 닫혀있어야 한다'는 OCP에 대한 설명입니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>SOLID 중 SRP(단일 책임 원칙)에 대한 설명으로 옳은 것은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="클래스는 하나의 책임(변경 이유)만 가져야 한다">클래스는 하나의 책임(변경 이유)만 가져야 한다</button>
+      <button class="quiz-opt" data-val="확장에는 열려있고 변경에는 닫혀있어야 한다">확장에는 열려있고 변경에는 닫혀있어야 한다</button>
+      <button class="quiz-opt" data-val="자식 클래스는 부모 클래스를 완전히 대체할 수 있어야 한다">자식 클래스는 부모 클래스를 완전히 대체할 수 있어야 한다</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q5" data-type="short" data-accept='["오버로딩", "overloading", "메서드 오버로딩"]' data-exp="같은 이름의 메서드를 매개변수의 개수나 타입을 다르게 해서 여러 개 정의하는 것을 오버로딩(Overloading)이라고 해요. 재정의(오버라이딩)와 헷갈리지 않도록 주의하세요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>이름은 같지만 매개변수의 개수나 타입이 다른 메서드를 여러 개 정의하는 것을 무엇이라 하는가? (한글 또는 영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q6" data-type="short" data-accept='["캡슐화", "encapsulation"]' data-exp="필드를 private으로 감추고 getter/setter 같은 메서드로만 접근하게 해서, 내부 구현이 바뀌어도 외부 코드에 영향이 적도록 하는 특성을 캡슐화(Encapsulation)라고 해요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>필드를 private으로 숨기고 메서드를 통해서만 접근하게 해 내부 구현을 감추는 객체지향 특성은? (한글 또는 영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+
+<div class="day-header" id="day2"><h1>Day 2 — Spring Boot 시작하기</h1><p>RESTful API 설계부터 Spring Boot 개요, IoC/DI, Configuration까지</p></div>
+
+<section class="sec" id="s5" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">5.</span> RESTful API 설계 원칙</h2>
+  </div>
+  <p class="subtitle">REST 아키텍처 제약조건 · HTTP 메서드와 멱등성 · 상태 코드 · 좋은 리소스 URI 설계</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: REST는 <b>"자원(Resource)을 URI로 표현하고, HTTP 메서드로 행위를 표현하자"</b>는 웹 API 설계 스타일이에요. URI에는 동사(get, delete 같은)를 넣지 않고, 대신 GET/POST/PUT/DELETE 같은 HTTP 메서드로 "무엇을 할지"를 표현하는 게 핵심 규칙이에요. 실습장에서 만져본 <code>/api/books</code> API가 바로 이 원칙을 따른 예시입니다.</div></div>
+
+  <h3>1) REST란 — 아키텍처 제약조건</h3>
+  <p>REST(REpresentational State Transfer)는 2000년 로이 필딩(Roy Fielding)의 박사 논문에서 제시된 아키텍처 스타일이에요. 몇 가지 제약조건을 지키는 API를 흔히 "RESTful하다"고 표현한다.</p>
+  <ul class="b">
+  <li><b>자원 중심(Resource-based)</b> — 모든 것을 "자원"으로 보고, 각 자원은 고유한 URI로 식별된다(예: <code>/api/books/1</code>).</li>
+  <li><b>무상태성(Stateless)</b> — 서버는 클라이언트의 이전 요청 상태를 기억하지 않는다. 매 요청에 필요한 정보가 모두 담겨 있어야 한다.</li>
+  <li><b>클라이언트-서버 분리</b> — 클라이언트(화면)와 서버(데이터·로직)의 관심사를 분리해 독립적으로 발전할 수 있게 한다.</li>
+  <li><b>Uniform Interface(일관된 인터페이스)</b> — HTTP 메서드, 상태 코드 등 표준화된 방식으로 자원을 다룬다.</li>
+  <li><b>Cacheable(캐시 가능)</b> — 응답이 캐시 가능한지 여부를 명시해 성능을 높일 수 있어야 한다.</li>
+  </ul>
+
+  <h3>2) HTTP 메서드와 멱등성</h3>
+  <p><b>멱등성(Idempotency)</b>이란 같은 요청을 여러 번 보내도 결과(서버 상태)가 한 번 보낸 것과 동일한 성질을 말해요. 멱등하다고 해서 응답까지 항상 똑같은 건 아니라는 점에 주의하세요(예: DELETE는 두 번째부터 404가 될 수 있지만, "삭제된 상태"라는 결과는 동일).</p>
+  <table class="t"><thead><tr><th>메서드</th><th>의미</th><th>멱등성</th><th>요청 바디</th></tr></thead>
+  <tbody>
+  <tr><td>GET</td><td>자원 조회</td><td>O</td><td>없음</td></tr>
+  <tr><td>POST</td><td>자원 생성</td><td>X (보낼 때마다 새로 생성됨)</td><td>있음</td></tr>
+  <tr><td>PUT</td><td>자원 전체 교체</td><td>O</td><td>있음</td></tr>
+  <tr><td>PATCH</td><td>자원 부분 수정</td><td>일반적으로 X</td><td>있음</td></tr>
+  <tr><td>DELETE</td><td>자원 삭제</td><td>O</td><td>보통 없음</td></tr>
+  </tbody></table>
+  <div class="note">🔑 PUT과 PATCH의 차이: PUT은 리소스 전체를 통째로 교체(빠진 필드는 null/기본값 처리될 수 있음), PATCH는 전달한 필드만 부분적으로 수정한다는 관례가 있어요. REST API 연습장의 PUT 예제가 일부 필드만 보내는 이유도 실무에서는 이 구분이 엄격하지 않게 쓰이는 경우가 많기 때문이에요.</div>
+
+  <h3>3) 주요 HTTP 상태 코드</h3>
+  <table class="t"><thead><tr><th>코드</th><th>의미</th><th>주로 쓰이는 상황</th></tr></thead>
+  <tbody>
+  <tr><td>200 OK</td><td>요청 성공</td><td>GET, PUT 성공 시 일반적인 응답</td></tr>
+  <tr><td>201 Created</td><td>자원 생성 성공</td><td>POST로 새 자원을 만들었을 때</td></tr>
+  <tr><td>204 No Content</td><td>성공했지만 응답 바디 없음</td><td>DELETE 성공 시 흔히 사용</td></tr>
+  <tr><td>400 Bad Request</td><td>잘못된 요청</td><td>필수 필드 누락, JSON 형식 오류 등</td></tr>
+  <tr><td>401 Unauthorized</td><td>인증 실패</td><td>로그인이 필요한데 인증 정보가 없거나 잘못됨</td></tr>
+  <tr><td>403 Forbidden</td><td>인가(권한) 실패</td><td>인증은 됐지만 접근 권한이 없음</td></tr>
+  <tr><td>404 Not Found</td><td>자원 없음</td><td>존재하지 않는 id 조회</td></tr>
+  <tr><td>500 Internal Server Error</td><td>서버 내부 오류</td><td>예외 처리가 안 된 서버 측 버그</td></tr>
+  </tbody></table>
+  <div class="note">🔑 401과 403을 헷갈리기 쉬운데, "너 누군지 모르겠다"가 401(인증 실패), "너가 누군지는 알겠는데 권한이 없다"가 403(인가 실패)이라고 기억하면 쉬워요.</div>
+
+  <h3>4) 좋은 리소스 URI 설계</h3>
+  <p>URI는 명사(자원)를 표현하고, 행위는 HTTP 메서드가 담당해야 해요. 아래 예시로 비교해볼게요.</p>
+  <div class="sqlbox"><div class="sqlhead">나쁜 URI vs 좋은 URI</div><pre><code>[나쁜 예 — URI에 동사가 들어감]
+GET  /getBookList
+POST /createBook
+POST /deleteBook?id=1
+
+[좋은 예 — 자원(명사) 중심, 메서드로 행위 표현]
+GET    /api/books          → 도서 목록 조회
+POST   /api/books          → 도서 생성
+GET    /api/books/{id}     → 특정 도서 조회
+PUT    /api/books/{id}     → 특정 도서 전체 수정
+PATCH  /api/books/{id}     → 특정 도서 부분 수정
+DELETE /api/books/{id}     → 특정 도서 삭제
+
+[계층 관계 표현 — 특정 도서의 리뷰 목록]
+GET  /api/books/{bookId}/reviews</code></pre></div>
+  <div class="cp"><div class="cphead">✔ 좋은 URI 설계 체크리스트</div><ul>
+  <li>URI는 복수형 명사를 사용한다(<code>/books</code>, <code>/users</code>).</li>
+  <li>URI에 동사를 쓰지 않는다 — 행위는 HTTP 메서드로 표현한다.</li>
+  <li>계층 관계는 <code>/부모/{id}/자식</code> 형태로 표현한다.</li>
+  <li>대소문자는 소문자로 통일하고, 구분자는 하이픈(<code>-</code>)을 사용한다.</li>
+  </ul></div>
+  <div class="callout deep"><span class="ctitle">🔎 심화 — REST API 연습장으로 직접 확인해보기</span>
+  <p>이 페이지 우측 하단의 "REST API 연습장"에서 <code>GET /api/books</code>, <code>POST /api/books</code> 같은 요청을 직접 보내볼 수 있어요. 존재하지 않는 id를 조회하면 404가, title/author 없이 POST하면 400이 오는 걸 직접 눈으로 확인해보세요.</p></div>
+</section>
+<section class="sec" id="s6" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">6.</span> Spring과 Spring Boot 개요</h2>
+  </div>
+  <p class="subtitle">Spring Framework 핵심 모듈(IoC/AOP) · Spring Boot 자동설정·내장 톰캣·starter · 설정 지옥 해소</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>Spring</b>은 자바 엔터프라이즈 개발을 위한 커다란 프레임워크이고, <b>Spring Boot</b>는 그 Spring을 "설정 없이 빠르게 시작할 수 있게" 감싸놓은 도구예요. Spring만 쓰면 XML 설정을 산더미처럼 써야 했지만, Spring Boot는 "관례(convention)"로 대부분을 자동 설정해줘서 개발자가 비즈니스 로직에만 집중할 수 있게 해줍니다.</div></div>
+
+  <h3>1) Spring Framework — 핵심 모듈</h3>
+  <p>Spring Framework는 2003년경 등장한 자바 엔터프라이즈 애플리케이션 프레임워크예요. 여러 모듈로 구성되어 있는데, 그중 핵심은 다음 두 가지예요.</p>
+  <ul class="b">
+  <li><b>IoC(Inversion of Control) / DI(Dependency Injection)</b> — 객체 생성과 의존관계 관리를 개발자 대신 컨테이너가 담당한다. 다음 장에서 자세히 다룬다.</li>
+  <li><b>AOP(Aspect Oriented Programming)</b> — 로깅, 트랜잭션, 보안 검사처럼 여러 곳에 반복적으로 필요한 "횡단 관심사(cross-cutting concern)"를 핵심 로직과 분리해서 다룰 수 있게 해준다.</li>
+  <li>이 외에도 데이터 접근(Spring Data), 웹(Spring MVC), 보안(Spring Security) 등 다양한 하위 프로젝트들이 Spring 생태계를 이루고 있다.</li>
+  </ul>
+
+  <h3>2) Spring Boot가 해결한 문제 — "설정 지옥"</h3>
+  <p>전통적인 Spring 프로젝트는 시작 전에 해야 할 일이 많았어요. 톰캣 같은 웹 서버를 별도로 설치·설정하고, DispatcherServlet·데이터소스·트랜잭션 매니저 등을 XML이나 Java Config로 일일이 등록해야 했죠. 이렇게 "본 개발을 시작하기도 전에" 방대한 설정 작업이 필요했던 상황을 흔히 <b>설정 지옥(configuration hell)</b>이라고 불렀다.</p>
+  <p>Spring Boot(2014년 첫 출시)는 이 문제를 <b>"관례 기반 자동 설정"</b>으로 해결했어요. 프로젝트에 어떤 라이브러리가 있는지를 감지해서, 적절한 기본 설정을 자동으로 채워주는 방식이에요.</p>
+
+  <h3>3) Spring Boot 핵심 기능</h3>
+  <ul class="b">
+  <li><b>자동 설정(Auto Configuration)</b> — classpath에 어떤 라이브러리가 있는지 보고 필요한 Bean들을 자동으로 등록해준다(<code>@SpringBootApplication</code>이 이를 활성화하는 핵심 애노테이션).</li>
+  <li><b>내장 톰캣(Embedded Tomcat)</b> — 별도로 웹 서버를 설치하지 않아도, 애플리케이션 자체에 톰캣 서버가 내장되어 있어 <code>main()</code> 메서드 실행만으로 웹 서버가 뜬다.</li>
+  <li><b>Starter 의존성</b> — <code>spring-boot-starter-web</code>처럼 관련된 라이브러리들을 한 묶음으로 제공하는 의존성 패키지. 버전 호환성 걱정 없이 필요한 기능을 한 줄로 추가할 수 있다.</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">Spring Boot 애플리케이션 최소 구성</div><pre><code>@SpringBootApplication // 자동설정 + 컴포넌트 스캔 + 설정 클래스 선언을 한 번에
+public class BookApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(BookApplication.class, args);
+        // 이 한 줄로 내장 톰캣이 뜨고, 애플리케이션 컨텍스트가 초기화된다
+    }
+}</code></pre></div>
+
+  <h3>4) Spring vs Spring Boot 비교</h3>
+  <table class="t"><thead><tr><th>구분</th><th>Spring Framework</th><th>Spring Boot</th></tr></thead>
+  <tbody>
+  <tr><td>설정 방식</td><td>XML 또는 Java Config를 개발자가 직접 작성</td><td>자동 설정(Auto Configuration) 기반</td></tr>
+  <tr><td>웹 서버</td><td>별도로 WAS(톰캣 등)를 설치·배포</td><td>내장 톰캣 포함, jar 하나로 실행 가능</td></tr>
+  <tr><td>의존성 관리</td><td>라이브러리 버전을 직접 관리</td><td>Starter로 검증된 버전 조합 제공</td></tr>
+  <tr><td>관계</td><td>Spring Boot의 기반이 되는 프레임워크</td><td>Spring Framework를 더 쉽게 쓰도록 감싼 도구</td></tr>
+  </tbody></table>
+  <div class="note">🔑 Spring Boot는 Spring Framework를 "대체"하는 게 아니라, 그 위에서 더 쉽게 시작할 수 있도록 감싸는 도구예요. 내부적으로는 여전히 Spring의 IoC 컨테이너, AOP 등을 그대로 사용한다.</div>
+  <div class="cp"><div class="cphead">✔ 6장 핵심 요약</div><ul>
+  <li>Spring의 핵심은 IoC/DI와 AOP.</li>
+  <li>Spring Boot는 자동설정·내장 톰캣·starter로 "설정 지옥"을 해소했다.</li>
+  <li>Spring Boot는 Spring 위에서 동작하는 도구이지, 별개의 프레임워크가 아니다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s7" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">7.</span> Spring Boot 핵심 — IoC·DI·Bean</h2>
+  </div>
+  <p class="subtitle">IoC 컨테이너 개념 · 생성자·필드·세터 주입 비교 · Bean 등록 방법 · Bean 라이프사이클</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 원래는 객체가 필요한 다른 객체를 <b>직접 new로 만들어서</b> 썼어요. IoC(제어의 역전)는 이 "객체를 만들고 연결하는 책임"을 개발자가 아니라 <b>Spring 컨테이너</b>에게 넘기는 것이고, DI(의존성 주입)는 그 컨테이너가 필요한 객체를 "대신 조립해서 넣어주는" 구체적인 방법이에요. 2장에서 배운 DIP 원칙이 여기서 실제로 구현되는 거죠.</div></div>
+
+  <h3>1) IoC(제어의 역전) 컨테이너</h3>
+  <p>전통적인 방식에서는 <code>BookService</code>가 필요한 <code>BookRepository</code>를 자기 손으로 <code>new</code>해서 만들었어요. IoC는 이 순서를 뒤집어요 — 객체(Bean)를 생성하고, 그 사이의 의존관계를 연결하는 일을 <b>Spring 컨테이너(ApplicationContext)</b>가 대신 해준다.</p>
+  <div class="note">🔑 "제어의 역전"이라는 이름이 붙은 이유: 원래는 내 코드가 흐름을 제어했는데(내가 직접 객체를 생성), 이제는 프레임워크(컨테이너)가 흐름을 제어하고 내 코드는 그 안에서 호출당하는 입장이 되기 때문이에요.</div>
+
+  <h3>2) DI(의존성 주입) 3가지 방식</h3>
+  <p>Bean이 필요로 하는 다른 Bean(의존 객체)을 컨테이너가 "주입"해주는 방법에는 3가지가 있어요.</p>
+  <div class="sqlbox"><div class="sqlhead">생성자 주입 vs 필드 주입 vs 세터 주입</div><pre><code>// ① 생성자 주입 (권장 방식)
+@Service
+public class BookService {
+    private final BookRepository bookRepository; // final로 선언 가능 → 불변성 보장
+
+    public BookService(BookRepository bookRepository) {
+        this.bookRepository = bookRepository;
+    }
+}
+
+// ② 필드 주입 (간편하지만 비권장)
+@Service
+public class BookService {
+    @Autowired
+    private BookRepository bookRepository; // final 불가, 테스트 시 주입이 번거로움
+}
+
+// ③ 세터 주입 (선택적 의존관계에 사용)
+@Service
+public class BookService {
+    private BookRepository bookRepository;
+
+    @Autowired
+    public void setBookRepository(BookRepository bookRepository) {
+        this.bookRepository = bookRepository;
+    }
+}</code></pre></div>
+  <table class="t"><thead><tr><th>방식</th><th>장점</th><th>단점</th></tr></thead>
+  <tbody>
+  <tr><td>생성자 주입</td><td>불변(final) 보장, 누락 시 컴파일 오류로 조기 발견, 순환 참조를 컴파일/구동 시점에 감지하기 쉬움</td><td>생성자 인자가 많아지면 코드가 길어짐(→ 오히려 설계 신호로 활용)</td></tr>
+  <tr><td>필드 주입</td><td>코드가 짧음</td><td>외부에서 변경 불가한 순수 자바 객체로 테스트하기 어려움, final 불가</td></tr>
+  <tr><td>세터 주입</td><td>주입 대상을 나중에 바꿀 수 있음</td><td>필수 의존관계인데 주입을 빠뜨려도 컴파일 오류가 안 남</td></tr>
+  </tbody></table>
+  <div class="note">🔑 Spring 공식 문서와 커뮤니티 모두 <b>생성자 주입을 기본으로 권장</b>해요. 필드 하나뿐이면 <code>@Autowired</code>도 생략 가능하다(생성자가 하나면 자동으로 주입 대상이 된다).</div>
+
+  <h3>3) Bean 등록 방법</h3>
+  <p>Spring이 관리하는 객체를 <b>Bean</b>이라고 불러요. Bean을 등록하는 방법은 크게 두 가지예요.</p>
+  <div class="sqlbox"><div class="sqlhead">컴포넌트 스캔 방식 vs 자바 코드로 직접 등록</div><pre><code>// 방법 1: 스테레오타입 애노테이션 (컴포넌트 스캔 대상)
+@Component      // 범용 Bean
+@Service        // 비즈니스 로직 계층
+@Repository     // 데이터 접근 계층 (예외 변환 기능도 함께 제공)
+@Controller     // 웹 요청 처리 계층
+
+@Service
+public class BookService { ... }
+
+// 방법 2: 자바 설정 클래스에서 직접 등록 (외부 라이브러리 등에 사용)
+@Configuration
+public class AppConfig {
+    @Bean
+    public BookRepository bookRepository() {
+        return new InMemoryBookRepository();
+    }
+}</code></pre></div>
+  <p><code>@Component</code> 계열 애노테이션은 클래스 위에 붙여두면 컴포넌트 스캔이 자동으로 찾아서 Bean으로 등록해줘요. 반면 <code>@Configuration</code> + <code>@Bean</code>은 내가 소스코드를 수정할 수 없는 외부 라이브러리 클래스를 Bean으로 등록하거나, 생성 과정을 세밀하게 제어하고 싶을 때 사용한다.</p>
+
+  <h3>4) Bean 라이프사이클 개요</h3>
+  <div class="formula"><div class="expr">컨테이너 생성 → Bean 생성 → 의존관계 주입 → <b>초기화 콜백</b> → 사용 → <b>소멸 전 콜백</b> → 컨테이너 종료</div></div>
+  <p>Spring Bean은 기본적으로 <b>싱글톤(singleton)</b> 스코프로 관리돼요 — 컨테이너 안에 딱 하나의 인스턴스만 생성되고, 여러 곳에서 공유해서 사용한다. 초기화·소멸 시점에 특정 로직을 실행하고 싶다면 <code>@PostConstruct</code>, <code>@PreDestroy</code> 애노테이션을 사용할 수 있다.</p>
+  <div class="cp"><div class="cphead">✔ 7장 핵심 요약</div><ul>
+  <li>IoC: 객체 생성·연결의 주도권을 개발자에서 컨테이너로 넘기는 것.</li>
+  <li>DI 3가지 방식 중 생성자 주입이 기본 권장(불변성, 조기 오류 발견).</li>
+  <li>Bean 등록은 컴포넌트 스캔(@Component 계열) 또는 @Configuration+@Bean으로.</li>
+  <li>Bean은 기본적으로 싱글톤 스코프로 관리된다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s8" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">8.</span> Configuration과 Profile 관리</h2>
+  </div>
+  <p class="subtitle">application.yml/properties · @Value 값 주입 · @ConfigurationProperties · Profile(dev/prod)별 설정 분리</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: DB 주소, 포트 번호 같은 값들을 코드에 하드코딩하면 개발 환경과 운영 환경마다 코드를 고쳐야 해서 위험해요. Spring Boot는 <b>application.yml</b> 같은 설정 파일에 값을 분리해두고, <b>Profile</b>로 "개발용/운영용" 설정을 나눠서 관리할 수 있게 해줘요.</div></div>
+
+  <h3>1) application.yml / application.properties</h3>
+  <p>Spring Boot 프로젝트는 <code>src/main/resources</code> 아래에 있는 <code>application.yml</code>(또는 <code>application.properties</code>) 파일을 실행 시점에 자동으로 읽어들여요. 같은 내용을 두 형식으로 비교해볼게요.</p>
+  <div class="sqlbox"><div class="sqlhead">application.properties vs application.yml</div><pre><code>## application.properties (key=value 방식)
+server.port=8080
+spring.application.name=book-api
+book.default-page-size=20
+book.support-email=support@example.com
+
+# application.yml (계층 구조, 들여쓰기로 표현 — 실무에서 더 선호됨)
+server:
+  port: 8080
+spring:
+  application:
+    name: book-api
+book:
+  default-page-size: 20
+  support-email: support@example.com</code></pre></div>
+  <p>같은 접두어(<code>spring.*</code>, <code>server.*</code>)가 반복되는 properties 방식보다, 계층 구조를 그대로 들여쓰기로 표현하는 yml 방식이 가독성이 좋아 최근에는 더 널리 쓰인다.</p>
+
+  <h3>2) @Value로 값 주입하기</h3>
+  <p>설정 파일의 값 하나를 필드에 바로 꽂아 넣고 싶을 때는 <code>@Value</code> 애노테이션을 사용해요. <code>${key}</code> 형식으로 프로퍼티 키를 참조한다.</p>
+  <div class="sqlbox"><div class="sqlhead">@Value 사용 예시</div><pre><code>@Component
+public class BookProperties {
+
+    @Value("${book.default-page-size}")
+    private int defaultPageSize;
+
+    @Value("${book.support-email}")
+    private String supportEmail;
+
+    @Value("${book.discount-rate:0}") // 콜론 뒤 값 = 기본값 (설정이 없을 때 사용)
+    private int discountRate;
+}</code></pre></div>
+  <div class="note">⚠️ @Value는 값 하나하나를 개별적으로 가져오기 때문에, 관련 설정이 여러 개면 필드가 계속 늘어나요. 설정이 많아질수록 다음에 배울 @ConfigurationProperties가 더 낫다.</div>
+
+  <h3>3) @ConfigurationProperties — 묶음으로 관리하기</h3>
+  <p>관련된 설정값들을 하나의 클래스로 묶어서 타입 안전하게 관리하고 싶을 때 사용해요. 접두어(prefix)만 지정하면, 그 아래 있는 모든 값이 필드에 자동으로 매핑된다.</p>
+  <div class="sqlbox"><div class="sqlhead">@ConfigurationProperties 예시</div><pre><code>@Component
+@ConfigurationProperties(prefix = "book")
+public class BookProperties {
+    private int defaultPageSize;
+    private String supportEmail;
+    private int discountRate;
+
+    // getter/setter 필요 (또는 Lombok @Getter @Setter, 혹은 record + 생성자 바인딩)
+    public int getDefaultPageSize() { return defaultPageSize; }
+    public void setDefaultPageSize(int defaultPageSize) { this.defaultPageSize = defaultPageSize; }
+    // ... 나머지 getter/setter 생략
+}
+
+// 사용하는 쪽 — Bean 하나로 관련 설정을 묶어서 주입받는다
+@Service
+public class BookService {
+    private final BookProperties bookProperties;
+
+    public BookService(BookProperties bookProperties) {
+        this.bookProperties = bookProperties;
+    }
+}</code></pre></div>
+
+  <h3>4) Profile로 환경별 설정 분리</h3>
+  <p><b>Profile</b>은 "개발(dev)/운영(prod)/테스트(test)"처럼 환경에 따라 다른 설정을 적용할 수 있게 해주는 기능이에요. 파일을 <code>application-{profile}.yml</code> 형식으로 나눠서 관리한다.</p>
+  <div class="sqlbox"><div class="sqlhead">환경별 설정 파일 분리</div><pre><code># application.yml (공통 설정 + 활성 프로필 지정)
+spring:
+  profiles:
+    active: dev
+
+---
+# application-dev.yml (개발 환경)
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:h2:mem:devdb
+
+---
+# application-prod.yml (운영 환경)
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:mysql://prod-db:3306/bookdb</code></pre></div>
+  <p>특정 Bean을 특정 Profile에서만 활성화하고 싶다면 <code>@Profile</code> 애노테이션을 클래스나 <code>@Bean</code> 메서드에 붙이면 돼요.</p>
+  <div class="sqlbox"><div class="sqlhead">@Profile 애노테이션</div><pre><code>@Configuration
+public class MailConfig {
+
+    @Bean
+    @Profile("dev")
+    public MailSender devMailSender() {
+        return new ConsoleMailSender(); // 개발 환경 — 콘솔에 로그만 출력
+    }
+
+    @Bean
+    @Profile("prod")
+    public MailSender prodMailSender() {
+        return new SmtpMailSender(); // 운영 환경 — 실제 SMTP 서버로 발송
+    }
+}</code></pre></div>
+  <div class="cp"><div class="cphead">✔ 8장 핵심 요약</div><ul>
+  <li>application.yml/properties에 설정값을 분리해두고 코드에서 참조한다.</li>
+  <li>값 하나는 @Value, 관련된 값 묶음은 @ConfigurationProperties.</li>
+  <li>Profile(dev/prod)로 환경별 설정 파일과 Bean을 분리해 관리할 수 있다.</li>
+  </ul></div>
+</section>
+<div class="quiz-wrap" id="quiz-day2">
+  <h2>✅ Day 2 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="2">0 / 7 정답</div>
+  <div class="quiz-q" data-qid="d2q0" data-type="ox" data-answer="false" data-exp="POST는 보낼 때마다 새로운 자원이 생성되므로 멱등하지 않아요(같은 요청을 두 번 보내면 자원이 두 개 생김). GET, PUT, DELETE는 멱등한 메서드입니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>HTTP POST 메서드는 같은 요청을 여러 번 보내도 결과가 동일한 멱등(idempotent) 메서드다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q1" data-type="ox" data-answer="true" data-exp="Spring Boot는 내장 톰캣을 포함하고 있어서, 별도로 웹 서버를 설치하지 않아도 main() 메서드 실행만으로 jar 하나가 바로 웹 서버로 동작해요.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Spring Boot는 내장 톰캣(Embedded Tomcat)을 포함하고 있어 별도의 웹 서버 설치 없이 실행할 수 있다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q2" data-type="ox" data-answer="true" data-exp="Spring은 필드 주입/세터 주입보다 생성자 주입을 기본으로 권장해요. final로 불변성을 보장할 수 있고, 필수 의존관계 누락을 컴파일 시점에 발견할 수 있기 때문입니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Spring 공식적으로 권장하는 기본 DI(의존성 주입) 방식은 생성자 주입이다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q3" data-type="mc" data-answer="404 Not Found" data-exp="존재하지 않는 id로 자원을 조회하면 서버는 해당 자원을 찾을 수 없다는 의미의 404 Not Found를 응답해요. 400은 요청 자체가 잘못된 경우, 401/403은 인증·인가 문제일 때 사용합니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>존재하지 않는 id로 <code>GET /api/books/999</code>를 요청했을 때 응답해야 할 적절한 상태 코드는?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="400 Bad Request">400 Bad Request</button>
+      <button class="quiz-opt" data-val="404 Not Found">404 Not Found</button>
+      <button class="quiz-opt" data-val="500 Internal Server Error">500 Internal Server Error</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q4" data-type="mc" data-answer="@Configuration 클래스에서 @Bean으로 직접 등록" data-exp="컴포넌트 스캔이 자동으로 훑을 수 없는 외부 라이브러리 클래스 등을 Bean으로 등록하고 싶을 때는 @Configuration 클래스 안에서 @Bean 메서드로 직접 등록하는 방식을 사용해요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>내가 소스코드를 수정할 수 없는 외부 라이브러리 클래스를 Spring Bean으로 등록하고 싶을 때 가장 적절한 방법은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="@Configuration 클래스에서 @Bean으로 직접 등록">@Configuration 클래스에서 @Bean으로 직접 등록</button>
+      <button class="quiz-opt" data-val="해당 외부 라이브러리 클래스에 @Component를 붙인다">해당 외부 라이브러리 클래스에 @Component를 붙인다</button>
+      <button class="quiz-opt" data-val="아무 설정 없이 자동으로 등록된다">아무 설정 없이 자동으로 등록된다</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q5" data-type="short" data-accept='["ioc", "제어의 역전", "inversion of control"]' data-exp="객체 생성과 의존관계 연결의 주도권을 개발자가 아니라 Spring 컨테이너가 갖는 것을 IoC(제어의 역전, Inversion of Control)라고 해요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>객체 생성과 의존관계 관리의 주도권을 개발자가 아닌 프레임워크(컨테이너)가 갖는 원리를 무엇이라 하는가? (한글 또는 영문 약어)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q6" data-type="short" data-accept='["profile", "@profile", "프로필"]' data-exp="특정 Bean을 dev/prod 같은 특정 환경(Profile)에서만 활성화하고 싶을 때는 @Profile 애노테이션을 @Bean 메서드나 클래스에 붙여서 사용해요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>특정 Bean을 dev/prod 등 특정 환경에서만 활성화하고 싶을 때 사용하는 애노테이션은? (@ 포함 또는 제외 모두 가능)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+
+<div class="day-header" id="day3"><h1>Day 3 — Spring MVC와 컨테이너</h1><p>Spring Boot MVC·Actuator부터 컴포넌트 스캔, Controller, Lombok, 예외 처리까지</p></div>
+
+<section class="sec" id="s9" data-day="3">
+  <div class="sec-head">
+    <span class="day-badge day3">Day 3</span>
+    <h2><span class="num">9.</span> Spring Boot MVC와 Actuator</h2>
+  </div>
+  <p class="subtitle">DispatcherServlet 기반 요청 처리 흐름(Front Controller 패턴) · MVC 구성요소 · Spring Boot Actuator 모니터링</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 브라우저가 <code>GET /api/books/1</code>을 보내면, 그 요청이 곧바로 내가 만든 컨트롤러로 가는 게 아니에요. <b>DispatcherServlet</b>이라는 "문지기"가 모든 요청을 먼저 받아서, 어느 컨트롤러의 어느 메서드로 보낼지 결정한 다음 전달해줘요. 이렇게 요청을 받는 창구를 하나로 통일하는 설계를 <b>Front Controller 패턴</b>이라고 하고, MVC는 그 뒤에서 "요청 처리(Controller) · 데이터(Model) · 화면(View)"의 역할을 나누는 설계예요.</div></div>
+
+  <h3>1) MVC 패턴 — 역할을 나누는 이유</h3>
+  <p>MVC는 애플리케이션을 세 가지 역할로 나누는 설계 패턴이에요. 역할을 분리하면 한 부분(예: 화면)을 바꿔도 다른 부분(예: 비즈니스 로직)에 영향을 주지 않는다.</p>
+  <table class="t"><thead><tr><th>구성요소</th><th>역할</th><th>REST API에서의 대응</th></tr></thead>
+  <tbody>
+  <tr><td>Model</td><td>데이터와 비즈니스 로직</td><td>Entity, Service, Repository</td></tr>
+  <tr><td>View</td><td>사용자에게 보여줄 화면</td><td>REST API에서는 화면 대신 JSON 응답 자체가 View 역할을 대신한다(<code>@RestController</code>)</td></tr>
+  <tr><td>Controller</td><td>요청을 받아 Model을 호출하고 View를 결정</td><td><code>BookController</code> 같은 <code>@RestController</code> 클래스</td></tr>
+  </tbody></table>
+  <div class="note">🔑 전통적인 MVC(화면을 반환하는 웹앱)에서는 Controller가 View 이름을 반환하고 서버가 HTML을 렌더링해요. 반면 REST API는 <code>@RestController</code>를 사용해서 View 렌더링 과정 없이 Model(데이터)을 JSON으로 바로 직렬화해서 응답한다.</div>
+
+  <h3>2) DispatcherServlet과 요청 처리 흐름 (Front Controller 패턴)</h3>
+  <p>Spring MVC의 핵심은 <b>DispatcherServlet</b>이에요. 모든 HTTP 요청이 각 컨트롤러로 직접 가지 않고, 반드시 이 하나의 서블릿을 거치도록 설계되어 있다 — 이런 구조를 <b>Front Controller 패턴</b>이라고 불러요. Spring Boot는 내장 톰캣을 띄울 때 이 DispatcherServlet을 자동으로 등록해준다.</p>
+  <div class="formula"><div class="expr">Client 요청 → <b>DispatcherServlet</b> → Handler Mapping(어느 메서드?) → Controller 실행 → Service/Repository 호출 → (View Resolver 또는 메시지 컨버터) → Client 응답</div><div class="cap">모든 요청의 단일 진입점 = DispatcherServlet (Front Controller 패턴)</div></div>
+  <ul class="b">
+  <li><b>Handler Mapping</b> — 요청 URL·HTTP 메서드를 보고 어떤 컨트롤러의 어떤 메서드가 처리할지 찾는다(<code>@GetMapping("/api/books/{id}")</code> 같은 매핑 정보를 참조).</li>
+  <li><b>Handler Adapter</b> — 찾아낸 메서드를 실제로 호출한다.</li>
+  <li><b>메시지 컨버터(HttpMessageConverter)</b> — <code>@RestController</code>에서는 반환값을 JSON으로 변환해서 응답 바디에 담아준다(기본적으로 Jackson 라이브러리 사용).</li>
+  </ul>
+  <div class="cp"><div class="cphead">✔ Front Controller 패턴을 쓰는 이유</div><ul>
+  <li>공통 처리(인코딩 설정, 로깅, 예외 처리 진입점 등)를 한 곳에 모을 수 있다.</li>
+  <li>요청 처리 흐름이 일관되어, 새 API를 추가할 때 컨트롤러 매핑만 신경 쓰면 된다.</li>
+  <li>개발자는 DispatcherServlet의 존재를 거의 의식하지 않고 <code>@RestController</code>만 작성하면 되도록 추상화되어 있다.</li>
+  </ul></div>
+
+  <h3>3) Spring Boot Actuator란</h3>
+  <p><b>Actuator</b>는 운영 중인 Spring Boot 애플리케이션의 상태를 들여다볼 수 있게 해주는 모니터링·관리 기능 모음이에요. <code>spring-boot-starter-actuator</code> 의존성만 추가하면, 애플리케이션의 헬스 상태·메트릭·환경 설정 같은 정보를 HTTP 엔드포인트로 바로 확인할 수 있게 돼요. "애플리케이션에 계기판(actuator)을 달아준다"고 생각하면 쉽다.</p>
+  <div class="sqlbox"><div class="sqlhead">build.gradle 의존성 추가</div><pre><code>dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+}</code></pre></div>
+
+  <h3>4) 주요 Actuator 엔드포인트</h3>
+  <table class="t"><thead><tr><th>엔드포인트</th><th>제공 정보</th></tr></thead>
+  <tbody>
+  <tr><td><code>/actuator/health</code></td><td>애플리케이션의 헬스 상태(<code>UP</code>/<code>DOWN</code>). DB, 디스크 등 연결된 컴포넌트 상태도 함께 확인 가능</td></tr>
+  <tr><td><code>/actuator/metrics</code></td><td>JVM 메모리, CPU 사용량, HTTP 요청 처리 시간 등 각종 지표</td></tr>
+  <tr><td><code>/actuator/info</code></td><td>애플리케이션 버전 등 개발자가 직접 등록한 커스텀 정보</td></tr>
+  <tr><td><code>/actuator/beans</code></td><td>현재 컨테이너에 등록된 모든 Bean 목록</td></tr>
+  <tr><td><code>/actuator/env</code></td><td>현재 적용된 환경 변수·설정 프로퍼티 목록</td></tr>
+  </tbody></table>
+  <div class="note">⚠️ Actuator 엔드포인트 중 <code>/health</code> 외 대부분은 기본적으로 비활성화되어 있고, 민감한 정보(<code>/env</code>, <code>/beans</code> 등)를 담고 있는 경우가 많아요. 운영 환경에서는 <code>management.endpoints.web.exposure.include</code> 설정으로 노출할 엔드포인트를 신중하게 선택하고, 접근 권한도 별도로 제어해야 한다.</div>
+  <div class="callout deep"><span class="ctitle">🔎 심화 — Actuator가 실무에서 쓰이는 곳</span>
+  <p>쿠버네티스 같은 오케스트레이션 환경에서는 <code>/actuator/health</code>를 컨테이너의 liveness/readiness probe로 등록해서, "이 인스턴스가 요청을 받아도 되는 상태인지"를 주기적으로 체크하는 데 흔히 활용해요. <code>/actuator/metrics</code>는 Prometheus 같은 모니터링 도구와 연동해서 대시보드를 구성하는 데 쓰인다.</p></div>
+  <div class="cp"><div class="cphead">✔ 9장 핵심 요약</div><ul>
+  <li>MVC는 Model(데이터·로직)·View(화면)·Controller(요청 처리)로 역할을 나누는 패턴이다.</li>
+  <li>DispatcherServlet이 모든 요청의 단일 진입점 역할을 하는 것이 Front Controller 패턴.</li>
+  <li>Actuator는 <code>/actuator/health</code>, <code>/actuator/metrics</code> 등으로 애플리케이션 상태를 모니터링하게 해준다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s10" data-day="3">
+  <div class="sec-head">
+    <span class="day-badge day3">Day 3</span>
+    <h2><span class="num">10.</span> 컴포넌트 스캔과 Spring 컨테이너</h2>
+  </div>
+  <p class="subtitle">@ComponentScan 동작 원리 · ApplicationContext가 Bean을 찾고 등록하는 과정 · @Autowired의 주입 원리</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 7장에서 <code>@Service</code>, <code>@Repository</code>를 붙이면 Bean이 등록된다고 배웠는데, 그게 어떻게 가능한 걸까요? Spring 컨테이너(<b>ApplicationContext</b>)가 애플리케이션 실행 시점에 지정된 패키지를 <b>훑어보면서(scan)</b> 스테레오타입 애노테이션이 붙은 클래스를 찾아 Bean으로 등록하는데, 이 과정을 <b>컴포넌트 스캔</b>이라고 해요. 이번 장에서는 그 내부 동작을 조금 더 들여다본다.</div></div>
+
+  <h3>1) @ComponentScan은 어디서 시작되는가</h3>
+  <p>Spring Boot 프로젝트의 시작점인 <code>@SpringBootApplication</code> 애노테이션 안에는 사실 <code>@ComponentScan</code>이 포함되어 있어요. 별도 설정이 없으면, <b>메인 클래스가 위치한 패키지와 그 하위 패키지</b>를 기본 스캔 범위로 삼는다.</p>
+  <div class="sqlbox"><div class="sqlhead">패키지 구조 예시</div><pre><code>com.example.bookapi
+ ├─ BookApplication.java        // @SpringBootApplication — 여기가 스캔 시작점
+ ├─ controller/BookController.java   // @RestController
+ ├─ service/BookService.java         // @Service
+ └─ repository/BookRepository.java   // @Repository</code></pre></div>
+  <div class="note">🔑 그래서 실무에서는 메인 클래스를 프로젝트 최상위 패키지(예: <code>com.example.bookapi</code>)에 두는 게 관례예요. 메인 클래스를 하위 패키지로 옮기면, 그보다 상위 패키지에 있는 컴포넌트는 스캔 대상에서 빠져 Bean으로 등록되지 않는다.</div>
+
+  <h3>2) ApplicationContext가 Bean을 찾고 등록하는 과정</h3>
+  <p><b>ApplicationContext</b>는 Spring의 IoC 컨테이너 구현체예요. 애플리케이션이 시작되면 대략 다음 순서로 동작한다.</p>
+  <div class="formula"><div class="expr">① 스캔 범위 내 클래스 탐색 → ② <b>@Component</b> 계열 애노테이션이 붙은 클래스 식별 → ③ 각 클래스를 Bean 정의(BeanDefinition)로 등록 → ④ 의존관계를 분석해 Bean 생성 순서 결정 → ⑤ 생성자/필드에 필요한 Bean을 <b>주입</b>하며 인스턴스 생성 → ⑥ 컨테이너 내부(싱글톤 레지스트리)에 보관</div></div>
+  <ul class="b">
+  <li><b>BeanDefinition</b> — Bean의 클래스 정보, 스코프, 의존관계 등을 담은 "설계도" 같은 메타데이터. 컨테이너는 실제 객체를 만들기 전에 이 정의부터 모두 등록한다.</li>
+  <li>Bean 사이에 의존관계가 있으면(<code>BookService</code>가 <code>BookRepository</code>를 필요로 함), 컨테이너는 <b>의존 대상을 먼저 생성</b>한 뒤 필요한 곳에 주입한다.</li>
+  <li>기본 스코프가 <b>싱글톤</b>이므로, 한 번 생성된 Bean은 컨테이너 종료 전까지 재사용된다(7장 참고).</li>
+  </ul>
+
+  <h3>3) @Autowired가 의존성을 주입하는 원리</h3>
+  <p><code>@Autowired</code>가 붙으면 Spring 컨테이너는 해당 필드/생성자 파라미터의 <b>타입</b>을 기준으로 컨테이너 안에서 일치하는 Bean을 찾아 연결해줘요. 이 과정을 <b>타입에 의한 자동 매칭(byType)</b>이라고 부른다.</p>
+  <div class="sqlbox"><div class="sqlhead">타입이 여러 개일 때 — @Qualifier로 구분</div><pre><code>public interface BookRepository {
+    Optional&lt;Book&gt; findById(Long id);
+}
+
+@Repository
+public class JpaBookRepository implements BookRepository { ... }
+
+@Repository
+public class InMemoryBookRepository implements BookRepository { ... }
+
+// BookRepository 타입 Bean이 2개 존재 → 타입만으로는 어떤 걸 주입할지 모호(ambiguous)
+@Service
+public class BookService {
+    private final BookRepository bookRepository;
+
+    public BookService(@Qualifier("jpaBookRepository") BookRepository bookRepository) {
+        this.bookRepository = bookRepository; // 이름을 지정해서 명확히 구분
+    }
+}</code></pre></div>
+  <div class="note">🔑 같은 타입의 Bean이 하나뿐이면 이름을 신경 쓸 필요 없이 타입만으로 주입돼요. 여러 개일 때만 <code>@Qualifier</code>(이름 지정) 또는 <code>@Primary</code>(우선순위 지정)로 모호함을 해소해줘야 한다. 컴포넌트 스캔으로 등록된 Bean의 기본 이름은 클래스명의 첫 글자를 소문자로 바꾼 값(<code>JpaBookRepository</code> → <code>jpaBookRepository</code>)이에요.</div>
+
+  <h3>4) 컴포넌트 스캔 대상에서 제외/포함하기</h3>
+  <p>기본 스캔 범위를 벗어나는 패키지를 포함시키거나, 특정 클래스를 스캔에서 제외하고 싶을 때는 <code>@ComponentScan</code>을 직접 지정할 수 있어요.</p>
+  <div class="sqlbox"><div class="sqlhead">스캔 범위 커스터마이징</div><pre><code>@SpringBootApplication
+@ComponentScan(basePackages = {"com.example.bookapi", "com.example.common"})
+public class BookApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(BookApplication.class, args);
+    }
+}</code></pre></div>
+  <div class="cp"><div class="cphead">✔ 10장 핵심 요약</div><ul>
+  <li>@SpringBootApplication에 포함된 @ComponentScan이 메인 클래스 기준 하위 패키지를 스캔한다.</li>
+  <li>ApplicationContext는 스캔 → BeanDefinition 등록 → 의존관계 분석 → Bean 생성·주입 순서로 동작한다.</li>
+  <li>@Autowired는 기본적으로 타입 기준(byType)으로 주입 대상을 찾고, 후보가 여러 개면 @Qualifier/@Primary로 구분한다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s11" data-day="3">
+  <div class="sec-head">
+    <span class="day-badge day3">Day 3</span>
+    <h2><span class="num">11.</span> Controller와 HTTP 요청 처리</h2>
+  </div>
+  <p class="subtitle">@RestController·@RequestMapping 계열 · @PathVariable·@RequestParam·@RequestBody 차이 · ResponseEntity로 상태코드 제어</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: Controller는 클라이언트 요청을 가장 먼저 받는 계층이에요. URL 경로의 일부(<code>/books/1</code>의 <code>1</code>)는 <b>@PathVariable</b>, 쿼리 파라미터(<code>?author=김</code>)는 <b>@RequestParam</b>, JSON 요청 바디는 <b>@RequestBody</b>로 각각 받는 방법이 정해져 있어요. 그리고 응답의 상태 코드까지 세밀하게 제어하고 싶을 땐 <b>ResponseEntity</b>를 사용한다.</div></div>
+
+  <h3>1) @RestController와 매핑 애노테이션</h3>
+  <p><code>@RestController</code>는 <code>@Controller</code>와 <code>@ResponseBody</code>를 합쳐놓은 애노테이션이에요. 이 애노테이션이 붙은 클래스의 메서드가 반환하는 객체는 View를 거치지 않고 그대로 JSON으로 변환되어 응답 바디에 담긴다.</p>
+  <div class="sqlbox"><div class="sqlhead">BookController — 매핑 애노테이션 기본형</div><pre><code>@RestController
+@RequestMapping("/api/books")   // 이 컨트롤러의 공통 URL 접두어
+public class BookController {
+
+    private final BookService bookService;
+
+    public BookController(BookService bookService) {
+        this.bookService = bookService;
+    }
+
+    @GetMapping                 // GET /api/books
+    public List&lt;Book&gt; findAll() {
+        return bookService.findAll();
+    }
+
+    @GetMapping("/{id}")        // GET /api/books/{id}
+    public Book findById(@PathVariable Long id) {
+        return bookService.findById(id);
+    }
+
+    @PostMapping                // POST /api/books
+    public Book create(@RequestBody Book book) {
+        return bookService.create(book);
+    }
+
+    @PutMapping("/{id}")        // PUT /api/books/{id}
+    public Book update(@PathVariable Long id, @RequestBody Book book) {
+        return bookService.update(id, book);
+    }
+
+    @DeleteMapping("/{id}")     // DELETE /api/books/{id}
+    public void delete(@PathVariable Long id) {
+        bookService.delete(id);
+    }
+}</code></pre></div>
+  <p><code>@GetMapping</code>, <code>@PostMapping</code>, <code>@PutMapping</code>, <code>@PatchMapping</code>, <code>@DeleteMapping</code>은 각각 <code>@RequestMapping(method = RequestMethod.GET)</code> 등을 축약한 표현이에요. 클래스 레벨의 <code>@RequestMapping("/api/books")</code>과 메서드 레벨의 매핑이 합쳐져 최종 URL이 결정된다.</p>
+
+  <h3>2) @PathVariable vs @RequestParam vs @RequestBody</h3>
+  <table class="t"><thead><tr><th>애노테이션</th><th>가져오는 위치</th><th>예시</th></tr></thead>
+  <tbody>
+  <tr><td>@PathVariable</td><td>URL 경로 자체의 일부</td><td><code>/api/books/{id}</code> → <code>@PathVariable Long id</code></td></tr>
+  <tr><td>@RequestParam</td><td>쿼리 스트링(<code>?key=value</code>)</td><td><code>/api/books?author=김민준</code> → <code>@RequestParam String author</code></td></tr>
+  <tr><td>@RequestBody</td><td>HTTP 요청 바디(주로 JSON)</td><td>POST/PUT 시 전달된 JSON → <code>@RequestBody Book book</code></td></tr>
+  </tbody></table>
+  <div class="sqlbox"><div class="sqlhead">@RequestParam 활용 — 검색/페이징 예시</div><pre><code>// GET /api/books/search?author=김민준&amp;page=0&amp;size=10
+@GetMapping("/search")
+public List&lt;Book&gt; search(
+        @RequestParam String author,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size) {
+    return bookService.searchByAuthor(author, page, size);
+}</code></pre></div>
+  <div class="note">🔑 <code>@RequestParam</code>은 기본적으로 필수 파라미터예요. 없어도 되는 값이면 <code>required = false</code> 또는 <code>defaultValue</code>를 지정해야 400 에러 없이 동작한다. 이 페이지 우측 하단의 REST API 연습장에서 쿼리 파라미터를 바꿔가며 요청을 보내보면 차이가 더 잘 와닿는다.</div>
+
+  <h3>3) ResponseEntity로 상태 코드와 바디 함께 제어하기</h3>
+  <p>지금까지 예시는 객체를 그대로 반환했는데, 이 경우 상태 코드는 항상 200(또는 예외 발생 시 500)으로 고정돼요. 생성 성공 시 201을, 삭제 성공 시 204를 명시적으로 응답하려면 <code>ResponseEntity</code>로 감싸서 반환해야 한다.</p>
+  <div class="sqlbox"><div class="sqlhead">ResponseEntity 활용</div><pre><code>@PostMapping
+public ResponseEntity&lt;Book&gt; create(@RequestBody Book book) {
+    Book saved = bookService.create(book);
+    return ResponseEntity
+            .status(HttpStatus.CREATED)   // 201 Created
+            .body(saved);
+}
+
+@GetMapping("/{id}")
+public ResponseEntity&lt;Book&gt; findById(@PathVariable Long id) {
+    return bookService.findByIdOptional(id)
+            .map(ResponseEntity::ok)                    // 200 OK + 바디
+            .orElse(ResponseEntity.notFound().build());  // 404 Not Found, 바디 없음
+}
+
+@DeleteMapping("/{id}")
+public ResponseEntity&lt;Void&gt; delete(@PathVariable Long id) {
+    bookService.delete(id);
+    return ResponseEntity.noContent().build(); // 204 No Content
+}</code></pre></div>
+  <div class="cp"><div class="cphead">✔ ResponseEntity를 쓰면 좋은 상황</div><ul>
+  <li>생성 성공 시 200이 아닌 201을 명시적으로 응답하고 싶을 때.</li>
+  <li>자원이 없을 때 예외 대신 404 응답을 직접 구성하고 싶을 때(다음 장의 예외 처리와도 비교해볼 것).</li>
+  <li>응답 헤더(예: <code>Location</code>)를 함께 담아 보내고 싶을 때 — <code>ResponseEntity.created(uri).body(saved)</code>.</li>
+  </ul></div>
+  <div class="cp"><div class="cphead">✔ 11장 핵심 요약</div><ul>
+  <li>@RestController = @Controller + @ResponseBody, 매핑 애노테이션으로 URL·메서드를 지정한다.</li>
+  <li>경로 값은 @PathVariable, 쿼리 파라미터는 @RequestParam, 요청 바디는 @RequestBody로 받는다.</li>
+  <li>상태 코드까지 세밀하게 제어하려면 ResponseEntity로 감싸서 반환한다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s12" data-day="3">
+  <div class="sec-head">
+    <span class="day-badge day3">Day 3</span>
+    <h2><span class="num">12.</span> Lombok과 입력값 검증</h2>
+  </div>
+  <p class="subtitle">Lombok 주요 애노테이션(@Getter·@Setter·@Builder 등) · Bean Validation(@NotNull·@NotBlank·@Size 등)과 @Valid</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>Lombok</b>은 getter/setter/생성자처럼 자바에서 매번 반복해서 써야 하는 코드를 애노테이션 하나로 자동 생성해주는 라이브러리예요. <b>Bean Validation</b>은 "제목은 비어있으면 안 된다", "가격은 0 이상이어야 한다" 같은 입력값 규칙을 애노테이션으로 선언해두면, Spring이 요청을 처리하기 전에 자동으로 검증해주는 기능이에요. 둘 다 "반복 작업을 줄여준다"는 공통점이 있다.</div></div>
+
+  <h3>1) Lombok 주요 애노테이션</h3>
+  <p>Lombok은 컴파일 시점에 애노테이션을 분석해서 getter/setter, 생성자, <code>toString()</code> 같은 코드를 자동으로 만들어 넣어줘요. 클래스 파일에는 손으로 친 코드가 안 보이지만, 컴파일된 바이트코드에는 실제로 포함된다.</p>
+  <table class="t"><thead><tr><th>애노테이션</th><th>생성해주는 것</th></tr></thead>
+  <tbody>
+  <tr><td><code>@Getter</code> / <code>@Setter</code></td><td>모든 필드의 getter / setter 메서드</td></tr>
+  <tr><td><code>@NoArgsConstructor</code></td><td>파라미터 없는 기본 생성자</td></tr>
+  <tr><td><code>@AllArgsConstructor</code></td><td>모든 필드를 파라미터로 받는 생성자</td></tr>
+  <tr><td><code>@Builder</code></td><td>빌더 패턴으로 객체를 생성하는 메서드 체인</td></tr>
+  <tr><td><code>@ToString</code></td><td>필드 값을 보기 좋게 출력하는 toString()</td></tr>
+  <tr><td><code>@EqualsAndHashCode</code></td><td>필드 기반 equals()/hashCode()</td></tr>
+  <tr><td><code>@Data</code></td><td>@Getter+@Setter+@ToString+@EqualsAndHashCode+생성자를 한 번에 (남용 주의)</td></tr>
+  </tbody></table>
+  <div class="sqlbox"><div class="sqlhead">Lombok 적용 전 vs 적용 후 — Book 클래스</div><pre><code>// Lombok 없이 — getter/setter/생성자를 모두 직접 작성
+public class Book {
+    private Long id;
+    private String title;
+    private String author;
+    private int price;
+
+    public Book() {}
+    public Book(Long id, String title, String author, int price) {
+        this.id = id; this.title = title; this.author = author; this.price = price;
+    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    // ... author, price도 반복 ...
+}
+
+// Lombok 적용 후 — 애노테이션 몇 줄로 대체
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Book {
+    private Long id;
+    private String title;
+    private String author;
+    private int price;
+}
+
+// @Builder 사용 예
+Book book = Book.builder()
+        .title("객체지향의 사실과 오해")
+        .author("조영호")
+        .price(22000)
+        .build();</code></pre></div>
+  <div class="note">⚠️ <code>@Builder</code>를 클래스에 붙일 때는 <code>@NoArgsConstructor</code>와 <code>@AllArgsConstructor</code>를 함께 붙여주는 게 안전해요. <code>@Builder</code>가 내부적으로 모든 필드를 받는 생성자를 필요로 하는데, 다른 생성자 애노테이션과 충돌하는 경우가 있기 때문이에요. 그리고 JPA 엔티티는 프록시 생성을 위해 기본 생성자가 필수라, <code>@NoArgsConstructor</code>는 특히 자주 함께 쓰인다(16장 참고).</div>
+
+  <h3>2) Bean Validation — 검증 애노테이션</h3>
+  <p>클라이언트가 보낸 요청 데이터가 올바른지(제목이 비어있지 않은지, 가격이 음수가 아닌지 등)를 매번 <code>if</code>문으로 검사하는 대신, 필드에 검증 규칙을 애노테이션으로 선언해둘 수 있어요.</p>
+  <table class="t"><thead><tr><th>애노테이션</th><th>검증 내용</th></tr></thead>
+  <tbody>
+  <tr><td><code>@NotNull</code></td><td>null이 아니어야 함</td></tr>
+  <tr><td><code>@NotBlank</code></td><td>null·빈 문자열·공백만 있는 문자열이 아니어야 함(String 전용)</td></tr>
+  <tr><td><code>@NotEmpty</code></td><td>null이거나 비어있지 않아야 함(문자열·컬렉션 등)</td></tr>
+  <tr><td><code>@Size(min=, max=)</code></td><td>문자열 길이·컬렉션 크기 범위 제한</td></tr>
+  <tr><td><code>@Min</code> / <code>@Max</code></td><td>숫자 값의 최소/최대 범위</td></tr>
+  <tr><td><code>@Positive</code> / <code>@PositiveOrZero</code></td><td>양수 / 0 이상</td></tr>
+  <tr><td><code>@Email</code></td><td>이메일 형식 검증</td></tr>
+  </tbody></table>
+  <div class="sqlbox"><div class="sqlhead">BookRequest DTO에 검증 규칙 선언</div><pre><code>@Getter @Setter
+@NoArgsConstructor
+public class BookRequest {
+
+    @NotBlank(message = "제목은 비어있을 수 없습니다.")
+    @Size(max = 100, message = "제목은 100자를 넘을 수 없습니다.")
+    private String title;
+
+    @NotBlank(message = "저자는 비어있을 수 없습니다.")
+    private String author;
+
+    @NotNull(message = "가격은 필수입니다.")
+    @Min(value = 0, message = "가격은 0원 이상이어야 합니다.")
+    private Integer price;
+}</code></pre></div>
+
+  <h3>3) @Valid로 검증 트리거하기</h3>
+  <p>DTO에 검증 규칙을 선언해도, 컨트롤러에서 <code>@Valid</code>(또는 <code>@Validated</code>)를 붙여야 실제로 검증이 실행돼요. 검증에 실패하면 컨트롤러 메서드가 실행되기도 전에 <code>MethodArgumentNotValidException</code>이 발생하며 요청이 차단된다(13장에서 이 예외를 다루는 방법을 배운다).</p>
+  <div class="sqlbox"><div class="sqlhead">@Valid를 붙인 컨트롤러</div><pre><code>@PostMapping
+public ResponseEntity&lt;Book&gt; create(@Valid @RequestBody BookRequest request) {
+    // @Valid가 없으면 검증 애노테이션이 있어도 무시된 채 이 메서드가 그대로 실행된다
+    Book saved = bookService.create(request);
+    return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+}</code></pre></div>
+  <div class="note">🔑 <code>@Valid</code>를 빠뜨리는 실수가 은근히 잦아요. DTO에 <code>@NotBlank</code> 등을 붙여놓고도 컨트롤러 파라미터에 <code>@Valid</code>를 안 붙이면 검증이 조용히 통과되어 버리니, 요청 바디를 받는 DTO에는 항상 <code>@Valid</code>를 붙이는 습관을 들이는 게 좋다.</div>
+  <div class="cp"><div class="cphead">✔ 12장 핵심 요약</div><ul>
+  <li>Lombok은 getter/setter/생성자/빌더 같은 반복 코드를 애노테이션으로 자동 생성한다.</li>
+  <li>Bean Validation 애노테이션(@NotBlank, @Size, @Min 등)으로 입력값 규칙을 선언할 수 있다.</li>
+  <li>실제 검증이 실행되려면 컨트롤러에서 @Valid(또는 @Validated)를 붙여야 한다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s13" data-day="3">
+  <div class="sec-head">
+    <span class="day-badge day3">Day 3</span>
+    <h2><span class="num">13.</span> 예외 처리(ExceptionHandler)</h2>
+  </div>
+  <p class="subtitle">@ExceptionHandler로 컨트롤러별 예외 처리 · @RestControllerAdvice로 전역 예외 처리 · 커스텀 예외와 일관된 에러 응답 형식</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 존재하지 않는 도서를 조회하거나, 검증에 실패한 요청이 들어오면 예외가 발생해요. 이걸 그냥 두면 스택 트레이스가 그대로 노출된 500 에러가 나가버려요. <b>@ExceptionHandler</b>와 <b>@RestControllerAdvice</b>는 이런 예외를 붙잡아서, 클라이언트가 이해할 수 있는 <b>일관된 형식의 JSON 에러 응답</b>으로 바꿔서 돌려주는 장치예요.</div></div>
+
+  <h3>1) 커스텀 예외 클래스 설계</h3>
+  <p>자바 표준 예외(<code>RuntimeException</code> 등) 대신, 상황에 맞는 의미를 담은 커스텀 예외를 만들어 쓰는 게 좋아요. "무엇이 왜 잘못됐는지"가 예외 이름만 봐도 드러나기 때문이에요.</p>
+  <div class="sqlbox"><div class="sqlhead">BookNotFoundException</div><pre><code>public class BookNotFoundException extends RuntimeException {
+    public BookNotFoundException(Long id) {
+        super("도서를 찾을 수 없습니다. id=" + id);
+    }
+}
+
+// Service 계층에서 발생시키는 지점
+@Service
+public class BookService {
+    private final BookRepository bookRepository;
+    // ... 생성자 생략 ...
+
+    public Book findById(Long id) {
+        return bookRepository.findById(id)
+                .orElseThrow(() -> new BookNotFoundException(id));
+    }
+}</code></pre></div>
+  <div class="note">🔑 <code>RuntimeException</code>(비검사 예외)을 상속하면 메서드 시그니처마다 <code>throws</code>를 선언하지 않아도 돼서, Spring 기반 코드에서는 대부분 비검사 예외로 커스텀 예외를 설계한다.</div>
+
+  <h3>2) @ExceptionHandler — 컨트롤러 단위 예외 처리</h3>
+  <p><code>@ExceptionHandler</code>는 같은 컨트롤러 클래스 안에서 특정 예외가 발생했을 때 실행될 메서드를 지정해요. 컨트롤러 범위에 국한된다는 게 특징이에요.</p>
+  <div class="sqlbox"><div class="sqlhead">컨트롤러 내부 예외 처리</div><pre><code>@RestController
+@RequestMapping("/api/books")
+public class BookController {
+
+    private final BookService bookService;
+    // ... 생성자 생략 ...
+
+    @GetMapping("/{id}")
+    public Book findById(@PathVariable Long id) {
+        return bookService.findById(id); // 못 찾으면 BookNotFoundException
+    }
+
+    @ExceptionHandler(BookNotFoundException.class)
+    public ResponseEntity&lt;String&gt; handleNotFound(BookNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    }
+}</code></pre></div>
+  <p>이 방식은 해당 컨트롤러에서만 적용되기 때문에, 컨트롤러가 여러 개면 같은 처리 코드를 계속 복사해야 하는 단점이 있어요. 이 문제를 해결하는 게 다음의 전역 예외 처리예요.</p>
+
+  <h3>3) @RestControllerAdvice — 전역 예외 처리</h3>
+  <p><code>@RestControllerAdvice</code>(<code>@ControllerAdvice</code> + <code>@ResponseBody</code>)가 붙은 클래스는 애플리케이션 전체의 컨트롤러에서 발생하는 예외를 한곳에서 처리할 수 있게 해줘요. 컨트롤러마다 <code>@ExceptionHandler</code>를 반복하지 않아도 된다.</p>
+  <div class="sqlbox"><div class="sqlhead">전역 예외 처리기 — GlobalExceptionHandler</div><pre><code>@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(BookNotFoundException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleBookNotFound(BookNotFoundException e) {
+        ErrorResponse body = new ErrorResponse("BOOK_NOT_FOUND", e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class) // @Valid 검증 실패 시 발생
+    public ResponseEntity&lt;ErrorResponse&gt; handleValidation(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(f -&gt; f.getField() + ": " + f.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+        ErrorResponse body = new ErrorResponse("VALIDATION_FAILED", message);
+        return ResponseEntity.badRequest().body(body);
+    }
+
+    @ExceptionHandler(Exception.class) // 나머지 예상치 못한 예외의 최종 방어선
+    public ResponseEntity&lt;ErrorResponse&gt; handleUnexpected(Exception e) {
+        ErrorResponse body = new ErrorResponse("INTERNAL_ERROR", "서버 내부 오류가 발생했습니다.");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    }
+}</code></pre></div>
+  <div class="note">🔑 예외 처리 메서드는 <b>더 구체적인 예외가 우선</b> 적용돼요. <code>BookNotFoundException</code> 전용 핸들러와 <code>Exception</code> 전체를 받는 핸들러가 함께 있으면, <code>BookNotFoundException</code>이 발생했을 때는 더 구체적인 핸들러가 먼저 매칭된다. 가장 포괄적인 <code>Exception.class</code> 핸들러는 "예상치 못한 예외를 500으로라도 일관되게 응답하기 위한 최종 방어선" 역할을 한다.</div>
+
+  <h3>4) 일관된 에러 응답 형식 설계</h3>
+  <p>클라이언트(프론트엔드)가 에러를 일관되게 처리하려면, 어떤 예외든 <b>같은 구조의 JSON</b>으로 응답하는 게 중요해요.</p>
+  <div class="sqlbox"><div class="sqlhead">ErrorResponse DTO와 응답 예시</div><pre><code>@Getter
+@AllArgsConstructor
+public class ErrorResponse {
+    private String code;      // 클라이언트가 분기 처리할 수 있는 에러 코드
+    private String message;   // 사람이 읽을 수 있는 메시지
+}
+
+// GET /api/books/999 → 404 응답 바디 예시
+{
+  "code": "BOOK_NOT_FOUND",
+  "message": "도서를 찾을 수 없습니다. id=999"
+}
+
+// POST /api/books (제목 누락) → 400 응답 바디 예시
+{
+  "code": "VALIDATION_FAILED",
+  "message": "title: 제목은 비어있을 수 없습니다."
+}</code></pre></div>
+  <div class="cp"><div class="cphead">✔ 실무에서 흔히 추가하는 필드</div><ul>
+  <li><code>timestamp</code> — 에러 발생 시각(로그 추적에 유용).</li>
+  <li><code>path</code> — 에러가 발생한 요청 경로.</li>
+  <li><code>status</code> — HTTP 상태 코드 숫자(응답 헤더와 별개로 바디에도 담아두면 클라이언트가 파싱하기 편함).</li>
+  </ul></div>
+  <div class="callout deep"><span class="ctitle">🔎 심화 — @ExceptionHandler vs @RestControllerAdvice, 언제 뭘 쓰나</span>
+  <p>특정 컨트롤러에서만 특별하게 처리해야 하는 예외라면 그 컨트롤러 안에 <code>@ExceptionHandler</code>를 두는 게 맞지만, 대부분의 경우(공통 검증 실패, 리소스 없음, 서버 오류 등)는 <code>@RestControllerAdvice</code> 하나로 애플리케이션 전역을 통일해서 관리하는 게 유지보수에 유리해요. 실무에서는 <code>@RestControllerAdvice</code>를 기본으로 두고, 정말 예외적인 경우에만 컨트롤러 로컬 핸들러를 추가하는 경우가 많다.</p></div>
+  <div class="cp"><div class="cphead">✔ 13장 핵심 요약</div><ul>
+  <li>커스텀 예외 클래스로 "무엇이 왜 잘못됐는지"를 명확히 표현한다.</li>
+  <li>@ExceptionHandler는 컨트롤러 단위, @RestControllerAdvice는 애플리케이션 전역 예외 처리를 담당한다.</li>
+  <li>모든 예외를 code/message 같은 일관된 JSON 구조로 응답하도록 설계하는 것이 중요하다.</li>
+  </ul></div>
+</section>
+<div class="quiz-wrap" id="quiz-day3">
+  <h2>✅ Day 3 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="3">0 / 7 정답</div>
+  <div class="quiz-q" data-qid="d3q0" data-type="ox" data-answer="true" data-exp="Spring MVC는 Front Controller 패턴을 따라서, 모든 HTTP 요청이 각 컨트롤러로 바로 전달되지 않고 DispatcherServlet이라는 단일 진입점을 먼저 거쳐요. DispatcherServlet이 Handler Mapping을 통해 적절한 컨트롤러 메서드로 요청을 전달합니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Spring MVC에서 모든 HTTP 요청은 각 컨트롤러로 바로 전달되지 않고, DispatcherServlet이라는 단일 진입점을 먼저 거친다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d3q1" data-type="ox" data-answer="false" data-exp="Actuator 엔드포인트는 /health 정도만 기본 노출되고, /env·/beans 등 민감한 정보를 담은 대부분의 엔드포인트는 기본적으로 비활성화되어 있어요. management.endpoints.web.exposure.include 설정으로 노출 범위를 직접 지정해야 합니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Spring Boot Actuator의 모든 엔드포인트는 별도 설정 없이도 기본적으로 전부 외부에 노출된다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d3q2" data-type="ox" data-answer="true" data-exp="@RequestParam으로 받는 파라미터는 기본적으로 필수예요. 값이 없으면 400 Bad Request가 발생하며, 선택적으로 만들고 싶다면 required=false나 defaultValue를 지정해야 합니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>@RequestParam으로 지정한 파라미터는 기본적으로 필수이며, 요청에 값이 없으면 400 에러가 발생한다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d3q3" data-type="mc" data-answer="@RequestBody" data-exp="요청 바디에 담긴 JSON을 자바 객체로 변환해서 받으려면 @RequestBody를 사용해요. @PathVariable은 URL 경로의 일부, @RequestParam은 쿼리 스트링 값을 받을 때 사용합니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>POST 요청의 JSON 바디를 자바 객체(예: Book)로 변환해서 받을 때 사용하는 애노테이션은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="@PathVariable">@PathVariable</button>
+      <button class="quiz-opt" data-val="@RequestParam">@RequestParam</button>
+      <button class="quiz-opt" data-val="@RequestBody">@RequestBody</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d3q4" data-type="mc" data-answer="@RestControllerAdvice" data-exp="@RestControllerAdvice는 애플리케이션 전체 컨트롤러에서 발생하는 예외를 한 클래스에서 전역으로 처리할 수 있게 해줘요. @ExceptionHandler는 그 안에서(혹은 개별 컨트롤러 안에서) 특정 예외 타입에 대한 처리 메서드를 지정하는 애노테이션입니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>여러 컨트롤러에서 발생하는 예외를 한 곳에서 전역으로 처리하고 싶을 때 클래스에 붙이는 애노테이션은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="@Valid">@Valid</button>
+      <button class="quiz-opt" data-val="@RestControllerAdvice">@RestControllerAdvice</button>
+      <button class="quiz-opt" data-val="@ComponentScan">@ComponentScan</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d3q5" data-type="short" data-accept='["lombok", "롬복"]' data-exp="getter, setter,생성자, 빌더 같은 반복 코드를 애노테이션만으로 자동 생성해주는 라이브러리는 Lombok이에요. @Getter, @Setter, @Builder 등을 붙이면 컴파일 시점에 해당 코드가 자동으로 만들어집니다.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>getter/setter/생성자/빌더 같은 반복 코드를 애노테이션만으로 자동 생성해주는 자바 라이브러리 이름은?</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d3q6" data-type="short" data-accept='["컴포넌트 스캔", "component scan", "componentscan"]' data-exp="Spring 컨테이너가 지정된 패키지를 훑으며 @Component 계열 애노테이션이 붙은 클래스를 찾아 Bean으로 등록하는 과정을 컴포넌트 스캔(Component Scan)이라고 해요. @SpringBootApplication 안에 기본적으로 포함되어 있습니다.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>Spring 컨테이너가 @Component 계열 애노테이션이 붙은 클래스를 찾아 Bean으로 자동 등록하는 과정을 무엇이라 하는가? (한글 또는 영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+
+<div class="day-header" id="day4"><h1>Day 4 — 공통 처리와 데이터 접근</h1><p>자동 설정·로그·AOP부터 JPA, JPA Repository, MyBatis까지</p></div>
+
+<section class="sec" id="s14" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">14.</span> 자동 설정과 로그 관리</h2>
+  </div>
+  <p class="subtitle">Auto Configuration이 조건에 따라 Bean을 구성하는 원리 · SLF4J+Logback 기본 사용법 · 로그 레벨</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 6장에서 Spring Boot가 "관례 기반 자동 설정"으로 설정 지옥을 해결했다고 배웠는데, 그 자동 설정을 실제로 실행하는 메커니즘이 <b>Auto Configuration</b>이에요. "classpath에 이 라이브러리가 있으면 이 Bean을 등록해라" 같은 조건을 판단해서 동작한다. 그리고 개발 중 무슨 일이 일어나는지 파악하려면 <code>System.out.println</code> 대신 <b>SLF4J+Logback</b> 기반의 로그를 남기는 게 표준이에요.</div></div>
+
+  <h3>1) Auto Configuration 동작 원리 개요</h3>
+  <p>Spring Boot는 프로젝트의 classpath에 어떤 라이브러리가 올라와 있는지를 보고, 그에 맞는 Bean들을 자동으로 등록해요. 예를 들어 <code>spring-boot-starter-web</code>이 있으면 내장 톰캣과 DispatcherServlet 관련 Bean들을, JDBC 드라이버와 <code>spring-boot-starter-data-jpa</code>가 있으면 <code>DataSource</code>와 <code>EntityManagerFactory</code> 관련 Bean들을 자동으로 구성해준다. 이 판단은 <code>@Conditional</code> 계열 애노테이션으로 이루어져요.</p>
+  <table class="t"><thead><tr><th>애노테이션</th><th>조건</th></tr></thead>
+  <tbody>
+  <tr><td><code>@ConditionalOnClass</code></td><td>지정한 클래스가 classpath에 존재할 때만 설정을 활성화</td></tr>
+  <tr><td><code>@ConditionalOnMissingBean</code></td><td>같은 타입의 Bean이 아직 등록되어 있지 않을 때만 기본 Bean을 등록(개발자가 직접 등록한 Bean이 있으면 그걸 우선시)</td></tr>
+  <tr><td><code>@ConditionalOnProperty</code></td><td>application.yml의 특정 프로퍼티 값에 따라 설정을 활성화/비활성화</td></tr>
+  </tbody></table>
+  <div class="sqlbox"><div class="sqlhead">Auto Configuration 개념 예시(Spring Boot 내부 구현을 단순화한 형태)</div><pre><code>@Configuration
+@ConditionalOnClass(DataSource.class)          // JDBC DataSource 클래스가 classpath에 있을 때만
+public class DataSourceAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean                  // 개발자가 직접 DataSource Bean을 등록하지 않았을 때만
+    public DataSource dataSource() {
+        return new HikariDataSource(); // 기본 커넥션 풀
+    }
+}</code></pre></div>
+  <div class="note">🔑 핵심은 "덮어쓸 수 있는 기본값"이라는 점이에요. 자동 설정이 만들어주는 Bean은 어디까지나 기본값이고, 개발자가 직접 같은 타입의 Bean을 등록하면(<code>@ConditionalOnMissingBean</code> 조건에 의해) 자동 설정 쪽이 조용히 비활성화되고 개발자가 등록한 Bean이 우선 사용된다.</div>
+
+  <h3>2) SLF4J + Logback — 로그를 남기는 이유</h3>
+  <p><code>System.out.println</code>은 로그 레벨 구분도 없고, 파일로 저장하거나 끄고 켜는 것도 쉽지 않아요. Spring Boot는 <b>SLF4J</b>(Simple Logging Facade for Java, 로깅 API의 "인터페이스")와 <b>Logback</b>(실제 구현체)을 기본 조합으로 사용한다. <code>spring-boot-starter-web</code> 같은 스타터에 이미 포함되어 있어서 별도 의존성 추가 없이 바로 쓸 수 있다.</p>
+  <div class="sqlbox"><div class="sqlhead">Logger 사용 예시 — BookService</div><pre><code>@Service
+public class BookService {
+    private static final Logger log = LoggerFactory.getLogger(BookService.class);
+    // Lombok의 @Slf4j 애노테이션을 쓰면 위 한 줄을 자동 생성해준다
+
+    private final BookRepository bookRepository;
+
+    public Book findById(Long id) {
+        log.debug("도서 조회 시작 - id: {}", id);   // {} 는 파라미터 자리표시자(placeholder)
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -&gt; {
+                    log.warn("도서를 찾을 수 없음 - id: {}", id);
+                    return new BookNotFoundException(id);
+                });
+        log.info("도서 조회 완료 - id: {}, title: {}", id, book.getTitle());
+        return book;
+    }
+}</code></pre></div>
+  <div class="note">🔑 문자열을 <code>+</code>로 이어붙이는 대신 <code>{}</code> 자리표시자를 쓰는 이유: 로그 레벨이 꺼져 있을 때(예: DEBUG 비활성화 상태에서 <code>log.debug(...)</code> 호출) 문자열 연결 연산 자체가 실행되지 않아 성능 낭비가 없기 때문이에요.</div>
+
+  <h3>3) 로그 레벨(TRACE / DEBUG / INFO / WARN / ERROR)</h3>
+  <p>로그 레벨은 심각도 순서로 나열돼요. 특정 레벨을 설정하면, <b>그 레벨 이상</b>의 로그만 출력된다.</p>
+  <div class="formula"><div class="expr">TRACE &lt; DEBUG &lt; INFO &lt; WARN &lt; ERROR</div><div class="cap">심각도가 낮은 순 → 높은 순. 예를 들어 INFO로 설정하면 TRACE·DEBUG는 무시되고 INFO 이상만 출력된다.</div></div>
+  <table class="t"><thead><tr><th>레벨</th><th>용도</th></tr></thead>
+  <tbody>
+  <tr><td>TRACE</td><td>가장 상세한 추적 정보. 메서드 진입/파라미터 값 등 (거의 개발 중 디버깅 전용)</td></tr>
+  <tr><td>DEBUG</td><td>개발 단계에서 흐름을 파악하기 위한 상세 정보</td></tr>
+  <tr><td>INFO</td><td>정상적인 애플리케이션 동작 정보(요청 처리 완료, 서버 시작 등)</td></tr>
+  <tr><td>WARN</td><td>당장 오류는 아니지만 주의가 필요한 상황(재시도, 폴백 처리 등)</td></tr>
+  <tr><td>ERROR</td><td>예외 발생 등 실제 오류 상황</td></tr>
+  </tbody></table>
+  <div class="sqlbox"><div class="sqlhead">application.yml에서 로그 레벨 설정</div><pre><code>logging:
+  level:
+    root: INFO                          # 기본 로그 레벨
+    com.example.bookapi: DEBUG          # 우리 패키지만 더 상세하게
+    org.hibernate.SQL: DEBUG            # JPA가 실행하는 SQL을 보고 싶을 때</code></pre></div>
+  <div class="note">⚠️ 운영 환경에서 DEBUG/TRACE를 켜두면 로그 양이 폭증해서 디스크·성능에 부담을 줄 수 있어요. 보통 운영(prod) 프로필은 INFO 이상, 개발(dev) 프로필은 DEBUG로 Profile별로 다르게 설정한다(8장의 Profile 분리와 연결).</div>
+  <div class="cp"><div class="cphead">✔ 14장 핵심 요약</div><ul>
+  <li>Auto Configuration은 @ConditionalOnClass 등으로 classpath·설정 상태를 판단해 기본 Bean을 자동 등록한다.</li>
+  <li>개발자가 직접 같은 타입 Bean을 등록하면 자동 설정보다 우선한다(@ConditionalOnMissingBean).</li>
+  <li>SLF4J+Logback으로 로그를 남기고, TRACE&lt;DEBUG&lt;INFO&lt;WARN&lt;ERROR 순서로 레벨을 구분해 관리한다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s15" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">15.</span> AOP(Aspect Oriented Programming)</h2>
+  </div>
+  <p class="subtitle">관점 지향 프로그래밍(횡단 관심사 분리) · @Aspect·@Before·@After·@Around · 프록시 기반 동작 원리 · 로깅·트랜잭션 활용</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: "메서드 실행 시간을 로그로 남기고 싶다"는 요구가 <code>BookService</code>, <code>BookController</code> 등 수십 개 클래스에 다 있다고 해봐요. 매번 로깅 코드를 복사해 넣으면 지저분하고, 나중에 로그 형식을 바꿀 때 모든 곳을 수정해야 해요. <b>AOP</b>는 이런 "여기저기 흩어진 공통 관심사"를 <b>핵심 비즈니스 로직과 분리</b>해서 한 곳에 모아두고, 필요한 지점에 자동으로 "끼워 넣는" 방법이에요.</div></div>
+
+  <h3>1) 횡단 관심사(Cross-Cutting Concern)란</h3>
+  <p>애플리케이션의 관심사는 크게 두 가지로 나눌 수 있어요.</p>
+  <ul class="b">
+  <li><b>핵심 관심사(Core Concern)</b> — 도서를 조회하고, 등록하고, 삭제하는 것처럼 그 기능이 존재하는 이유 자체가 되는 로직.</li>
+  <li><b>횡단 관심사(Cross-Cutting Concern)</b> — 로깅, 트랜잭션 관리, 보안 검사, 성능 측정처럼 여러 핵심 로직에 공통적으로 걸쳐 있는(가로지르는) 관심사.</li>
+  </ul>
+  <p>횡단 관심사를 각 클래스에 직접 섞어 넣으면 핵심 로직이 무엇인지 알아보기 어려워지고, 코드 중복도 심해져요. <b>AOP(관점 지향 프로그래밍)</b>는 이 횡단 관심사를 "관점(Aspect)"이라는 별도 모듈로 분리해서, 핵심 로직 코드는 건드리지 않은 채 필요한 지점에 자동으로 적용되게 하는 프로그래밍 패러다임이에요.</p>
+
+  <h3>2) @Aspect와 주요 어드바이스(Advice)</h3>
+  <p>Spring AOP에서 관점은 <code>@Aspect</code>가 붙은 클래스로 정의해요. 그 안에서 "언제(Before/After/Around) · 어디에(Pointcut) 적용할지"를 애노테이션으로 지정한다.</p>
+  <table class="t"><thead><tr><th>애노테이션</th><th>실행 시점</th></tr></thead>
+  <tbody>
+  <tr><td><code>@Before</code></td><td>대상 메서드 실행 <b>전</b></td></tr>
+  <tr><td><code>@After</code></td><td>대상 메서드 실행 <b>후</b>(정상 종료든 예외든 항상)</td></tr>
+  <tr><td><code>@AfterReturning</code></td><td>대상 메서드가 <b>정상적으로 값을 반환한 후</b></td></tr>
+  <tr><td><code>@AfterThrowing</code></td><td>대상 메서드에서 <b>예외가 발생한 후</b></td></tr>
+  <tr><td><code>@Around</code></td><td>대상 메서드 실행 <b>전·후를 모두 감싸서</b> 제어(가장 강력, 실행 여부·반환값까지 조작 가능)</td></tr>
+  </tbody></table>
+  <div class="sqlbox"><div class="sqlhead">LoggingAspect — 메서드 실행 시간 로깅</div><pre><code>@Aspect
+@Component
+public class LoggingAspect {
+
+    private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class);
+
+    // Pointcut: service 패키지 아래 모든 클래스의 모든 public 메서드
+    @Around("execution(* com.example.bookapi.service..*(..))")
+    public Object logExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable {
+        long start = System.currentTimeMillis();
+
+        Object result = joinPoint.proceed(); // 실제 대상 메서드(핵심 로직) 실행
+
+        long elapsed = System.currentTimeMillis() - start;
+        log.info("{} 실행 시간: {}ms", joinPoint.getSignature(), elapsed);
+        return result;
+    }
+}</code></pre></div>
+  <p><code>execution(* com.example.bookapi.service..*(..))</code>는 <b>포인트컷(Pointcut)</b> 표현식이에요 — "어떤 메서드에 이 관점을 적용할지"를 지정하는 패턴이에요. <code>service</code> 패키지와 그 하위 패키지의 모든 반환 타입(<code>*</code>), 모든 메서드(<code>*(..)</code>)를 의미한다.</p>
+
+  <h3>3) 프록시 기반 동작 원리</h3>
+  <p>Spring AOP는 <b>프록시(Proxy)</b> 객체를 통해 동작해요. <code>BookService</code> Bean을 컨테이너에서 꺼내 쓸 때, 실제로는 원본 <code>BookService</code>가 아니라 그것을 감싼 <b>프록시 객체</b>가 대신 주입된다.</p>
+  <div class="formula"><div class="expr">호출부 → <b>프록시 객체</b>(부가 기능 실행: 로깅 시작) → 원본 BookService.findById() 실행 → 프록시로 복귀(부가 기능 실행: 로깅 종료) → 호출부로 결과 반환</div><div class="cap">Spring AOP는 실제 객체를 감싼 프록시가 부가 기능을 끼워 넣는 방식으로 동작한다</div></div>
+  <div class="note">⚠️ 프록시 기반이기 때문에 생기는 대표적인 제약이 있어요 — <b>같은 클래스 내부에서 자기 자신의 메서드를 호출</b>하면(<code>this.methodA()</code>가 내부에서 <code>this.methodB()</code>를 호출) 프록시를 거치지 않고 원본 객체가 직접 호출되므로 AOP(예: <code>@Transactional</code>)가 적용되지 않아요. 이런 경우 메서드를 별도 Bean으로 분리하는 등의 우회가 필요하다.</div>
+
+  <h3>4) 실전 활용 — 로깅과 트랜잭션</h3>
+  <p>AOP는 개념 설명용 예제뿐 아니라 실무에서도 널리 쓰여요. 대표적인 두 가지 예시가 로깅과 트랜잭션이에요.</p>
+  <div class="sqlbox"><div class="sqlhead">사실 @Transactional도 AOP 기반이다</div><pre><code>@Service
+public class BookService {
+
+    @Transactional // 이 애노테이션 자체가 Spring AOP의 프록시로 동작한다
+    public Book create(BookRequest request) {
+        Book book = Book.builder()
+                .title(request.getTitle())
+                .author(request.getAuthor())
+                .price(request.getPrice())
+                .build();
+        return bookRepository.save(book);
+        // 메서드가 정상 종료되면 프록시가 자동으로 커밋(commit),
+        // 예외가 발생하면 자동으로 롤백(rollback)한다 — 이 커밋/롤백 로직이 바로 AOP로 "끼워 넣어진" 부분
+    }
+}</code></pre></div>
+  <div class="cp"><div class="cphead">✔ AOP가 실무에서 쓰이는 대표적인 곳</div><ul>
+  <li><b>로깅</b> — 메서드 호출·실행 시간·파라미터를 자동으로 기록.</li>
+  <li><b>트랜잭션 관리</b> — <code>@Transactional</code> (17장에서 자세히 다룸)</li>
+  <li><b>보안 검사</b> — 메서드 실행 전 권한이 있는지 확인.</li>
+  <li><b>성능 모니터링</b> — 특정 메서드의 응답 시간을 측정해 통계로 수집.</li>
+  </ul></div>
+  <div class="cp"><div class="cphead">✔ 15장 핵심 요약</div><ul>
+  <li>AOP는 로깅·트랜잭션 같은 횡단 관심사를 핵심 로직과 분리해서 관리하는 프로그래밍 패러다임이다.</li>
+  <li>@Aspect 클래스 안에서 @Before/@After/@Around 등으로 언제 실행할지, 포인트컷 표현식으로 어디에 적용할지를 지정한다.</li>
+  <li>Spring AOP는 프록시 객체를 통해 동작하며, 내부 자기 호출에는 적용되지 않는다는 제약이 있다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s16" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">16.</span> JPA 기초 — 엔티티와 연관관계 매핑</h2>
+  </div>
+  <p class="subtitle">@Entity·@Id·@GeneratedValue · @OneToMany·@ManyToOne·@ManyToMany 연관관계 매핑 · 지연 로딩(LAZY) vs 즉시 로딩(EAGER)</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>JPA</b>(Java Persistence API)는 자바 객체와 관계형 DB 테이블을 자동으로 연결해주는 표준 인터페이스예요. <code>Book</code> 클래스에 <code>@Entity</code>를 붙이면 그게 곧 <code>book</code> 테이블과 매핑되고, SQL을 직접 쓰지 않아도 객체를 저장·조회할 수 있게 돼요. "책 한 권에는 여러 리뷰가 달릴 수 있다" 같은 테이블 간 관계도 애노테이션 하나로 표현할 수 있다.</div></div>
+
+  <h3>1) @Entity, @Id, @GeneratedValue — 기본 매핑</h3>
+  <p><code>@Entity</code>가 붙은 클래스는 JPA가 관리하는 대상이 되고, DB의 한 테이블에 대응돼요. 기본 키 필드에는 <code>@Id</code>를, 자동 증가시킬 값이라면 <code>@GeneratedValue</code>를 함께 붙인다.</p>
+  <div class="sqlbox"><div class="sqlhead">Book 엔티티</div><pre><code>@Entity
+@Table(name = "book")
+@Getter @Setter
+@NoArgsConstructor
+public class Book {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // DB의 auto_increment에 위임
+    private Long id;
+
+    @Column(nullable = false, length = 100)
+    private String title;
+
+    @Column(nullable = false)
+    private String author;
+
+    private int price;
+}</code></pre></div>
+  <div class="note">🔑 <code>@Entity</code> 클래스는 JPA가 프록시를 생성하고 리플렉션으로 다루기 때문에, 파라미터 없는 기본 생성자(<code>@NoArgsConstructor</code>)가 반드시 필요해요. 12장에서 배운 Lombok의 <code>@NoArgsConstructor</code>가 여기서 실질적으로 쓰인다.</div>
+
+  <h3>2) 연관관계 매핑 — @ManyToOne, @OneToMany</h3>
+  <p>"도서 한 권에는 여러 개의 리뷰(Review)가 달릴 수 있다"는 관계를 예로 들어볼게요. 리뷰 입장에서는 도서 하나를 참조하고(다대일, N:1), 도서 입장에서는 여러 리뷰를 가진다(일대다, 1:N).</p>
+  <div class="sqlbox"><div class="sqlhead">Review(N) ↔ Book(1) 양방향 매핑</div><pre><code>@Entity
+@Getter @Setter
+@NoArgsConstructor
+public class Review {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String content;
+    private int rating;
+
+    @ManyToOne(fetch = FetchType.LAZY)   // 리뷰 여러 개가 도서 하나를 가리킴 (연관관계의 주인)
+    @JoinColumn(name = "book_id")        // 외래 키(FK) 컬럼 이름
+    private Book book;
+}
+
+@Entity
+@Getter @Setter
+@NoArgsConstructor
+public class Book {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String title;
+    private String author;
+    private int price;
+
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL) // "book" = Review 쪽 필드 이름
+    private List&lt;Review&gt; reviews = new ArrayList&lt;&gt;();
+}</code></pre></div>
+  <div class="note">🔑 <b>연관관계의 주인(owner)</b>은 외래 키(FK)를 관리하는 쪽, 즉 <code>@JoinColumn</code>이 있는 <code>Review.book</code>이에요. 주인이 아닌 쪽(<code>Book.reviews</code>)은 <code>mappedBy</code>로 "나는 상대방의 어떤 필드에 의해 매핑된 거울일 뿐"이라고 표시만 하고, 실제 FK 값 변경에는 관여하지 않는다. FK를 변경하려면 반드시 주인 쪽 필드(<code>review.setBook(book)</code>)를 통해야 한다.</div>
+
+  <h3>3) @ManyToMany 연관관계</h3>
+  <p>"도서 하나가 여러 태그(Tag)를 가질 수 있고, 태그 하나도 여러 도서에 붙을 수 있다"처럼 양쪽 모두 여러 개를 가질 수 있는 관계는 다대다(N:M)예요. 관계형 DB는 다대다를 직접 표현할 수 없어서, 중간에 연결 테이블이 필요하다.</p>
+  <div class="sqlbox"><div class="sqlhead">@ManyToMany 매핑</div><pre><code>@Entity
+@Getter @Setter
+@NoArgsConstructor
+public class Book {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String title;
+
+    @ManyToMany
+    @JoinTable(
+        name = "book_tag",                                   // 중간 연결 테이블
+        joinColumns = @JoinColumn(name = "book_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id"))
+    private List&lt;Tag&gt; tags = new ArrayList&lt;&gt;();
+}</code></pre></div>
+  <div class="note">⚠️ 실무에서는 <code>@ManyToMany</code>를 직접 쓰기보다, 연결 테이블 자체를 <code>BookTag</code>라는 별도 엔티티로 만들어 <code>@OneToMany</code> + <code>@ManyToOne</code> 두 개의 관계로 풀어내는 방식을 더 선호해요. 연결 테이블에 "태그를 등록한 날짜" 같은 추가 컬럼이 필요해지는 경우가 많고, 그때 <code>@ManyToMany</code>로는 대응이 어렵기 때문이에요.</div>
+
+  <h3>4) 지연 로딩(LAZY) vs 즉시 로딩(EAGER)</h3>
+  <p>연관된 엔티티(예: <code>Book</code>을 조회할 때 딸려오는 <code>Review</code> 목록)를 <b>언제 실제로 DB에서 가져올지</b>를 결정하는 옵션이에요.</p>
+  <table class="t"><thead><tr><th>전략</th><th>동작</th><th>기본값이 적용되는 곳</th></tr></thead>
+  <tbody>
+  <tr><td>LAZY(지연 로딩)</td><td>연관 엔티티를 실제로 사용하는 시점(<code>book.getReviews()</code> 호출 시)에 DB 조회</td><td>@OneToMany, @ManyToMany</td></tr>
+  <tr><td>EAGER(즉시 로딩)</td><td>대상 엔티티를 조회할 때 연관 엔티티까지 함께 즉시 조회</td><td>@ManyToOne, @OneToOne</td></tr>
+  </tbody></table>
+  <div class="note">🔑 실무에서는 거의 항상 <b>모든 연관관계를 LAZY로 명시</b>하는 게 권장돼요. EAGER는 예상치 못한 시점에 불필요한 연관 데이터까지 한꺼번에 조회해버려서(특히 연관관계가 여러 단계로 얽혀 있으면) 성능 문제(N+1 문제 등)를 진단하기 어렵게 만들기 때문이에요. 필요한 데이터는 다음 장에서 배울 <code>@Query</code>(fetch join)로 필요한 시점에 명시적으로 가져오는 게 더 안전하다.</div>
+  <div class="cp"><div class="cphead">✔ 16장 핵심 요약</div><ul>
+  <li>@Entity+@Id(+@GeneratedValue)로 자바 클래스를 DB 테이블에 매핑한다.</li>
+  <li>@ManyToOne/@OneToMany로 1:N, @ManyToMany로 N:M 관계를 표현하며, FK를 관리하는 쪽이 연관관계의 주인이다.</li>
+  <li>연관관계 로딩 전략은 실무에서 기본적으로 LAZY를 명시하는 것이 권장된다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s17" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">17.</span> JPA Repository — 조회와 트랜잭션</h2>
+  </div>
+  <p class="subtitle">JpaRepository&lt;T,ID&gt; 상속만으로 CRUD가 되는 원리 · 쿼리 메서드 네이밍 규칙 · @Query로 JPQL 작성 · @Transactional</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 지금까지는 <code>BookRepository</code>를 직접 구현했지만, Spring Data JPA를 쓰면 <b>인터페이스 하나만 선언</b>해도 저장·조회·삭제 같은 기본 CRUD가 전부 자동으로 동작해요. 심지어 메서드 이름을 <code>findByTitleContaining</code>처럼 규칙에 맞게 짓기만 해도, Spring이 이름을 해석해서 알맞은 SQL을 자동으로 만들어준다. 정말 복잡한 조회는 <code>@Query</code>로 직접 JPQL을 쓸 수도 있어요.</div></div>
+
+  <h3>1) JpaRepository&lt;T, ID&gt; 상속만으로 CRUD가 되는 원리</h3>
+  <p>Spring Data JPA가 제공하는 <code>JpaRepository&lt;Book, Long&gt;</code>을 상속하는 인터페이스를 하나 선언하기만 하면, 구현 클래스를 직접 작성하지 않아도 기본적인 CRUD 메서드를 즉시 사용할 수 있어요.</p>
+  <div class="sqlbox"><div class="sqlhead">BookRepository — 인터페이스 선언만으로 끝</div><pre><code>public interface BookRepository extends JpaRepository&lt;Book, Long&gt; {
+    // 아무 메서드도 추가하지 않아도 아래가 전부 기본 제공된다
+}
+
+// 사용 예 — BookService
+@Service
+public class BookService {
+    private final BookRepository bookRepository;
+
+    public List&lt;Book&gt; findAll() {
+        return bookRepository.findAll();          // 전체 조회
+    }
+    public Optional&lt;Book&gt; findById(Long id) {
+        return bookRepository.findById(id);        // id로 단건 조회
+    }
+    public Book save(Book book) {
+        return bookRepository.save(book);           // 저장(insert) 또는 수정(update)
+    }
+    public void delete(Long id) {
+        bookRepository.deleteById(id);              // 삭제
+    }
+}</code></pre></div>
+  <div class="note">🔑 Spring Data JPA는 애플리케이션이 시작될 때 <code>JpaRepository</code>를 상속한 인터페이스를 찾아서, <b>런타임에 프록시 구현체를 자동으로 만들어 Bean으로 등록</b>해줘요. 그래서 개발자는 구현 클래스를 직접 작성할 필요 없이 인터페이스만 정의하면 된다. <code>save()</code>는 id가 없으면 insert, 있으면 update로 동작한다는 점도 기억해두면 좋다.</div>
+
+  <h3>2) 쿼리 메서드 네이밍 규칙</h3>
+  <p>메서드 이름을 정해진 규칙대로 지으면, Spring Data JPA가 그 이름을 분석해서 자동으로 쿼리를 생성해줘요. SQL을 한 줄도 쓰지 않고 조건 조회가 가능한 이유예요.</p>
+  <table class="t"><thead><tr><th>메서드 이름</th><th>생성되는 조건</th></tr></thead>
+  <tbody>
+  <tr><td><code>findByTitle(String title)</code></td><td><code>WHERE title = ?</code></td></tr>
+  <tr><td><code>findByTitleContaining(String keyword)</code></td><td><code>WHERE title LIKE %?%</code></td></tr>
+  <tr><td><code>findByAuthorAndPriceLessThan(String author, int price)</code></td><td><code>WHERE author = ? AND price &lt; ?</code></td></tr>
+  <tr><td><code>findByPriceBetween(int min, int max)</code></td><td><code>WHERE price BETWEEN ? AND ?</code></td></tr>
+  <tr><td><code>findByOrderByPriceDesc()</code></td><td><code>ORDER BY price DESC</code>(전체 조회 + 정렬)</td></tr>
+  <tr><td><code>countByAuthor(String author)</code></td><td><code>SELECT COUNT(*) WHERE author = ?</code></td></tr>
+  <tr><td><code>existsByTitle(String title)</code></td><td><code>WHERE title = ?</code>의 존재 여부(boolean 반환)</td></tr>
+  </tbody></table>
+  <div class="sqlbox"><div class="sqlhead">BookRepository에 쿼리 메서드 추가</div><pre><code>public interface BookRepository extends JpaRepository&lt;Book, Long&gt; {
+    List&lt;Book&gt; findByTitleContaining(String keyword);
+    List&lt;Book&gt; findByAuthorAndPriceLessThan(String author, int price);
+    List&lt;Book&gt; findByOrderByPriceDesc();
+}</code></pre></div>
+  <div class="note">⚠️ 조건이 많아질수록 메서드 이름이 길고 복잡해져요(예: <code>findByAuthorAndPriceLessThanAndTitleContaining</code>). 조건이 3~4개를 넘어가거나 통계성 집계가 필요하면, 다음에 배울 <code>@Query</code>로 직접 JPQL을 작성하는 편이 오히려 가독성이 좋다.</div>
+
+  <h3>3) @Query로 직접 JPQL 작성하기</h3>
+  <p>메서드 이름만으로 표현하기 어려운 복잡한 조건은 <code>@Query</code> 애노테이션에 <b>JPQL</b>(SQL과 비슷하지만 테이블이 아닌 엔티티·필드를 기준으로 쓰는 객체지향 쿼리 언어)을 직접 작성할 수 있어요.</p>
+  <div class="sqlbox"><div class="sqlhead">@Query 사용 예시</div><pre><code>public interface BookRepository extends JpaRepository&lt;Book, Long&gt; {
+
+    @Query("SELECT b FROM Book b WHERE b.price &gt;= :minPrice ORDER BY b.price ASC")
+    List&lt;Book&gt; findExpensiveBooks(@Param("minPrice") int minPrice);
+
+    // 네이티브 SQL이 꼭 필요할 때는 nativeQuery = true
+    @Query(value = "SELECT * FROM book WHERE author = :author LIMIT 5", nativeQuery = true)
+    List&lt;Book&gt; findTop5ByAuthorNative(@Param("author") String author);
+}</code></pre></div>
+  <div class="note">🔑 JPQL은 <code>FROM Book b</code>처럼 테이블명이 아니라 <b>엔티티 클래스명</b>을 기준으로 쓴다는 점이 SQL과 다른 핵심 차이예요. JPQL은 특정 DB 벤더에 종속되지 않는 반면, <code>nativeQuery = true</code>로 쓰는 순수 SQL은 DB마다 문법이 조금씩 달라질 수 있다.</div>
+
+  <h3>4) @Transactional — 트랜잭션 관리</h3>
+  <p>여러 DB 작업을 하나의 단위로 묶어서 "전부 성공 또는 전부 취소(원자성)"를 보장하고 싶을 때 <code>@Transactional</code>을 사용해요. 15장에서 배운 AOP 기반으로 동작한다 — 메서드 실행 전 트랜잭션을 시작하고, 정상 종료되면 커밋, 예외가 발생하면 롤백한다.</p>
+  <div class="sqlbox"><div class="sqlhead">@Transactional 사용 예시</div><pre><code>@Service
+public class BookService {
+
+    private final BookRepository bookRepository;
+
+    @Transactional
+    public void updatePrice(Long id, int newPrice) {
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -&gt; new BookNotFoundException(id));
+        book.setPrice(newPrice);
+        // 트랜잭션 안에서 엔티티 필드만 바꿔도, 트랜잭션 종료 시점에 JPA가 변경을 감지해
+        // 자동으로 UPDATE 쿼리를 실행한다 — 이를 '변경 감지(Dirty Checking)'라고 부른다.
+        // 별도로 save()를 호출하지 않아도 된다.
+    }
+
+    @Transactional(readOnly = true) // 조회 전용 — 성능 최적화(변경 감지 생략 등) 힌트
+    public List&lt;Book&gt; findAll() {
+        return bookRepository.findAll();
+    }
+}</code></pre></div>
+  <div class="note">🔑 조회만 하는 메서드에는 <code>@Transactional(readOnly = true)</code>를 붙여주는 게 좋은 습관이에요. JPA가 변경 감지를 위한 스냅샷 비교를 생략하는 등 내부적으로 최적화를 할 수 있어서 성능에 도움이 된다.</div>
+  <div class="cp"><div class="cphead">✔ 17장 핵심 요약</div><ul>
+  <li>JpaRepository를 상속하기만 해도 기본 CRUD 메서드가 자동으로 제공된다.</li>
+  <li>쿼리 메서드 네이밍 규칙(findBy...)으로 SQL 없이 조건 조회를 만들 수 있고, 복잡한 조건은 @Query(JPQL)로 작성한다.</li>
+  <li>@Transactional로 원자성을 보장하며, 변경 감지(Dirty Checking)로 save() 호출 없이도 엔티티 변경이 반영된다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s18" data-day="4">
+  <div class="sec-head">
+    <span class="day-badge day4">Day 4</span>
+    <h2><span class="num">18.</span> SQL Mapper(MyBatis)</h2>
+  </div>
+  <p class="subtitle">MyBatis가 JPA와 다른 접근 방식(SQL 직접 제어) · Mapper 인터페이스 + XML/애노테이션 쿼리 매핑 · 통계·리포트 쿼리에 유리한 이유</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: JPA는 "객체를 다루면 SQL은 알아서 생성된다"는 철학이라면, <b>MyBatis</b>는 반대로 "SQL은 내가 직접 쓰고, 그 결과를 객체에 매핑하는 반복 작업만 자동화해준다"는 철학이에요. 두 기술은 대립 관계가 아니라, 한 프로젝트 안에서 <b>일반 CRUD는 JPA, 복잡한 통계·리포트 쿼리는 MyBatis</b>로 역할을 나눠서 함께 쓰는 경우가 많다.</div></div>
+
+  <h3>1) MyBatis vs JPA — 접근 방식의 차이</h3>
+  <table class="t"><thead><tr><th>구분</th><th>JPA(Hibernate)</th><th>MyBatis</th></tr></thead>
+  <tbody>
+  <tr><td>패러다임</td><td>객체 중심 — 엔티티를 다루면 SQL은 프레임워크가 생성(ORM)</td><td>SQL 중심 — 개발자가 SQL을 직접 작성, 결과 매핑만 자동화</td></tr>
+  <tr><td>SQL 제어권</td><td>추상화되어 개발자가 직접 손대기 어려움</td><td>SQL을 한 글자까지 원하는 대로 튜닝 가능</td></tr>
+  <tr><td>학습 곡선</td><td>영속성 컨텍스트, 연관관계, 로딩 전략 등 개념이 많음</td><td>SQL만 알면 비교적 빠르게 익힐 수 있음</td></tr>
+  <tr><td>적합한 상황</td><td>단건 CRUD, 연관관계가 있는 도메인 모델 조작</td><td>복잡한 조인·집계, DB 벤더 특화 기능이 필요한 조회</td></tr>
+  </tbody></table>
+  <div class="note">🔑 MyBatis는 ORM이 아니라 <b>SQL Mapper</b>예요. "객체와 테이블을 자동으로 매핑"하는 게 목표가 아니라, "SQL 실행 결과(ResultSet)를 자바 객체로 옮겨 담는 반복 코드(JDBC의 <code>PreparedStatement</code>, <code>ResultSet</code> 처리 등)를 대신 해주는" 역할에 집중한다는 점이 JPA와의 근본적인 차이예요.</div>
+
+  <h3>2) Mapper 인터페이스 + XML 쿼리 매핑</h3>
+  <p>MyBatis는 Java 인터페이스와 SQL을 담은 XML 파일을 연결하는 방식이 전통적으로 널리 쓰여요. 인터페이스의 메서드 시그니처와 XML의 <code>id</code>가 서로 매칭된다.</p>
+  <div class="sqlbox"><div class="sqlhead">BookMapper 인터페이스</div><pre><code>@Mapper
+public interface BookMapper {
+    List&lt;BookStatDto&gt; findAuthorStatistics();
+    List&lt;Book&gt; searchBooks(@Param("keyword") String keyword, @Param("minPrice") int minPrice);
+}</code></pre></div>
+  <div class="sqlbox"><div class="sqlhead">BookMapper.xml — 실제 SQL 정의</div><pre><code>&lt;?xml version="1.0" encoding="UTF-8" ?&gt;
+&lt;!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd"&gt;
+&lt;mapper namespace="com.example.bookapi.mapper.BookMapper"&gt;
+
+    &lt;select id="findAuthorStatistics" resultType="com.example.bookapi.dto.BookStatDto"&gt;
+        SELECT author,
+               COUNT(*)      AS bookCount,
+               AVG(price)    AS avgPrice,
+               MAX(price)    AS maxPrice
+        FROM book
+        GROUP BY author
+        ORDER BY bookCount DESC
+    &lt;/select&gt;
+
+    &lt;select id="searchBooks" resultType="com.example.bookapi.entity.Book"&gt;
+        SELECT * FROM book
+        WHERE title LIKE CONCAT('%', #{keyword}, '%')
+          AND price &gt;= #{minPrice}
+    &lt;/select&gt;
+
+&lt;/mapper&gt;</code></pre></div>
+  <div class="note">🔑 <code>#{keyword}</code> 문법은 내부적으로 <code>PreparedStatement</code>의 <code>?</code> 자리표시자로 변환돼요(SQL Injection에 안전). 반면 <code>${ }</code> 문법은 값을 문자열 그대로 SQL에 끼워 넣기 때문에 SQL Injection에 취약하니, 컬럼명·테이블명처럼 바인딩이 불가능한 경우가 아니면 항상 <code>#{ }</code>를 사용해야 한다.</div>
+
+  <h3>3) 애노테이션 방식 — 간단한 쿼리는 XML 없이</h3>
+  <p>쿼리가 짧고 단순하다면, XML 파일 없이 인터페이스 메서드에 애노테이션으로 SQL을 바로 붙일 수도 있어요.</p>
+  <div class="sqlbox"><div class="sqlhead">애노테이션 기반 Mapper</div><pre><code>@Mapper
+public interface BookMapper {
+
+    @Select("SELECT * FROM book WHERE id = #{id}")
+    Optional&lt;Book&gt; findById(@Param("id") Long id);
+
+    @Insert("INSERT INTO book (title, author, price) VALUES (#{title}, #{author}, #{price})")
+    @Options(useGeneratedKeys = true, keyProperty = "id") // insert 후 생성된 id를 book.id에 채워줌
+    void insert(Book book);
+
+    @Update("UPDATE book SET price = #{price} WHERE id = #{id}")
+    void updatePrice(@Param("id") Long id, @Param("price") int price);
+}</code></pre></div>
+  <div class="note">⚠️ 실무에서는 짧은 단건 쿼리는 애노테이션으로, 조인이 여러 개거나 조건에 따라 SQL이 동적으로 바뀌는(<code>&lt;if&gt;</code>, <code>&lt;where&gt;</code> 같은 동적 SQL 태그가 필요한) 복잡한 쿼리는 XML로 작성하는 식으로 섞어 쓰는 경우가 많다.</div>
+
+  <h3>4) 복잡한 통계·리포트 쿼리에 MyBatis가 유리한 이유</h3>
+  <p>위 <code>findAuthorStatistics()</code> 예시처럼 여러 테이블을 조인하고, <code>GROUP BY</code>·집계 함수·서브쿼리가 뒤섞인 리포트성 쿼리는 JPQL이나 엔티티 그래프로 표현하려면 오히려 부자연스럽고 성능도 예측하기 어려운 경우가 많아요.</p>
+  <div class="cp"><div class="cphead">✔ 이런 상황에서는 MyBatis가 더 유리하다</div><ul>
+  <li>여러 테이블을 조인한 뒤 <code>GROUP BY</code>·집계 함수로 통계를 뽑아야 할 때 — 엔티티 하나에 대응되지 않는 결과(DTO)를 자유롭게 매핑할 수 있다.</li>
+  <li>DB 벤더 전용 SQL 문법(윈도우 함수, 특정 힌트 등)을 그대로 활용해야 할 때.</li>
+  <li>실행 계획(explain)을 보고 쿼리를 세밀하게 튜닝해야 하는 성능 크리티컬한 조회.</li>
+  <li>동적 조건이 많은 대시보드·검색 필터 화면(<code>&lt;if&gt;</code> 태그로 조건별 SQL 분기를 명확하게 표현).</li>
+  </ul></div>
+  <div class="callout deep"><span class="ctitle">🔎 심화 — JPA와 MyBatis를 함께 쓰는 실무 패턴</span>
+  <p>많은 실무 프로젝트가 두 기술을 배타적으로 선택하지 않고 함께 사용해요. 도서 등록·수정·삭제 같은 일반적인 CRUD와 연관관계 조작은 JPA(<code>BookRepository</code>)로 처리하고, 저자별 판매 통계 같은 리포트성 조회는 MyBatis(<code>BookMapper</code>)로 별도 계층을 두는 식이에요. "무엇을 다루는가"보다 "어떤 종류의 쿼리인가"를 기준으로 도구를 선택하는 것이 핵심이다.</p></div>
+  <div class="cp"><div class="cphead">✔ 18장 핵심 요약</div><ul>
+  <li>JPA는 객체 중심 ORM, MyBatis는 SQL을 직접 제어하는 SQL Mapper라는 점이 근본적인 차이다.</li>
+  <li>Mapper 인터페이스 + XML(또는 애노테이션)으로 SQL과 자바 메서드를 연결한다.</li>
+  <li>복잡한 조인·통계·리포트 쿼리는 SQL을 직접 튜닝할 수 있는 MyBatis가 유리하며, 실무에서는 JPA와 병행하는 경우가 많다.</li>
+  </ul></div>
+</section>
+<div class="quiz-wrap" id="quiz-day4">
+  <h2>✅ Day 4 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="4">0 / 7 정답</div>
+  <div class="quiz-q" data-qid="d4q0" data-type="ox" data-answer="true" data-exp="@ConditionalOnMissingBean은 컨테이너 안에 같은 타입의 Bean이 이미 등록되어 있으면 자동 설정이 만드는 기본 Bean을 생성하지 않아요. 그래서 개발자가 직접 등록한 Bean이 자동 설정보다 우선 적용됩니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>@ConditionalOnMissingBean이 붙은 자동 설정은, 같은 타입의 Bean이 이미 등록되어 있으면 그 Bean을 새로 생성하지 않는다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d4q1" data-type="ox" data-answer="false" data-exp="로그 레벨은 TRACE&lt;DEBUG&lt;INFO&lt;WARN&lt;ERROR 순서로, 설정한 레벨 이상만 출력돼요. INFO로 설정하면 그보다 심각도가 낮은 DEBUG·TRACE는 출력되지 않고, INFO·WARN·ERROR만 출력됩니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>로그 레벨을 INFO로 설정하면 DEBUG, TRACE 레벨의 로그도 함께 출력된다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d4q2" data-type="ox" data-answer="true" data-exp="Spring AOP는 프록시 객체를 통해 부가 기능을 끼워 넣는 방식으로 동작해요. 같은 클래스 내부에서 this로 자기 자신의 메서드를 호출하면 프록시를 거치지 않고 원본 객체가 직접 호출되므로, @Transactional 같은 AOP 기반 기능이 적용되지 않습니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Spring AOP는 프록시 기반으로 동작하기 때문에, 같은 클래스 내부에서 this로 자기 메서드를 호출하면 AOP(예: @Transactional)가 적용되지 않는다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d4q3" data-type="mc" data-answer="Review" data-exp="Book(1)-Review(N) 관계에서 외래 키(book_id)는 Review 테이블에 존재해요. 이 외래 키를 실제로 관리하는 쪽, 즉 @JoinColumn이 붙은 Review.book 필드가 연관관계의 주인입니다. Book.reviews는 mappedBy로 표시된 '거울'일 뿐 FK 변경에 관여하지 않아요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>Book(1) - Review(N) 연관관계에서, 외래 키(book_id)를 실제로 관리하는 '연관관계의 주인'은 어느 쪽인가?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="Book">Book</button>
+      <button class="quiz-opt" data-val="Review">Review</button>
+      <button class="quiz-opt" data-val="양쪽 모두 동등하게 관리">양쪽 모두 동등하게 관리</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d4q4" data-type="mc" data-answer="MyBatis" data-exp="여러 테이블을 조인하고 GROUP BY로 집계하는 통계·리포트성 쿼리는 SQL을 직접 세밀하게 튜닝할 수 있는 MyBatis가 유리해요. JPA는 객체 중심 ORM이라 이런 쿼리를 표현하기 부자연스럽고 성능 예측도 어려운 경우가 많습니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>여러 테이블을 조인한 뒤 GROUP BY로 저자별 통계를 뽑아내는 리포트성 쿼리에 상대적으로 더 유리한 기술은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="JPA(Hibernate)">JPA(Hibernate)</button>
+      <button class="quiz-opt" data-val="MyBatis">MyBatis</button>
+      <button class="quiz-opt" data-val="Bean Validation">Bean Validation</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d4q5" data-type="short" data-accept='["aop", "관점 지향 프로그래밍", "관점지향프로그래밍"]' data-exp="로깅·트랜잭션처럼 여러 곳에 공통으로 걸쳐 있는 횡단 관심사를 핵심 로직과 분리해서 다루는 프로그래밍 기법을 AOP(Aspect Oriented Programming, 관점 지향 프로그래밍)라고 해요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>로깅·트랜잭션처럼 여러 곳에 공통으로 걸쳐 있는 관심사를 핵심 로직과 분리해서 다루는 프로그래밍 기법의 이름은? (영문 약어)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d4q6" data-type="short" data-accept='["쿼리 메서드", "query method", "쿼리메서드"]' data-exp="findByTitleContaining처럼 정해진 규칙에 맞춰 메서드 이름을 지으면, Spring Data JPA가 이름을 분석해 자동으로 쿼리를 생성해주는 기능을 쿼리 메서드(Query Method)라고 해요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>findByTitleContaining처럼 이름 규칙만으로 Spring Data JPA가 자동으로 쿼리를 생성해주는 기능을 무엇이라 부르는가?</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+
+<div class="day-header" id="day5"><h1>Day 5 — 문서화·인증·배포</h1><p>REST API 문서화부터 JWT·Security, 컨테이너, MSA까지</p></div>
+
+<section class="sec" id="s19" data-day="5">
+  <div class="sec-head">
+    <span class="day-badge day5">Day 5</span>
+    <h2><span class="num">19.</span> REST API 문서화 — OpenAPI/Swagger</h2>
+  </div>
+  <p class="subtitle">OpenAPI 스펙이란 무엇인가 · springdoc-openapi로 문서 자동 생성 · Swagger UI로 API 직접 테스트 · @Operation/@Schema/@Parameter로 문서 보강</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: API를 만들었어도 그 사용법을 팀원이나 프론트엔드 개발자에게 말로 설명하기는 번거로워요. <b>OpenAPI</b>는 "이 API는 어떤 요청을 받고 어떤 응답을 주는지"를 정해진 형식으로 정리한 명세이고, <b>springdoc-openapi</b> 라이브러리를 추가하기만 하면 컨트롤러 코드를 스캔해서 이 명세를 자동으로 만들어줘요. 그리고 <b>Swagger UI</b>라는 웹 화면에서 그 명세를 보기 좋게 보여주는 동시에, 브라우저에서 버튼 클릭만으로 API를 직접 호출해볼 수도 있다.</div></div>
+
+  <h3>1) OpenAPI 스펙이란 무엇인가</h3>
+  <p><b>OpenAPI Specification(OAS)</b>은 REST API의 엔드포인트, 요청 파라미터, 요청/응답 본문의 구조, 상태 코드 등을 사람과 기계가 모두 읽을 수 있는 JSON/YAML 형식으로 표현하기로 약속한 표준 규격이에요. 예전에는 "Swagger 스펙"이라고 불렸는데, 지금은 OpenAPI라는 이름으로 표준화되어 있고 Swagger는 그 스펙을 다루는 도구 모음(Swagger UI, Swagger Editor 등)의 브랜드 이름으로 남아있다.</p>
+  <div class="cp"><div class="cphead">✔ OpenAPI 문서가 있으면 좋은 점</div><ul>
+  <li>프론트엔드 개발자가 백엔드 코드를 보지 않아도 요청/응답 형식을 정확히 알 수 있다.</li>
+  <li>문서를 기반으로 클라이언트 코드(SDK)를 자동 생성하는 도구를 쓸 수 있다.</li>
+  <li>Swagger UI 같은 도구로 문서를 웹 화면에서 바로 렌더링하고, 그 자리에서 테스트도 가능하다.</li>
+  <li>API 명세와 실제 코드가 어긋나는 것을 방지하기 쉽다(코드에서 자동 생성하기 때문).</li>
+  </ul></div>
+
+  <h3>2) springdoc-openapi로 문서 자동 생성하기</h3>
+  <p>의존성 하나만 추가하면, 애플리케이션이 뜰 때 <code>@RestController</code>로 등록된 컨트롤러들을 스캔해서 OpenAPI 문서(JSON)와 Swagger UI 화면을 자동으로 만들어줘요. 별도의 설정 파일을 직접 작성할 필요가 거의 없다는 게 큰 장점이다.</p>
+  <div class="sqlbox"><div class="sqlhead">build.gradle — 의존성 추가</div><pre><code>dependencies {
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+}</code></pre></div>
+  <div class="sqlbox"><div class="sqlhead">BookController — 기존 코드 그대로, 애노테이션만 없어도 기본 문서는 만들어진다</div><pre><code>@RestController
+@RequestMapping("/api/books")
+public class BookController {
+
+    @GetMapping
+    public List&lt;Book&gt; findAll() {
+        return bookService.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public Book findById(@PathVariable Long id) {
+        return bookService.findById(id);
+    }
+
+    @PostMapping
+    public Book create(@RequestBody Book book) {
+        return bookService.save(book);
+    }
+}</code></pre></div>
+  <p>애플리케이션을 실행한 뒤 아래 두 경로로 접속하면 각각 원본 명세(JSON)와 사람이 보기 좋은 화면을 확인할 수 있어요.</p>
+  <table class="t"><thead><tr><th>경로</th><th>내용</th></tr></thead>
+  <tbody>
+  <tr><td><code>/v3/api-docs</code></td><td>OpenAPI 명세 원본(JSON) — 도구 간 연동에 사용</td></tr>
+  <tr><td><code>/swagger-ui.html</code></td><td>Swagger UI 화면 — 브라우저에서 API 문서 열람 + 테스트</td></tr>
+  </tbody></table>
+  <div class="note">🔑 springdoc-openapi는 컨트롤러의 <code>@GetMapping</code>/<code>@PostMapping</code> 같은 매핑 애노테이션과 메서드 파라미터 타입을 리플렉션으로 분석해서 기본적인 문서를 만들어줘요. 그래서 애노테이션을 하나도 추가하지 않아도 "어떤 경로가 있고 어떤 타입을 주고받는지" 정도는 이미 문서화된다. 다만 설명이나 예시값처럼 코드만으로는 알 수 없는 정보는 다음 절의 애노테이션으로 직접 보강해야 한다.</div>
+
+  <h3>3) Swagger UI로 API 직접 테스트해보기</h3>
+  <p>Swagger UI는 단순히 문서를 보여주기만 하는 게 아니라, 각 엔드포인트마다 <b>"Try it out"</b> 버튼을 눌러 파라미터 값을 입력하고 바로 요청을 보내볼 수 있는 화면을 제공해요. 이 페이지의 "REST API 연습장"과 비슷한 역할을, 실제 Swagger UI는 서버가 자동으로 만들어주는 문서와 함께 제공하는 셈이다.</p>
+  <div class="formula"><div class="expr">엔드포인트 목록 확인 → <b>Try it out</b> 클릭 → 파라미터/요청 본문 입력 → Execute → 실제 서버에 요청 전송 → 응답(상태 코드·본문) 확인</div><div class="cap">Swagger UI는 문서 열람과 실제 API 호출 테스트를 한 화면에서 처리한다</div></div>
+  <div class="note">⚠️ Swagger UI에서 "Try it out"으로 보낸 요청은 문서 열람용 가짜 요청이 아니라, 실제로 서버에 도달하는 진짜 HTTP 요청이에요. 그래서 운영 환경에 그대로 노출하면 외부인이 실제 데이터를 조작할 수 있는 통로가 될 수 있어, 실무에서는 운영(prod) 환경에서 Swagger UI 접근을 막거나 인증을 요구하는 경우가 많다.</div>
+
+  <h3>4) @Operation / @Schema / @Parameter로 문서 내용 보강하기</h3>
+  <p>기본 생성된 문서는 "경로와 타입"만 알려줄 뿐, "이 API가 정확히 무슨 의미인지"는 설명하지 못해요. 애노테이션을 추가하면 Swagger UI에 사람이 읽을 설명·예시값·필수 여부 같은 정보를 덧붙일 수 있다.</p>
+  <div class="sqlbox"><div class="sqlhead">애노테이션으로 문서 보강하기</div><pre><code>@RestController
+@RequestMapping("/api/books")
+@Tag(name = "Book API", description = "도서 등록·조회·수정·삭제를 담당하는 API")
+public class BookController {
+
+    @Operation(summary = "id로 도서 단건 조회", description = "존재하지 않는 id면 404를 반환한다.")
+    @GetMapping("/{id}")
+    public Book findById(
+            @Parameter(description = "조회할 도서의 id", example = "1")
+            @PathVariable Long id) {
+        return bookService.findById(id);
+    }
+
+    @Operation(summary = "새 도서 등록")
+    @PostMapping
+    public Book create(@RequestBody Book book) {
+        return bookService.save(book);
+    }
+}
+
+@Schema(description = "도서 정보")
+public class Book {
+
+    @Schema(description = "도서 고유 id", example = "1")
+    private Long id;
+
+    @Schema(description = "제목", example = "객체지향의 사실과 오해")
+    private String title;
+
+    @Schema(description = "저자", example = "조영호")
+    private String author;
+
+    @Schema(description = "가격(원)", example = "18000")
+    private int price;
+}</code></pre></div>
+  <table class="t"><thead><tr><th>애노테이션</th><th>붙이는 위치</th><th>역할</th></tr></thead>
+  <tbody>
+  <tr><td><code>@Tag</code></td><td>컨트롤러 클래스</td><td>Swagger UI에서 API를 그룹으로 묶어 보여줄 이름</td></tr>
+  <tr><td><code>@Operation</code></td><td>컨트롤러 메서드</td><td>해당 엔드포인트의 요약(summary)·상세 설명(description)</td></tr>
+  <tr><td><code>@Parameter</code></td><td>메서드 파라미터</td><td>경로 변수·쿼리 파라미터의 설명과 예시값</td></tr>
+  <tr><td><code>@Schema</code></td><td>DTO/엔티티 클래스 및 필드</td><td>요청/응답 본문 필드에 대한 설명과 예시값</td></tr>
+  </tbody></table>
+  <div class="callout deep"><span class="ctitle">🔎 심화 — 문서는 코드와 함께 살아있어야 한다</span>
+  <p>API 문서를 별도의 워드/노션 페이지로 따로 관리하면, 코드가 바뀌어도 문서를 갱신하는 걸 잊어버려 금방 실제와 어긋나는 "죽은 문서"가 되기 쉬워요. springdoc-openapi처럼 <b>코드(애노테이션)에서 문서를 생성하는 방식</b>은 코드가 바뀌면 문서도 자동으로 함께 바뀌기 때문에, 문서와 실제 동작이 어긋나는 문제를 근본적으로 줄여준다는 점이 핵심 장점이다.</p></div>
+  <div class="cp"><div class="cphead">✔ 19장 핵심 요약</div><ul>
+  <li>OpenAPI는 REST API의 구조를 표준 형식으로 표현한 명세이고, Swagger는 그 명세를 다루는 도구 모음이다.</li>
+  <li>springdoc-openapi 의존성만 추가해도 컨트롤러를 스캔해 문서(JSON)와 Swagger UI 화면이 자동 생성된다.</li>
+  <li>Swagger UI는 문서 열람뿐 아니라 Try it out으로 실제 API 호출 테스트까지 지원하며, 운영 환경 노출에는 주의가 필요하다.</li>
+  <li>@Operation/@Schema/@Parameter로 요약·설명·예시값을 추가해 문서를 사람이 이해하기 쉽게 보강할 수 있다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s20" data-day="5">
+  <div class="sec-head">
+    <span class="day-badge day5">Day 5</span>
+    <h2><span class="num">20.</span> JWT와 Spring Security</h2>
+  </div>
+  <p class="subtitle">JWT 구조(Header.Payload.Signature) · 로그인→토큰 발급→요청마다 검증하는 인증 흐름 · Spring Security 필터 체인 · @PreAuthorize로 메서드 단위 권한 제어</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 세션 방식은 서버가 "누가 로그인했는지"를 메모리나 DB에 기억해둬야 하지만, <b>JWT(JSON Web Token)</b> 방식은 로그인 성공 시 서버가 "이 사람이 누구인지"를 담은 토큰을 발급하고, 그 이후에는 클라이언트가 요청마다 그 토큰을 들고 오면 서버가 서명만 검증해서 신원을 확인해요. 서버가 상태를 따로 기억하지 않아도 된다는 뜻에서 <b>무상태(stateless)</b> 인증 방식이라고 부른다. Spring Security는 이 인증·인가 과정을 요청이 컨트롤러에 도달하기 전 여러 개의 <b>필터</b>를 거치게 해서 처리한다.</div></div>
+
+  <h3>1) JWT의 구조 — Header.Payload.Signature</h3>
+  <p>JWT는 점(<code>.</code>)으로 구분된 3개의 부분이 이어붙은 하나의 문자열이에요. 각 부분은 Base64Url로 인코딩되어 있어서, 디코딩하면 내용을 바로 읽을 수 있다(암호화된 것이 아니라 인코딩된 것이라는 점에 유의).</p>
+  <table class="t"><thead><tr><th>구성 요소</th><th>담는 내용</th><th>예시(디코딩 후)</th></tr></thead>
+  <tbody>
+  <tr><td>Header</td><td>토큰 타입, 서명 알고리즘</td><td><code>{"alg":"HS256","typ":"JWT"}</code></td></tr>
+  <tr><td>Payload</td><td>클레임(claim) — 사용자 정보, 만료 시간 등</td><td><code>{"sub":"user1","role":"USER","exp":1735689600}</code></td></tr>
+  <tr><td>Signature</td><td>Header+Payload를 서버만 아는 비밀키로 서명한 값 — 위변조 검증용</td><td><code>HMACSHA256(base64(header)+"."+base64(payload), secretKey)</code></td></tr>
+  </tbody></table>
+  <div class="formula"><div class="expr">Header(Base64Url) + "." + Payload(Base64Url) + "." + Signature(Base64Url)</div><div class="cap">예: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyMSJ9.SflKxwRJSMeKKF2QT4fw...</div></div>
+  <div class="note">⚠️ Payload는 <b>암호화되어 있지 않고 단순히 인코딩만 된 상태</b>라서, 토큰을 가진 사람이면 누구나 디코딩해서 내용을 읽을 수 있어요. 그래서 비밀번호나 주민번호 같은 민감한 정보는 절대 Payload에 담으면 안 된다. Signature는 내용을 숨기는 게 아니라, "이 토큰이 서버가 발급한 뒤 중간에 조작되지 않았는지"를 검증하는 용도다.</div>
+
+  <h3>2) 로그인 → 토큰 발급 → 요청마다 검증하는 인증 흐름</h3>
+  <p>JWT 기반 인증은 최초 로그인 시 한 번 토큰을 발급받고, 이후에는 매 요청의 헤더에 그 토큰을 실어 보내는 방식으로 동작해요. 서버는 요청이 올 때마다 토큰의 서명을 검증하기만 하면 되므로, 로그인 상태를 별도로 저장해둘 필요가 없다.</p>
+  <div class="formula"><div class="expr">① POST /api/auth/login(id/pw) → ② 서버가 검증 후 JWT 발급 → ③ 클라이언트가 토큰을 저장(예: localStorage) → ④ 이후 요청마다 Authorization: Bearer &lt;token&gt; 헤더로 전송 → ⑤ 서버가 매 요청마다 서명·만료시간 검증 → ⑥ 유효하면 요청 처리, 무효면 401 응답</div></div>
+  <div class="sqlbox"><div class="sqlhead">로그인 요청/응답 예시</div><pre><code>POST /api/auth/login
+Content-Type: application/json
+
+{ "username": "reader1", "password": "p@ssw0rd" }
+
+--- 응답 ---
+200 OK
+{ "accessToken": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyZWFkZXIxIn0.abc123..." }
+
+--- 이후 도서 API 요청 시 ---
+GET /api/books/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyZWFkZXIxIn0.abc123...</code></pre></div>
+  <div class="sqlbox"><div class="sqlhead">JwtTokenProvider — 발급과 검증(개념 예시)</div><pre><code>@Component
+public class JwtTokenProvider {
+
+    private final SecretKey secretKey; // 서버만 아는 비밀키
+
+    public String createToken(String username, String role) {
+        return Jwts.builder()
+                .subject(username)
+                .claim("role", role)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 3600_000)) // 1시간
+                .signWith(secretKey)
+                .compact();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
+            return true; // 서명이 유효하고, 만료되지 않았음
+        } catch (JwtException | IllegalArgumentException e) {
+            return false; // 위변조되었거나 만료된 토큰
+        }
+    }
+}</code></pre></div>
+  <div class="note">🔑 JWT는 만료 시간이 짧은 <b>Access Token</b>과, 그것을 재발급받는 데 쓰는 만료 시간이 긴 <b>Refresh Token</b>을 함께 쓰는 경우가 많아요. Access Token이 탈취되어도 금방 만료되도록 짧게 두고, 사용자가 매번 재로그인하지 않도록 Refresh Token으로 Access Token만 갱신하는 구조다.</div>
+
+  <h3>3) Spring Security 필터 체인</h3>
+  <p>Spring Security는 클라이언트의 요청이 컨트롤러에 도달하기 전에, 여러 개의 <b>필터(Filter)</b>가 순서대로 요청을 가로채서 인증·인가 처리를 하는 구조로 동작해요. 이 필터들이 이어진 것을 <b>필터 체인(Filter Chain)</b>이라고 부른다.</p>
+  <div class="formula"><div class="expr">요청 → ... → <b>JwtAuthenticationFilter</b>(토큰 꺼내 검증, 인증 정보 등록) → ... → AuthorizationFilter(권한 확인) → DispatcherServlet → Controller</div><div class="cap">JWT를 직접 다루는 프로젝트에서는 보통 커스텀 필터를 필터 체인 중간에 끼워 넣는다</div></div>
+  <div class="sqlbox"><div class="sqlhead">SecurityConfig — 필터 체인 설정 예시</div><pre><code>@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
+        http
+            .csrf(csrf -&gt; csrf.disable())          // 토큰 기반 API는 보통 CSRF 보호가 불필요
+            .sessionManagement(sm -&gt;
+                sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 사용 안 함
+            .authorizeHttpRequests(auth -&gt; auth
+                .requestMatchers("/api/auth/login").permitAll()   // 로그인은 누구나 접근 가능
+                .requestMatchers("/api/books/**").authenticated() // 도서 API는 인증 필요
+                .anyRequest().authenticated())
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class); // 커스텀 필터 등록
+
+        return http.build();
+    }
+}</code></pre></div>
+  <div class="note">🔑 <code>JwtAuthenticationFilter</code>는 요청 헤더에서 토큰을 꺼내 <code>JwtTokenProvider</code>로 검증하고, 유효하면 <code>SecurityContextHolder</code>에 "이 요청은 이 사용자가 인증된 상태"라는 정보를 등록해요. 이후 필터들과 컨트롤러는 이 정보를 참조해서 "누가 요청했는지"를 알 수 있게 된다.</div>
+
+  <h3>4) @PreAuthorize — 메서드 단위 권한 제어</h3>
+  <p>필터 체인 설정이 URL 경로 단위로 접근을 막는 것이었다면, <code>@PreAuthorize</code>는 <b>메서드 단위</b>로 더 세밀하게 "이 역할(role)을 가진 사용자만 이 메서드를 실행할 수 있다"는 조건을 걸 수 있어요.</p>
+  <div class="sqlbox"><div class="sqlhead">@PreAuthorize 사용 예시</div><pre><code>@RestController
+@RequestMapping("/api/books")
+public class BookController {
+
+    @GetMapping
+    public List&lt;Book&gt; findAll() { // 인증만 되어 있으면 누구나 조회 가능
+        return bookService.findAll();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping
+    public Book create(@RequestBody Book book) { // ADMIN 권한을 가진 사용자만 등록 가능
+        return bookService.save(book);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id) { // ADMIN 권한을 가진 사용자만 삭제 가능
+        bookService.delete(id);
+    }
+}</code></pre></div>
+  <div class="note">⚠️ <code>@PreAuthorize</code>가 동작하려면 <code>@EnableMethodSecurity</code>를 설정 클래스에 붙여야 하고, 필터 체인 단계에서 이미 <code>SecurityContextHolder</code>에 인증 정보(역할 포함)가 등록되어 있어야 해요. 즉 20장에서 다룬 "토큰 검증 → 인증 정보 등록" 흐름이 먼저 성립해야, 그 정보를 바탕으로 메서드 단위 권한 검사가 가능해진다.</div>
+  <div class="callout myth"><span class="ctitle">🔎 오해 — JWT를 쓰면 로그아웃이 저절로 처리된다?</span>
+  <p>세션 방식은 서버가 세션을 삭제하면 즉시 로그아웃되지만, JWT는 서버가 토큰 자체를 "기억"하지 않기 때문에 <b>이미 발급된 토큰을 서버가 강제로 무효화하기 어렵다</b>는 특징이 있어요. 그래서 실무에서는 만료 시간을 짧게 유지하거나, 무효화해야 할 토큰 목록(블랙리스트)을 별도로 관리하는 방식을 함께 쓰는 경우가 많다. "무상태"라는 장점이 곧 "로그아웃 처리가 간단하다"는 뜻은 아니다.</p></div>
+  <div class="cp"><div class="cphead">✔ 20장 핵심 요약</div><ul>
+  <li>JWT는 Header.Payload.Signature 3부분으로 구성되며, Payload는 암호화가 아니라 인코딩만 되어 있어 민감 정보를 담으면 안 된다.</li>
+  <li>로그인 시 토큰을 한 번 발급받고, 이후 요청마다 헤더에 담아 보내면 서버가 서명을 검증하는 무상태 인증 흐름이다.</li>
+  <li>Spring Security는 요청이 컨트롤러에 도달하기 전 필터 체인을 거치며, JWT 검증도 보통 커스텀 필터로 이 체인에 끼워 넣는다.</li>
+  <li>@PreAuthorize로 URL 단위보다 더 세밀한 메서드 단위 권한 제어가 가능하다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s21" data-day="5">
+  <div class="sec-head">
+    <span class="day-badge day5">Day 5</span>
+    <h2><span class="num">21.</span> 컨테이너 이해 — Docker와 Kubernetes</h2>
+  </div>
+  <p class="subtitle">컨테이너와 가상머신(VM)의 차이 · Dockerfile로 Spring Boot 앱 이미지 빌드 · docker-compose로 앱+DB 함께 띄우기 · Kubernetes 기본 개념(Pod/Deployment/Service) 개요</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: "내 컴퓨터에서는 되는데 서버에서는 안 돼요"라는 문제는, 개발 환경과 운영 환경의 설정(자바 버전, 라이브러리 등)이 미묘하게 다를 때 자주 생겨요. <b>컨테이너</b>는 애플리케이션과 그 실행에 필요한 모든 것(런타임, 라이브러리, 설정)을 하나의 "상자"에 통째로 담아, 어느 환경에서 실행하든 똑같이 동작하도록 보장하는 기술이다. <b>Docker</b>는 이 컨테이너를 만들고 실행하는 도구이고, <b>Kubernetes</b>는 이런 컨테이너들을 수십·수백 개 규모로 자동으로 관리해주는 도구예요.</div></div>
+
+  <h3>1) 컨테이너와 가상머신(VM)의 차이</h3>
+  <p>가상머신(VM)은 하드웨어를 통째로 가상화해서 그 위에 <b>운영체제(OS) 전체</b>를 새로 설치하는 방식이라 무겁고 느려요. 반면 컨테이너는 호스트 OS의 커널을 그대로 공유하면서 프로세스 수준에서만 격리하기 때문에 훨씬 가볍고 빠르게 뜬다.</p>
+  <table class="t"><thead><tr><th>구분</th><th>가상머신(VM)</th><th>컨테이너</th></tr></thead>
+  <tbody>
+  <tr><td>격리 단위</td><td>하드웨어 가상화 + OS 전체</td><td>프로세스(호스트 OS 커널 공유)</td></tr>
+  <tr><td>크기</td><td>보통 수 GB(OS 이미지 포함)</td><td>보통 수백 MB 이하</td></tr>
+  <tr><td>시작 속도</td><td>OS 부팅 필요 — 수십 초~분 단위</td><td>프로세스 시작 수준 — 수 초 이내</td></tr>
+  <tr><td>이식성</td><td>하이퍼바이저 환경에 의존적</td><td>Docker 엔진만 있으면 어디서든 동일하게 동작</td></tr>
+  </tbody></table>
+  <div class="formula"><div class="expr">VM: 하드웨어 → Hypervisor → Guest OS(전체) → 앱  vs  컨테이너: 하드웨어 → Host OS → Docker 엔진 → 앱(격리된 프로세스)</div><div class="cap">컨테이너는 OS를 다시 설치하지 않고 커널을 공유하기 때문에 훨씬 가볍다</div></div>
+  <div class="note">🔑 이런 가벼움 덕분에 "빌드한 이미지를 어디서 실행하든 똑같이 동작한다"는 점이 컨테이너의 핵심 가치예요. 개발자 로컬 환경, 테스트 서버, 운영 서버가 모두 같은 이미지를 실행하므로 환경 차이로 인한 장애를 크게 줄일 수 있다.</div>
+
+  <h3>2) Dockerfile로 Spring Boot 앱을 이미지로 빌드하기</h3>
+  <p><b>Dockerfile</b>은 "어떤 재료로, 어떤 순서로 이미지를 만들지"를 적어둔 설계도예요. Spring Boot 프로젝트를 빌드한 jar 파일을 컨테이너 이미지 안에 넣고, 그 jar를 실행하도록 지시하는 식으로 작성한다.</p>
+  <div class="sqlbox"><div class="sqlhead">Dockerfile — 도서 관리 API 이미지 빌드</div><pre><code># 1단계: 자바 실행 환경이 담긴 베이스 이미지에서 시작
+FROM eclipse-temurin:21-jre
+
+# 2단계: 컨테이너 안에서 작업할 디렉터리 지정
+WORKDIR /app
+
+# 3단계: 로컬에서 빌드해 둔 jar 파일을 이미지 안으로 복사
+COPY build/libs/book-api-0.0.1-SNAPSHOT.jar app.jar
+
+# 4단계: 이 컨테이너가 외부에 노출할 포트를 명시(문서화 목적)
+EXPOSE 8080
+
+# 5단계: 컨테이너가 시작될 때 실행할 명령
+ENTRYPOINT ["java", "-jar", "app.jar"]</code></pre></div>
+  <div class="sqlbox"><div class="sqlhead">이미지 빌드 &amp; 실행 명령</div><pre><code># 이미지 빌드 (Dockerfile이 있는 위치에서 실행)
+docker build -t book-api:1.0 .
+
+# 컨테이너 실행 — 호스트의 8080 포트를 컨테이너의 8080 포트에 연결
+docker run -p 8080:8080 book-api:1.0</code></pre></div>
+  <div class="note">⚠️ 실무에서는 빌드 도구(Gradle 등)까지 포함한 무거운 이미지를 그대로 배포하지 않도록, 빌드 단계와 실행 단계를 분리하는 <b>멀티 스테이지 빌드</b>를 자주 사용해요. 빌드에 필요한 도구는 중간 단계에만 두고, 최종 이미지에는 실행에 꼭 필요한 jar 파일만 남겨서 이미지 크기를 줄이는 방식이다.</div>
+
+  <h3>3) docker-compose로 앱+DB를 함께 띄우기</h3>
+  <p>도서 관리 API처럼 애플리케이션이 DB와 함께 동작해야 하는 경우, 컨테이너를 하나씩 <code>docker run</code>으로 실행하고 서로 연결하는 건 번거로워요. <b>docker-compose</b>는 여러 컨테이너의 구성을 YAML 파일 하나로 정의하고, 명령 한 번으로 한꺼번에 띄우고 내릴 수 있게 해준다.</p>
+  <div class="sqlbox"><div class="sqlhead">docker-compose.yml — book-api + MySQL</div><pre><code>version: "3.8"
+services:
+  book-api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/bookdb
+      SPRING_DATASOURCE_USERNAME: bookuser
+      SPRING_DATASOURCE_PASSWORD: bookpass
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: bookdb
+      MYSQL_USER: bookuser
+      MYSQL_PASSWORD: bookpass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - book-db-data:/var/lib/mysql
+
+volumes:
+  book-db-data:</code></pre></div>
+  <div class="sqlbox"><div class="sqlhead">실행 명령</div><pre><code>docker compose up -d    # 백그라운드로 book-api, db 컨테이너를 함께 실행
+docker compose down     # 실행 중인 컨테이너들을 한 번에 정지 및 제거</code></pre></div>
+  <div class="note">🔑 <code>book-api</code> 서비스에서 DB 접속 주소를 <code>jdbc:mysql://db:3306/...</code>처럼 <b>서비스 이름(db)</b>으로 지정할 수 있는 이유는, docker-compose가 같은 네트워크 안의 컨테이너들을 서비스 이름으로 서로 찾을 수 있게(DNS처럼) 연결해주기 때문이에요. IP 주소를 몰라도 서비스 이름만으로 통신할 수 있다.</div>
+
+  <h3>4) Kubernetes 기본 개념 — Pod / Deployment / Service (개요)</h3>
+  <p>docker-compose는 보통 한 대의 서버 안에서 여러 컨테이너를 관리하는 데 적합해요. 하지만 트래픽이 늘어나 서버를 여러 대로 늘리고, 컨테이너가 죽으면 자동으로 재시작하고, 트래픽을 여러 컨테이너에 고르게 분산해야 하는 규모가 되면 <b>Kubernetes(K8s)</b>라는 컨테이너 오케스트레이션 도구를 쓰게 된다. 여기서는 핵심 개념 3가지만 아주 개요 수준으로 짚어본다.</p>
+  <table class="t"><thead><tr><th>개념</th><th>역할</th></tr></thead>
+  <tbody>
+  <tr><td><b>Pod</b></td><td>Kubernetes에서 컨테이너를 실행하는 가장 작은 단위. 보통 컨테이너 1개(가끔 여러 개)를 감싼다.</td></tr>
+  <tr><td><b>Deployment</b></td><td>"Pod를 몇 개 유지할지"를 선언해두면, Pod가 죽었을 때 자동으로 다시 만들어 개수를 유지해준다(자가 치유).</td></tr>
+  <tr><td><b>Service</b></td><td>여러 개로 늘어난 Pod들 앞에서 고정된 접속 주소 역할을 하며, 요청을 여러 Pod에 고르게 분산(로드밸런싱)한다.</td></tr>
+  </tbody></table>
+  <div class="formula"><div class="expr">Deployment(원하는 Pod 개수 = 3 선언) → Pod, Pod, Pod(각각 book-api 컨테이너 실행) → Service(고정 주소로 요청을 3개 Pod에 분산)</div><div class="cap">Pod 하나가 죽으면 Deployment가 감지해 자동으로 새 Pod를 만들어 개수를 다시 3개로 맞춘다</div></div>
+  <div class="callout deep"><span class="ctitle">🔎 심화 — docker-compose와 Kubernetes, 무엇이 다른가</span>
+  <p>docker-compose는 "이 컨테이너들을 이렇게 구성해서 띄워줘"라는 정적인 구성을 다루는 데 강점이 있고, 보통 로컬 개발 환경이나 작은 규모에 적합해요. Kubernetes는 여기서 한 걸음 더 나아가 "몇 개의 Pod를 항상 유지할지, 트래픽이 늘면 몇 개까지 자동으로 늘릴지(오토스케일링), 장애가 나면 어떻게 복구할지"까지 지속적으로 관리해주는 <b>오케스트레이션</b> 도구라는 점이 근본적인 차이다. 이 강의에서는 개념만 소개하며, 실제 운영은 별도의 심화 학습이 필요하다.</p></div>
+  <div class="cp"><div class="cphead">✔ 21장 핵심 요약</div><ul>
+  <li>컨테이너는 호스트 OS 커널을 공유해 VM보다 훨씬 가볍고 빠르며, 어디서든 동일하게 동작하는 이식성을 제공한다.</li>
+  <li>Dockerfile로 Spring Boot jar를 이미지로 빌드하고, docker build/docker run(또는 docker compose)으로 실행한다.</li>
+  <li>docker-compose는 앱과 DB처럼 여러 컨테이너의 구성을 YAML 하나로 정의해 한 번에 띄우고 내릴 수 있게 해준다.</li>
+  <li>Kubernetes는 Pod(최소 실행 단위)·Deployment(개수 유지·자가 치유)·Service(고정 주소·로드밸런싱)로 대규모 컨테이너 운영을 자동화한다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s22" data-day="5">
+  <div class="sec-head">
+    <span class="day-badge day5">Day 5</span>
+    <h2><span class="num">22.</span> MSA와 최신 트렌드</h2>
+  </div>
+  <p class="subtitle">모놀리식 vs 마이크로서비스 아키텍처 · MSA의 장점(독립 배포/확장)과 단점(운영 복잡도/분산 트랜잭션) · 동기 REST vs 비동기 메시지 큐 · API Gateway 역할</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 지금까지 이 강의에서 만든 도서 관리 API는 도서 등록·조회·리뷰·통계 기능이 <b>하나의 애플리케이션</b> 안에 모두 들어있는 구조예요(모놀리식). <b>마이크로서비스 아키텍처(MSA)</b>는 이걸 "도서 서비스", "리뷰 서비스", "통계 서비스"처럼 <b>독립적으로 배포·운영 가능한 여러 개의 작은 서비스</b>로 쪼개는 방식이다. 서비스가 늘어나면 그만큼 서비스끼리 어떻게 통신하고, 요청을 어디로 보낼지 정리해줄 장치도 함께 필요해진다.</div></div>
+
+  <h3>1) 모놀리식 아키텍처 vs 마이크로서비스 아키텍처(MSA)</h3>
+  <p><b>모놀리식(Monolithic)</b>은 하나의 애플리케이션, 하나의 코드베이스, 하나의 배포 단위 안에 모든 기능이 들어있는 전통적인 구조예요. 반면 <b>MSA</b>는 기능(도메인)별로 애플리케이션 자체를 여러 개로 쪼개서, 각자 독립적인 코드베이스·배포·DB를 갖게 한다.</p>
+  <table class="t"><thead><tr><th>구분</th><th>모놀리식</th><th>MSA</th></tr></thead>
+  <tbody>
+  <tr><td>배포 단위</td><td>애플리케이션 전체를 하나로 배포</td><td>서비스별로 독립적으로 배포</td></tr>
+  <tr><td>도서 API 예시</td><td>도서·리뷰·통계 기능이 한 프로젝트, 한 jar 안에 함께 존재</td><td>book-service, review-service, stat-service로 완전히 분리된 프로젝트</td></tr>
+  <tr><td>DB</td><td>보통 하나의 DB를 여러 기능이 공유</td><td>서비스마다 자신만의 DB를 갖는 경우가 많음</td></tr>
+  <tr><td>기술 스택</td><td>보통 프로젝트 전체가 동일한 언어/프레임워크</td><td>서비스마다 다른 언어/프레임워크 선택 가능</td></tr>
+  </tbody></table>
+  <div class="note">🔑 MSA로 전환한다는 것은 단순히 "코드를 여러 폴더로 나누는 것"이 아니라, <b>배포 단위와 DB까지 독립적으로 분리</b>한다는 뜻이에요. book-service를 재배포해도 review-service는 전혀 영향을 받지 않아야 진짜 MSA라고 할 수 있다.</div>
+
+  <h3>2) MSA의 장점 — 독립 배포와 확장</h3>
+  <p>서비스를 잘게 쪼개면 각 서비스를 독립적으로 다룰 수 있다는 게 가장 큰 장점이에요.</p>
+  <div class="cp"><div class="cphead">✔ MSA의 대표적인 장점</div><ul>
+  <li><b>독립 배포</b> — 리뷰 기능에 버그를 고쳤을 때 review-service만 재배포하면 되고, 도서 등록 기능은 중단 없이 계속 돌아간다.</li>
+  <li><b>독립 확장(스케일링)</b> — 통계 조회 요청이 몰릴 때 stat-service의 인스턴스 개수만 늘리면 되고, 상대적으로 트래픽이 적은 book-service까지 함께 늘릴 필요가 없다.</li>
+  <li><b>기술 선택의 자유</b> — 통계 서비스는 데이터 분석에 유리한 다른 언어를 쓰는 식으로, 서비스별로 적합한 기술을 고를 수 있다.</li>
+  <li><b>장애 격리</b> — 리뷰 서비스에 장애가 나도, 잘 설계되어 있다면 도서 조회 자체는 영향을 받지 않을 수 있다.</li>
+  </ul></div>
+
+  <h3>3) MSA의 단점 — 운영 복잡도와 분산 트랜잭션</h3>
+  <p>장점이 있는 만큼, 서비스가 여러 개로 나뉘는 순간부터 모놀리식에는 없던 새로운 어려움이 생긴다.</p>
+  <div class="cp"><div class="cphead">⚠ MSA의 대표적인 단점</div><ul>
+  <li><b>운영 복잡도 증가</b> — 서비스가 10개면 배포 파이프라인, 모니터링, 로그 수집도 10곳에서 따로 관리해야 한다.</li>
+  <li><b>서비스 간 통신 오버헤드</b> — 같은 프로세스 안에서 메서드를 호출하던 것을, 이제는 네트워크를 통한 API 호출로 바꿔야 하니 지연 시간과 실패 가능성이 늘어난다.</li>
+  <li><b>분산 트랜잭션 문제</b> — "도서 주문 생성"과 "재고 차감"이 서로 다른 서비스, 다른 DB에 있다면, 하나의 <code>@Transactional</code>로 두 작업을 함께 묶어 원자성을 보장할 수 없다.</li>
+  <li><b>디버깅 난이도 증가</b> — 하나의 사용자 요청이 여러 서비스를 거치면서 처리되기 때문에, 어느 서비스에서 문제가 생겼는지 추적하기가 모놀리식보다 훨씬 어렵다.</li>
+  </ul></div>
+  <div class="note">⚠️ 분산 트랜잭션 문제는 실무에서 보통 "여러 서비스에 걸친 작업을 하나의 트랜잭션으로 묶는다"가 아니라, <b>실패했을 때 이전 작업을 취소하는 보상(compensation) 로직을 순차적으로 실행하는 사가(Saga) 패턴</b> 같은 방식으로 다뤄요. 완벽한 원자성 대신, 최종적으로는 일관된 상태에 도달하는 것(최종 일관성, eventual consistency)을 목표로 설계하는 경우가 많다.</div>
+
+  <h3>4) 서비스 간 통신 — 동기 REST 호출 vs 비동기 메시지 큐</h3>
+  <p>서비스가 여러 개로 나뉘면, 그 서비스들이 서로 정보를 주고받는 방법을 선택해야 해요. 크게 두 가지 방식이 있다.</p>
+  <table class="t"><thead><tr><th>방식</th><th>동작 방식</th><th>특징</th></tr></thead>
+  <tbody>
+  <tr><td><b>동기(Synchronous) — REST 호출</b></td><td>book-service가 review-service의 API를 직접 호출하고, 응답이 올 때까지 기다린다.</td><td>구현이 직관적이지만, review-service가 느리거나 죽으면 book-service 요청도 함께 지연·실패한다.</td></tr>
+  <tr><td><b>비동기(Asynchronous) — 메시지 큐</b></td><td>book-service가 "도서가 등록됨"이라는 이벤트를 메시지 큐에 발행만 하고 응답을 기다리지 않으며, review-service는 큐를 구독해 나중에 처리한다.</td><td>서비스 간 결합도가 낮아지고 한쪽이 잠시 죽어도 메시지가 큐에 남아있어 안정적이지만, 즉시 결과가 필요한 경우엔 맞지 않는다.</td></tr>
+  </tbody></table>
+  <div class="formula"><div class="expr">동기: book-service → (REST 호출, 응답 대기) → review-service → 응답 반환  vs  비동기: book-service → (이벤트 발행) → 메시지 큐 → review-service(나중에 구독·처리, 즉시 응답 없음)</div></div>
+  <div class="note">🔑 "지금 당장 응답 결과가 필요한가?"가 선택의 기준이 되는 경우가 많아요. 예를 들어 "도서 상세 조회"처럼 즉시 화면에 결과를 보여줘야 하면 동기 REST 호출이, "도서가 등록되면 알림을 보낸다"처럼 결과를 그 자리에서 기다릴 필요가 없는 작업은 비동기 메시지 큐가 더 적합한 경우가 많다.</div>
+
+  <h3>5) API Gateway의 역할</h3>
+  <p>서비스가 여러 개로 나뉘면, 클라이언트 입장에서는 "도서 조회는 어느 주소로, 리뷰 조회는 또 다른 어느 주소로 보내야 하는지"를 일일이 알아야 하는 불편함이 생겨요. <b>API Gateway</b>는 여러 서비스 앞에 놓인 <b>단일 진입점</b> 역할을 하며, 클라이언트의 모든 요청을 받아 적절한 내부 서비스로 전달해준다.</p>
+  <div class="formula"><div class="expr">Client → <b>API Gateway</b>(단일 진입점) → 요청 경로에 따라 라우팅 → book-service / review-service / stat-service</div><div class="cap">클라이언트는 내부에 서비스가 몇 개인지, 어디에 있는지 몰라도 Gateway 주소 하나만 알면 된다</div></div>
+  <div class="cp"><div class="cphead">✔ API Gateway가 흔히 함께 담당하는 역할</div><ul>
+  <li><b>라우팅</b> — 요청 경로(예: <code>/api/books/**</code>, <code>/api/reviews/**</code>)에 따라 알맞은 내부 서비스로 전달.</li>
+  <li><b>인증/인가 공통 처리</b> — 20장에서 다룬 JWT 검증 같은 공통 로직을 각 서비스마다 중복 구현하지 않고 Gateway에서 한 번에 처리.</li>
+  <li><b>로드밸런싱</b> — 같은 서비스의 여러 인스턴스(Pod) 중 하나로 요청을 분산.</li>
+  <li><b>공통 정책 적용</b> — 요청 속도 제한(rate limiting), 로깅, CORS 같은 공통 관심사를 한곳에서 관리.</li>
+  </ul></div>
+  <div class="callout goal"><span class="ctitle">🎯 정리 — 언제 MSA를 고려해야 할까</span>
+  <p>MSA는 무조건 더 좋은 구조가 아니라, 팀 규모가 커지고 기능 단위로 독립 배포·확장이 자주 필요해질 때 그 복잡도를 감수할 가치가 생기는 선택이에요. 이 강의에서 계속 다룬 도서 관리 API처럼 작은 규모의 프로젝트라면 모놀리식으로 시작해서 필요할 때 서비스를 점진적으로 분리해나가는 방식이 실무에서도 흔히 권장되는 접근이다. "작게 시작해서 필요할 때 나눈다"는 원칙을 기억해두면 좋다.</p></div>
+  <div class="cp"><div class="cphead">✔ 22장 핵심 요약</div><ul>
+  <li>모놀리식은 하나의 배포 단위로 모든 기능을 담고, MSA는 기능별로 독립 배포·독립 DB를 갖는 서비스로 나눈다.</li>
+  <li>MSA는 독립 배포·독립 확장·장애 격리라는 장점이 있지만, 운영 복잡도 증가와 분산 트랜잭션 같은 새로운 어려움이 따른다.</li>
+  <li>서비스 간 통신은 즉시 응답이 필요하면 동기 REST 호출을, 결합도를 낮추고 싶으면 비동기 메시지 큐를 선택한다.</li>
+  <li>API Gateway는 여러 서비스 앞의 단일 진입점으로 라우팅, 공통 인증, 로드밸런싱 등을 담당한다.</li>
+  </ul></div>
+</section>
+
+<div class="quiz-wrap" id="quiz-day5">
+  <h2>✅ Day 5 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="5">0 / 7 정답</div>
+  <div class="quiz-q" data-qid="d5q0" data-type="ox" data-answer="true" data-exp="springdoc-openapi 의존성을 추가하면 애플리케이션이 뜰 때 컨트롤러를 스캔해서 OpenAPI 문서(JSON)와 Swagger UI 화면을 자동으로 생성해줘요. 별도의 문서 작성 없이도 기본적인 API 구조는 문서화됩니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>springdoc-openapi 의존성을 추가하면, 별도의 설정 없이도 컨트롤러를 스캔해 OpenAPI 문서와 Swagger UI 화면이 자동으로 생성된다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d5q1" data-type="ox" data-answer="false" data-exp="JWT의 Payload는 암호화되어 있지 않고 Base64Url로 인코딩만 되어 있어요. 토큰을 가진 사람이면 누구나 디코딩해서 내용을 읽을 수 있기 때문에, 비밀번호 같은 민감한 정보를 Payload에 담으면 안 됩니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>JWT의 Payload는 암호화되어 있어서, 토큰을 가진 사람이라도 그 내용을 알아볼 수 없다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d5q2" data-type="ox" data-answer="true" data-exp="컨테이너는 하드웨어를 통째로 가상화하는 VM과 달리, 호스트 OS의 커널을 그대로 공유하면서 프로세스 수준에서만 격리해요. 그래서 OS를 다시 설치할 필요가 없어 VM보다 훨씬 가볍고 빠르게 시작할 수 있습니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>컨테이너는 호스트 OS의 커널을 공유하기 때문에, 별도의 OS를 통째로 설치하는 가상머신(VM)보다 훨씬 가볍고 빠르게 뜬다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d5q3" data-type="mc" data-answer="필터 체인 중간에 커스텀 필터를 등록해 검증한다" data-exp="Spring Security는 요청이 컨트롤러에 도달하기 전 여러 필터를 순서대로 거치는 필터 체인 구조로 동작해요. JWT를 다루는 프로젝트에서는 보통 JwtAuthenticationFilter 같은 커스텀 필터를 이 체인 중간에 addFilterBefore 등으로 끼워 넣어 토큰을 검증합니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>Spring Security에서 JWT 토큰 검증은 보통 어떤 방식으로 처리되는가?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="컨트롤러 메서드 안에서 매번 직접 토큰을 파싱한다">컨트롤러 메서드 안에서 매번 직접 토큰을 파싱한다</button>
+      <button class="quiz-opt" data-val="필터 체인 중간에 커스텀 필터를 등록해 검증한다">필터 체인 중간에 커스텀 필터를 등록해 검증한다</button>
+      <button class="quiz-opt" data-val="DB에 저장된 세션 값과 비교해 검증한다">DB에 저장된 세션 값과 비교해 검증한다</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d5q4" data-type="mc" data-answer="분산 트랜잭션 처리가 어려워진다" data-exp="서비스별로 독립된 DB를 갖는 MSA에서는, 여러 서비스에 걸친 작업을 하나의 @Transactional로 묶어 원자성을 보장할 수 없어요. 이 때문에 실패 시 이전 작업을 취소하는 사가(Saga) 패턴처럼 별도의 보상 전략이 필요해지는, MSA의 대표적인 단점 중 하나입니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>모놀리식 아키텍처와 비교했을 때, MSA(마이크로서비스 아키텍처)의 대표적인 단점으로 옳은 것은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="서비스별 독립 배포가 불가능해진다">서비스별 독립 배포가 불가능해진다</button>
+      <button class="quiz-opt" data-val="분산 트랜잭션 처리가 어려워진다">분산 트랜잭션 처리가 어려워진다</button>
+      <button class="quiz-opt" data-val="서비스마다 다른 기술 스택을 쓸 수 없다">서비스마다 다른 기술 스택을 쓸 수 없다</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d5q5" data-type="short" data-accept='["swagger ui", "swaggerui", "swagger-ui"]' data-exp="springdoc-openapi가 생성한 OpenAPI 명세를 사람이 보기 좋은 웹 화면으로 렌더링하고, Try it out 버튼으로 실제 API 호출까지 테스트해볼 수 있게 해주는 화면을 Swagger UI라고 해요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>OpenAPI 명세를 웹 화면으로 보여주고, "Try it out"으로 API를 직접 호출해볼 수 있게 해주는 도구의 이름은? (영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d5q6" data-type="short" data-accept='["api gateway", "apigateway", "api 게이트웨이", "게이트웨이"]' data-exp="여러 마이크로서비스 앞에 놓여 클라이언트 요청을 받는 단일 진입점 역할을 하며, 요청 경로에 따른 라우팅과 공통 인증·로드밸런싱 등을 처리하는 컴포넌트를 API Gateway라고 해요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>여러 마이크로서비스 앞에서 클라이언트 요청을 받아 알맞은 서비스로 라우팅해주는 단일 진입점 역할을 하는 컴포넌트는? (영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+
+
+  </main>
+</div>
+<button class="top-btn" id="topBtn" title="맨 위로">↑</button>
+
+<button id="rpToggle">🖥 REST API 연습장</button>
+<div id="rpDrawer">
+  <div class="rp-head">
+    <h3>🖥 REST API 연습장 — 가상 도서 관리 API로 직접 요청 보내기</h3>
+    <div class="rp-actions">
+      <span class="rp-info" id="rpStatusLabel">준비 완료 ✓</span>
+      <button class="rp-close" id="rpClose">×</button>
+    </div>
+  </div>
+  <div class="rp-body">
+    <div class="rp-side">
+      <div class="rp-guide">브라우저 메모리에 있는 가상 <b>도서(book)</b> 목록에 실제 HTTP 요청처럼 GET/POST/PUT/DELETE를 보내볼 수 있어요. 왼쪽 예제를 눌러 자동 채우기 하거나, 직접 메서드·경로·바디를 입력해보세요.</div>
+      <h4>예제 요청</h4>
+      <div id="rpExamples"></div>
+      <h4>가상 스키마</h4>
+      <div style="font-family:monospace; font-size:11px; line-height:1.8;">
+        GET/POST /api/books<br>
+        GET/PUT/DELETE /api/books/{id}<br>
+        <br>
+        Book { id, title, author, price }
+      </div>
+    </div>
+    <div class="rp-main">
+      <div class="rp-reqrow">
+        <select id="rpMethod">
+          <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option>
+        </select>
+        <input id="rpPath" type="text" value="/api/books" placeholder="/api/books">
+      </div>
+      <textarea id="rpBody" placeholder='요청 바디 (JSON) — POST/PUT일 때만 필요&#10;예: {"title":"이펙티브 자바","author":"조슈아 블로크","price":32000}'></textarea>
+      <div class="rp-btnrow">
+        <button class="rp-send" id="rpSend">▶ 요청 보내기 (Ctrl+Enter)</button>
+        <button class="rp-reset" id="rpReset">데이터 초기화</button>
+      </div>
+      <div class="rp-result" id="rpResult"><div class="rp-info">요청을 보내면 응답이 여기 표시됩니다.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const links = document.querySelectorAll('.navlink');
+  const sections = document.querySelectorAll('.sec');
+  const searchBox = document.getElementById('searchBox');
+  const topBtn = document.getElementById('topBtn');
+
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const id = e.target.id;
+        links.forEach(l=>l.classList.toggle('active', l.getAttribute('href')==='#'+id));
+      }
+    });
+  }, {rootMargin:'-10% 0px -70% 0px'});
+  sections.forEach(s=>obs.observe(s));
+
+  searchBox.addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    sections.forEach(sec=>{
+      const text = sec.innerText.toLowerCase();
+      const match = q==='' || text.includes(q);
+      sec.style.display = match ? '' : 'none';
+    });
+    links.forEach(l=>{
+      const num = l.getAttribute('data-sec');
+      if(!num) return;
+      const sec = document.getElementById('s'+num);
+      const groupTitle = l.textContent.toLowerCase();
+      const match = q==='' || (sec && sec.innerText.toLowerCase().includes(q)) || groupTitle.includes(q);
+      l.style.display = match ? '' : 'none';
+    });
+  });
+
+  window.addEventListener('scroll', ()=>{
+    topBtn.style.display = window.scrollY > 600 ? 'block' : 'none';
+  });
+  topBtn.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'}));
+
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', ()=>{
+    document.body.classList.toggle('light');
+    const isLight = document.body.classList.contains('light');
+    themeBtn.textContent = isLight ? '🌙 다크 모드' : '☀ 라이트 모드';
+  });
+
+  // ==== Quiz logic (3회 재시도 후 해설 공개) ====
+  const MAX_ATTEMPTS = 3;
+  function expHtml(exp){
+    return exp ? '<div class="quiz-exp">💡 ' + exp + '</div>' : '';
+  }
+  document.querySelectorAll('.quiz-q[data-type="ox"], .quiz-q[data-type="mc"]').forEach(qEl=>{
+    const answer = qEl.dataset.answer;
+    const exp = qEl.dataset.exp || '';
+    const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    const fb = qEl.querySelector('.quiz-feedback');
+    let attempts = 0;
+    qEl.querySelectorAll('.quiz-opt').forEach(opt=>{
+      opt.addEventListener('click', ()=>{
+        if(qEl.classList.contains('locked') || opt.disabled) return;
+        const val = opt.dataset.val;
+        const isCorrect = (val === answer);
+        if(isCorrect){
+          qEl.classList.add('locked','answered-correct');
+          opt.classList.add('correct');
+          qEl.querySelectorAll('.quiz-opt').forEach(o=> o.setAttribute('disabled','true'));
+          fb.innerHTML = '정답이에요! 🎉' + expHtml(exp);
+          fb.className = 'quiz-feedback ok';
+          updateScore(day);
+          return;
+        }
+        attempts++;
+        opt.classList.add('incorrect');
+        opt.setAttribute('disabled','true');
+        if(attempts >= MAX_ATTEMPTS){
+          qEl.classList.add('locked');
+          qEl.querySelectorAll('.quiz-opt').forEach(o=>{
+            o.setAttribute('disabled','true');
+            if(o.dataset.val === answer) o.classList.add('correct');
+          });
+          fb.innerHTML = MAX_ATTEMPTS + '번 틀렸어요. 정답은 강조 표시된 항목이에요.' + expHtml(exp);
+        } else {
+          fb.textContent = '아쉬워요, 다시 시도해보세요. (' + attempts + '/' + MAX_ATTEMPTS + ')';
+        }
+        fb.className = 'quiz-feedback no';
+        updateScore(day);
+      });
+    });
+  });
+  document.querySelectorAll('.quiz-q[data-type="short"]').forEach(qEl=>{
+    const acceptRaw = JSON.parse(qEl.dataset.accept);
+    const accept = acceptRaw.map(a=>a.toLowerCase().trim());
+    const exp = qEl.dataset.exp || '';
+    const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    const input = qEl.querySelector('input');
+    const btn = qEl.querySelector('.quiz-check');
+    const fb = qEl.querySelector('.quiz-feedback');
+    let attempts = 0;
+    function check(){
+      if(qEl.classList.contains('locked')) return;
+      const val = input.value.toLowerCase().trim();
+      const isCorrect = accept.includes(val) && val !== '';
+      if(isCorrect){
+        qEl.classList.add('locked','answered-correct');
+        fb.innerHTML = '정답이에요! 🎉' + expHtml(exp);
+        fb.className = 'quiz-feedback ok';
+        input.disabled = true; btn.disabled = true;
+        updateScore(day);
+        return;
+      }
+      attempts++;
+      if(attempts >= MAX_ATTEMPTS){
+        qEl.classList.add('locked');
+        input.disabled = true; btn.disabled = true;
+        fb.innerHTML = MAX_ATTEMPTS + '번 틀렸어요. 정답은 <b>' + acceptRaw[0] + '</b> 이에요.' + expHtml(exp);
+      } else {
+        fb.textContent = '다시 시도해보세요. (' + attempts + '/' + MAX_ATTEMPTS + ')';
+      }
+      fb.className = 'quiz-feedback no';
+    }
+    btn.addEventListener('click', check);
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); });
+  });
+  function updateScore(day){
+    const wrap = document.getElementById('quiz-day'+day);
+    if(!wrap) return;
+    const total = wrap.querySelectorAll('.quiz-q').length;
+    const correct = wrap.querySelectorAll('.quiz-q.answered-correct').length;
+    const scoreEl = wrap.querySelector('.quiz-score');
+    if(scoreEl) scoreEl.textContent = correct + ' / ' + total + ' 정답';
+  }
+
+  // ==== REST API 연습장 (가상 도서 API 시뮬레이터) ====
+  const rpToggle = document.getElementById('rpToggle');
+  const rpDrawer = document.getElementById('rpDrawer');
+  const rpClose = document.getElementById('rpClose');
+  const rpMethod = document.getElementById('rpMethod');
+  const rpPath = document.getElementById('rpPath');
+  const rpBody = document.getElementById('rpBody');
+  const rpSend = document.getElementById('rpSend');
+  const rpReset = document.getElementById('rpReset');
+  const rpResult = document.getElementById('rpResult');
+  const rpExamples = document.getElementById('rpExamples');
+
+  function openDrawer(){ rpDrawer.classList.add('open'); }
+  function closeDrawer(){ rpDrawer.classList.remove('open'); }
+  rpToggle.addEventListener('click', ()=>{
+    rpDrawer.classList.contains('open') ? closeDrawer() : openDrawer();
+  });
+  rpClose.addEventListener('click', closeDrawer);
+
+  const INITIAL_BOOKS = [
+    {id:1, title:"이펙티브 자바", author:"조슈아 블로크", price:32000},
+    {id:2, title:"클린 코드", author:"로버트 마틴", price:28000},
+    {id:3, title:"객체지향의 사실과 오해", author:"조영호", price:22000}
+  ];
+  let books = JSON.parse(JSON.stringify(INITIAL_BOOKS));
+  let nextId = 4;
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderResponse(status, body){
+    const cls = status < 300 ? 's2' : (status < 500 ? 's4' : 's5');
+    const statusText = {200:'OK',201:'Created',204:'No Content',400:'Bad Request',404:'Not Found',405:'Method Not Allowed',500:'Internal Server Error'}[status] || '';
+    let html = '<div class="rp-status"><span class="code ' + cls + '">' + status + ' ' + statusText + '</span><span style="color:var(--muted)">Content-Type: application/json</span></div>';
+    html += '<pre>' + (body === undefined ? '(empty body)' : escapeHtml(JSON.stringify(body, null, 2))) + '</pre>';
+    rpResult.innerHTML = html;
+  }
+
+  function handleRequest(method, path, bodyText){
+    const m = path.match(/^\/api\/books(?:\/(\d+))?\/?$/);
+    if(!m){
+      renderResponse(404, {error: "지원하지 않는 경로입니다. /api/books 형태로 입력하세요."});
+      return;
+    }
+    const id = m[1] ? parseInt(m[1], 10) : null;
+
+    if(method === 'GET'){
+      if(id === null){
+        renderResponse(200, books);
+      } else {
+        const book = books.find(b=>b.id===id);
+        book ? renderResponse(200, book) : renderResponse(404, {error: "id=" + id + " 인 책을 찾을 수 없습니다."});
+      }
+      return;
+    }
+
+    if(method === 'POST'){
+      if(id !== null){
+        renderResponse(405, {error: "POST는 컬렉션 경로(/api/books)에만 사용합니다. id를 포함하려면 PUT을 쓰세요."});
+        return;
+      }
+      let payload;
+      try{ payload = bodyText.trim() ? JSON.parse(bodyText) : {}; }
+      catch(e){ renderResponse(400, {error: "요청 바디가 올바른 JSON이 아닙니다: " + e.message}); return; }
+      if(!payload.title || !payload.author){
+        renderResponse(400, {error: "title, author는 필수입니다."});
+        return;
+      }
+      const newBook = {id: nextId++, title: payload.title, author: payload.author, price: payload.price ?? 0};
+      books.push(newBook);
+      renderResponse(201, newBook);
+      return;
+    }
+
+    if(method === 'PUT'){
+      if(id === null){ renderResponse(400, {error: "PUT은 /api/books/{id} 형태로 id가 필요합니다."}); return; }
+      const idx = books.findIndex(b=>b.id===id);
+      if(idx === -1){ renderResponse(404, {error: "id=" + id + " 인 책을 찾을 수 없습니다."}); return; }
+      let payload;
+      try{ payload = bodyText.trim() ? JSON.parse(bodyText) : {}; }
+      catch(e){ renderResponse(400, {error: "요청 바디가 올바른 JSON이 아닙니다: " + e.message}); return; }
+      books[idx] = {...books[idx], ...payload, id};
+      renderResponse(200, books[idx]);
+      return;
+    }
+
+    if(method === 'DELETE'){
+      if(id === null){ renderResponse(400, {error: "DELETE는 /api/books/{id} 형태로 id가 필요합니다."}); return; }
+      const idx = books.findIndex(b=>b.id===id);
+      if(idx === -1){ renderResponse(404, {error: "id=" + id + " 인 책을 찾을 수 없습니다."}); return; }
+      const removed = books.splice(idx, 1)[0];
+      renderResponse(204, undefined);
+      return;
+    }
+
+    renderResponse(405, {error: "지원하지 않는 메서드입니다."});
+  }
+
+  rpSend.addEventListener('click', ()=>{
+    handleRequest(rpMethod.value, rpPath.value.trim(), rpBody.value);
+  });
+  document.addEventListener('keydown', (e)=>{
+    if((e.ctrlKey || e.metaKey) && e.key==='Enter' && rpDrawer.classList.contains('open')){
+      handleRequest(rpMethod.value, rpPath.value.trim(), rpBody.value);
+    }
+  });
+  rpReset.addEventListener('click', ()=>{
+    books = JSON.parse(JSON.stringify(INITIAL_BOOKS));
+    nextId = 4;
+    rpResult.innerHTML = '<div class="rp-info">데이터를 초기 상태로 재설정했습니다.</div>';
+  });
+
+  const RP_EXAMPLES = [
+    {label:'전체 목록 조회', method:'GET', path:'/api/books', body:''},
+    {label:'단건 조회 (id=1)', method:'GET', path:'/api/books/1', body:''},
+    {label:'새 책 등록', method:'POST', path:'/api/books', body:'{\n  "title": "모던 자바 인 액션",\n  "author": "라울-게이브리얼 우르마",\n  "price": 36000\n}'},
+    {label:'수정 (id=2)', method:'PUT', path:'/api/books/2', body:'{\n  "price": 25000\n}'},
+    {label:'삭제 (id=3)', method:'DELETE', path:'/api/books/3', body:''},
+    {label:'존재하지 않는 id 조회 (404 확인)', method:'GET', path:'/api/books/999', body:''}
+  ];
+  RP_EXAMPLES.forEach(ex=>{
+    const btn = document.createElement('button');
+    btn.className = 'rp-ex';
+    btn.innerHTML = '<span class="m ' + ex.method + '">' + ex.method + '</span>' + ex.label;
+    btn.addEventListener('click', ()=>{
+      rpMethod.value = ex.method;
+      rpPath.value = ex.path;
+      rpBody.value = ex.body;
+      openDrawer();
+    });
+    rpExamples.appendChild(btn);
+  });
+</script>
+</body>
+</html>
