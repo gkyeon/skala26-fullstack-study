@@ -17,7 +17,8 @@ site/
 │   ├── 03-basic-statistics/index.html     # 강의 3: 데이터 분석 개요 및 기초통계 (완료)
 │   ├── 04-prompt-engineering/index.html   # 강의 4: Prompt 설계 및 Context Engineering (완료)
 │   ├── 05-llm-transformer/index.html      # 강의 5: LLM과 Transformer 아키텍처 (완료)
-│   └── 06-springboot-restapi/index.html   # 강의 6: Java·Spring Boot·REST API (완료)
+│   ├── 06-springboot-restapi/index.html   # 강의 6: Java·Spring Boot·REST API (완료)
+│   └── 07-agile-msa/index.html            # 강의 7: Agile 방법론과 MSA (완료)
 ├── template/
 │   └── lecture-template.html              # 새 강의 만들 때 복사해서 쓰는 뼈대
 └── README.md                              # 이 파일
