@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKALA | 실전 Feature Engineering - 복습노트</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#161925; --panel2:#1c2030; --border:#2a2f42;
+    --text:#e6e8ef; --muted:#9aa0b4; --accent:#7c9dff; --accent2:#4fd1c5;
+    --code-bg:#10131c; --code-text:#c9e6ff;
+    --day1:#7c9dff; --day2:#4fd1c5;
+    --warn:#f6ad55;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6;
+  }
+  .layout{display:flex; min-height:100vh;}
+  .sidebar{
+    width:300px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--border);
+    position:sticky; top:0; height:100vh; overflow-y:auto; padding:20px 14px;
+  }
+  .sidebar h1{font-size:15px; margin:0 6px 4px; color:var(--text); font-weight:700;}
+  .sidebar .sub{font-size:11.5px; color:var(--muted); margin:0 6px 16px;}
+  .search{
+    width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:13px; margin-bottom:14px;
+  }
+  .search:focus{outline:none; border-color:var(--accent);}
+  .day-group{margin-bottom:10px;}
+  .day-title{
+    font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
+    padding:8px 6px 4px; font-weight:700;
+  }
+  .day-title.d1{color:var(--day1);} .day-title.d2{color:var(--day2);}
+  .navlink{
+    display:block; padding:6px 8px; border-radius:6px; color:var(--muted); text-decoration:none;
+    font-size:13px; margin:1px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .navlink:hover{background:var(--panel2); color:var(--text);}
+  .navlink.active{background:rgba(124,157,255,.15); color:var(--accent); font-weight:600;}
+  main{flex:1; padding:32px 40px 120px; max-width:980px;}
+  .page-head{margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border);}
+  .page-head h1{font-size:26px; margin:0 0 8px;}
+  .page-head p{color:var(--muted); font-size:14px; margin:0;}
+  .badges{margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;}
+  .badges span{font-size:11.5px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted);}
+  .sec{margin-bottom:56px; padding-top:8px; scroll-margin-top:20px;}
+  .sec-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .day-badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; color:#0b0d14;}
+  .day-badge.day1{background:var(--day1);} .day-badge.day2{background:var(--day2);}
+  .sec h2{font-size:21px; margin:0; display:flex; gap:8px; align-items:baseline;}
+  .sec h2 .num{color:var(--muted); font-weight:500;}
+  .subtitle{color:var(--muted); font-size:13.5px; margin:6px 0 18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .sec h3{font-size:16px; margin:22px 0 8px; color:var(--text);}
+  .sec h4{font-size:13.5px; margin:14px 0 6px; color:var(--accent2); font-weight:700;}
+  .b{margin:4px 0 14px; padding-left:20px;}
+  .b li{margin:4px 0; font-size:14px;}
+  .b li::marker{color:var(--accent);}
+  p{font-size:14px; margin:8px 0;}
+  .sqlbox{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:10px;
+    margin:12px 0; overflow:hidden;
+  }
+  .sqlhead{
+    font-size:11px; color:var(--muted); padding:7px 12px; border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,.02); letter-spacing:.03em; text-transform:uppercase;
+  }
+  .sqlbox pre{margin:0; padding:12px 14px; overflow-x:auto;}
+  .sqlbox code{
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:13.5px; color:var(--code-text);
+    line-height:1.85; white-space:pre-wrap; word-break:break-word;
+  }
+  .cp{
+    background:rgba(79,209,197,.07); border:1px solid rgba(79,209,197,.3); border-radius:10px;
+    padding:10px 14px; margin:14px 0;
+  }
+  .cphead{color:var(--accent2); font-size:12.5px; font-weight:700; margin-bottom:6px;}
+  .cp ul{margin:0; padding-left:18px;}
+  .cp li{font-size:13px; margin:3px 0; color:#d5f5f0;}
+  table.t{border-collapse:collapse; width:100%; margin:12px 0; font-size:13px;}
+  table.t th{
+    background:var(--panel2); text-align:left; padding:8px 10px; border:1px solid var(--border);
+    color:var(--accent2); font-size:12px;
+  }
+  table.t td{padding:8px 10px; border:1px solid var(--border); color:var(--text); vertical-align:top;}
+  .note{
+    font-size:12.5px; color:var(--warn); background:rgba(246,173,85,.08);
+    border-left:3px solid var(--warn); padding:8px 12px; margin:12px 0; border-radius:4px;
+  }
+  .divider{border:none; border-top:1px solid var(--border); margin:40px 0;}
+  .day-header{
+    margin:60px 0 24px; padding:14px 0; border-bottom:2px solid var(--border);
+  }
+  .day-header h1{font-size:22px; margin:0 0 4px;}
+  .day-header p{color:var(--muted); font-size:13px; margin:0;}
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-thumb{background:#333850; border-radius:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  .top-btn{
+    position:fixed; bottom:24px; right:24px; background:var(--accent); color:#0b0d14;
+    border:none; border-radius:999px; width:44px; height:44px; font-size:18px; cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,.4); display:none;
+  }
+  @media (max-width:900px){
+    .sidebar{position:fixed; z-index:20; transform:translateX(-100%); transition:transform .2s;}
+    .sidebar.open{transform:translateX(0);}
+    main{padding:20px;}
+  }
+  body{ font-size:15px; }
+  main{ padding:36px 48px 160px; max-width:900px; }
+  .sec{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:22px 26px 26px; margin-bottom:28px; box-shadow:0 1px 0 rgba(255,255,255,.02) inset;
+  }
+  .sec-head{margin-bottom:2px;}
+  .sec h2{font-size:20px;}
+  .subtitle{font-size:13.5px; line-height:1.55; margin-bottom:16px;}
+  p, .b li, .cp li, table.t td{font-size:14.5px; line-height:1.75;}
+  .b{padding-left:22px;}
+  .b li{margin:6px 0;}
+  h4{letter-spacing:.01em;}
+  .day-header{
+    background:linear-gradient(180deg, rgba(124,157,255,.08), transparent);
+    border-radius:12px; padding:20px 22px; border-bottom:none; border:1px solid var(--border);
+  }
+  .day-header h1{font-size:23px;}
+
+  body.light{
+    --bg:#f7f8fc; --panel:#ffffff; --panel2:#f0f2f9; --border:#e2e5f0;
+    --text:#20232e; --muted:#6b7180; --accent:#3f5fd6; --accent2:#0f9488;
+    --code-bg:#f4f6fb; --code-text:#1d3b6b; --warn:#b45309;
+  }
+  body.light .sec{box-shadow:0 1px 3px rgba(20,25,50,.06);}
+  body.light .cp{background:rgba(15,148,136,.07); border-color:rgba(15,148,136,.28);}
+  body.light .cp li{color:#0d4b45;}
+  body.light .sqlbox{border-color:#dde1ee;}
+  body.light table.t th{background:#eef1fa;}
+  body.light .day-header{background:linear-gradient(180deg, rgba(63,95,214,.06), transparent);}
+
+  .toolbar{display:flex; gap:8px; margin-bottom:14px;}
+  .theme-btn{
+    flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:12.5px; cursor:pointer;
+  }
+  .theme-btn:hover{border-color:var(--accent);}
+
+  main{ max-width: 1180px; padding:40px 56px 160px; }
+  @media (min-width:1500px){ main{ max-width: 1320px; } }
+  @media (min-width:1800px){ main{ max-width: 1440px; } }
+
+  .tldr{
+    display:flex; gap:12px; align-items:flex-start; background:rgba(124,157,255,.09);
+    border:1px solid rgba(124,157,255,.35); border-radius:12px; padding:14px 16px; margin:14px 0 18px;
+  }
+  .tldr .icon{font-size:18px; line-height:1.4;}
+  .tldr .txt{font-size:14px; line-height:1.7; color:var(--text);}
+  .tldr .txt b{color:var(--accent);}
+  body.light .tldr{background:rgba(63,95,214,.06); border-color:rgba(63,95,214,.25);}
+
+  .callout{
+    border:1px solid var(--border); background:var(--panel2); border-radius:11px;
+    padding:12px 15px; margin:14px 0;
+  }
+  .callout .ctitle{display:block; font-size:12.5px; font-weight:800; margin-bottom:6px; letter-spacing:.02em;}
+  .callout p{margin:5px 0; font-size:14px; line-height:1.75;}
+  .callout ul{margin:6px 0 2px; padding-left:20px;}
+  .callout li{font-size:14px; line-height:1.7; margin:4px 0;}
+  .callout.goal{background:rgba(79,209,197,.07); border-color:rgba(79,209,197,.3);}
+  .callout.goal .ctitle{color:var(--accent2);}
+  .callout.deep{background:rgba(124,157,255,.07); border-color:rgba(124,157,255,.32);}
+  .callout.deep .ctitle{color:var(--accent);}
+  .callout.myth{background:rgba(246,173,85,.08); border-color:rgba(246,173,85,.32);}
+  .callout.myth .ctitle{color:var(--warn);}
+
+  .faq{margin:12px 0 4px;}
+  .faq details{
+    border:1px solid var(--border); border-radius:10px; background:var(--panel2); margin:8px 0;
+  }
+  .faq summary{
+    cursor:pointer; padding:11px 15px; font-size:14px; font-weight:600; color:var(--text);
+    list-style:none; line-height:1.6;
+  }
+  .faq summary::-webkit-details-marker{display:none;}
+  .faq summary::before{content:"Q. "; color:var(--accent); font-weight:800;}
+  .faq summary:hover{color:var(--accent);}
+  .faq details[open] summary{border-bottom:1px solid var(--border);}
+  .faq .fa{padding:11px 15px 13px; font-size:14px; line-height:1.85;}
+  .faq .fa::before{content:"A. "; color:var(--accent2); font-weight:800;}
+
+  p code, .b li code, table.t td code, .callout code, .faq code{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:.88em; color:var(--code-text);
+  }
+
+  .formula{
+    background:var(--panel2); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin:14px 0; text-align:center;
+  }
+  .formula .expr{
+    font-family:"SF Mono",Menlo,Consolas,monospace;
+    font-size:14.5px; color:var(--text); line-height:2; letter-spacing:.01em;
+  }
+  .formula .expr b{color:var(--accent);}
+  .formula .cap{font-size:12px; color:var(--muted); margin-top:6px; font-style:normal;}
+  body.light .formula{background:#eef1fb;}
+
+  .quiz-wrap{
+    margin:36px 0 60px; background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:24px 28px 28px;
+  }
+  .quiz-wrap h2{font-size:19px; margin:0 0 4px; display:flex; align-items:center; gap:8px;}
+  .quiz-wrap > p{color:var(--muted); font-size:13px; margin:0 0 18px;}
+  .quiz-score{
+    display:inline-block; background:var(--panel2); border:1px solid var(--border); border-radius:999px;
+    padding:4px 14px; font-size:12.5px; color:var(--accent2); font-weight:700; margin-bottom:16px;
+  }
+  .quiz-q{
+    border-top:1px dashed var(--border); padding:16px 0;
+  }
+  .quiz-q:first-of-type{border-top:none;}
+  .quiz-qtext{font-size:14.5px; margin:0 0 10px; font-weight:600;}
+  .quiz-qtext .qtype{
+    font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:5px; margin-right:8px;
+    background:var(--panel2); color:var(--muted); vertical-align:middle;
+  }
+  .quiz-opts{display:flex; flex-wrap:wrap; gap:8px;}
+  .quiz-opt{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:8px 14px; font-size:13px; cursor:pointer; text-align:left;
+  }
+  .quiz-opt:hover{border-color:var(--accent);}
+  .quiz-opt.correct{background:rgba(79,209,197,.18); border-color:var(--accent2); color:var(--accent2); font-weight:700;}
+  .quiz-opt.incorrect{background:rgba(246,135,179,.15); border-color:#f687b3; color:#f687b3;}
+  .quiz-opt[disabled]{cursor:default;}
+  .quiz-short{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .quiz-short input{
+    flex:1; min-width:180px; padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--code-bg); color:var(--text); font-size:13px;
+  }
+  .quiz-check{
+    background:var(--accent); color:#0b0d14; border:none; border-radius:7px; padding:8px 16px;
+    font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+  .quiz-feedback{font-size:12.5px; margin-top:8px; font-weight:600;}
+  .quiz-feedback.ok{color:var(--accent2);}
+  .quiz-feedback.no{color:#f687b3;}
+  .quiz-exp{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-weight:400; font-size:12.5px;
+    line-height:1.6; color:var(--text); background:var(--panel2); border:1px solid var(--border);
+  }
+
+  .site-topbar{
+    display:flex; align-items:center; gap:10px; padding:9px 18px; background:var(--panel2);
+    border-bottom:1px solid var(--border); font-size:12.5px; position:sticky; top:0; z-index:30;
+  }
+  .site-topbar a{color:var(--muted); text-decoration:none;}
+  .site-topbar a:hover{color:var(--accent);}
+  .site-topbar .crumb-sep{color:var(--border);}
+  .site-topbar .crumb-cur{color:var(--text); font-weight:600;}
+</style>
+</head>
+
+<body class="light">
+<div class="site-topbar">
+  <a href="../../index.html">🏠 Full-stack 학습 홈</a>
+  <span class="crumb-sep">/</span>
+  <span class="crumb-cur">실전 Feature Engineering</span>
+</div>
+<div class="layout">
+  <nav class="sidebar" id="sidebar">
+    <h1>SKALA Feature Engineering</h1>
+    <p class="sub">결측값·이상치·인코딩부터 Feature Creation·Selection·Store까지 · 복습노트</p>
+    <div class="toolbar">
+      <button class="theme-btn" id="themeBtn">🌙 다크 모드</button>
+    </div>
+    <input class="search" id="searchBox" type="text" placeholder="검색 (예: 결측값, 인코딩, RFM, Feature Store...)">
+    <div class="day-group"><div class="day-title d1">Day 1 — Feature Engineering 기초와 Transformation</div>
+<a class="navlink" href="#s1" data-sec="1">1. Feature Engineering 개요</a>
+<a class="navlink" href="#s2" data-sec="2">2. 결측값 처리</a>
+<a class="navlink" href="#s3" data-sec="3">3. 이상치 처리</a>
+<a class="navlink" href="#s4" data-sec="4">4. Feature Scaling</a>
+<a class="navlink" href="#s5" data-sec="5">5. 범주형 변수 인코딩</a>
+<a class="navlink" href="#quiz-day1" style="color:var(--accent2);">✅ Day1 퀴즈</a>
+</div>
+<div class="day-group"><div class="day-title d2">Day 2 — Feature Creation·Selection과 Feature Store</div>
+<a class="navlink" href="#s6" data-sec="6">6. Feature Creation — 파생 변수 생성 기초</a>
+<a class="navlink" href="#s7" data-sec="7">7. 도메인 지식 기반 Feature Creation</a>
+<a class="navlink" href="#s8" data-sec="8">8. Feature Selection — 통계 기반 검증</a>
+<a class="navlink" href="#s9" data-sec="9">9. Feature Selection — ML 기반 검증</a>
+<a class="navlink" href="#s10" data-sec="10">10. Feature Store — 개념과 운영</a>
+<a class="navlink" href="#quiz-day2" style="color:var(--accent2);">✅ Day2 퀴즈</a>
+</div>
+  </nav>
+  <main>
+    <div class="page-head">
+      <h1>실전 Feature Engineering — 복습노트</h1>
+      <p>Full-stack Engineering(AI캠퍼스) · 데이터분석 및 AIOps · 결측값·이상치·인코딩부터 Feature Creation·Selection·Store까지 전체 10개 세션 요약</p>
+      <div class="badges">
+        <span>Feature Transformation</span><span>Feature Creation</span><span>Feature Selection</span>
+        <span>Feature Store</span><span>Data Leakage</span><span>🖥 Day별 퀴즈 포함</span>
+      </div>
+    </div>
+
+    <div class="day-header" id="day1"><h1>Day 1 — Feature Engineering 기초와 Transformation</h1><p>Feature Engineering 개요부터 결측값·이상치 처리, Scaling, 범주형 인코딩까지</p></div>
+
+<section class="sec" id="s1" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">1.</span> Feature Engineering 개요</h2>
+  </div>
+  <p class="subtitle">Feature Engineering의 정의 · Garbage In, Garbage Out · 데이터 분석/ML 파이프라인에서의 위치 · 모델 성능에 미치는 실질적 영향</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>Feature Engineering</b>은 원본 데이터를 모델이 잘 학습할 수 있는 형태의 변수(feature)로 가공하는 과정이에요. 아무리 성능 좋은 알고리즘을 쓰더라도 입력으로 들어가는 피처가 부실하면 좋은 결과가 나올 수 없다는 <b>"Garbage In, Garbage Out"</b> 원칙이 이 챕터 전체를 관통하는 핵심이에요. 이번 장에서는 Feature Engineering이 정확히 무엇이고, 전체 데이터 분석/ML 파이프라인 어디쯤에 위치하는지 큰 그림을 잡아봐요. 예제 데이터는 <b>중고차 가격 예측</b>(주행거리, 연식, 브랜드, 사고이력 등)을 계속 사용할 거예요.</div></div>
+
+  <h3>1) Feature Engineering이란 무엇인가</h3>
+  <p>Feature Engineering은 <b>원본 데이터(raw data)를 모델이 더 잘 학습할 수 있는 형태의 변수(feature)로 가공하는 과정</b>이에요. 여기에는 결측값·이상치 처리, 스케일 조정, 범주형 변수 인코딩처럼 "기존 데이터를 정제하는 작업"과, 여러 변수를 조합해 새로운 의미 있는 변수를 만들어내는 "새로운 데이터를 만드는 작업"이 모두 포함돼요.</p>
+  <div class="sqlbox"><div class="sqlhead">중고차 가격 예측 — 원본 데이터 vs 가공된 feature 예시</div><pre><code># 원본 데이터(raw data)
+{
+    "제조연도": 2019,
+    "주행거리_km": 87500,
+    "브랜드": "현대",
+    "사고이력": "있음",
+    "등록일": "2019-03-15"
+}
+
+# Feature Engineering을 거친 feature
+{
+    "차량연식": 2026 - 2019,          # = 7 (파생 변수)
+    "연간_평균주행거리": 87500 / 7,    # = 12500 (파생 변수)
+    "브랜드_encoded": 3,               # 범주형 인코딩 결과
+    "사고이력_flag": 1,                # 범주형 -&gt; 이진 변수
+    "주행거리_scaled": 0.42            # 정규화된 값
+}</code></pre></div>
+  <p>즉 모델은 "제조연도가 2019년이다"라는 사실 자체보다, 그로부터 계산된 "차량연식 7년"이라는 값을 훨씬 더 직접적으로 활용할 수 있어요. 이렇게 데이터를 모델 친화적인 형태로 다듬는 모든 과정을 통틀어 Feature Engineering이라고 불러요.</p>
+
+  <h3>2) Garbage In, Garbage Out — 왜 피처 품질이 가장 중요한가</h3>
+  <p><b>"Garbage In, Garbage Out"(GIGO)</b>은 컴퓨터 과학 전반에서 쓰이는 오래된 원칙으로, 나쁜 입력을 넣으면 아무리 훌륭한 처리 과정을 거쳐도 나쁜 출력이 나온다는 뜻이에요. 머신러닝에서는 이 원칙이 "모델"에도 그대로 적용돼요.</p>
+  <div class="callout myth"><span class="ctitle">⚠️ "알고리즘만 좋으면 된다"는 흔한 오해</span>
+  <p>최신 알고리즘, 깊은 신경망, 정교한 하이퍼파라미터 튜닝을 아무리 잘 해도, 애초에 입력되는 피처가 예측 대상과 관련이 없거나 노이즈·결측값·이상치로 오염되어 있다면 모델은 좋은 성능을 낼 수 없어요. 예를 들어 중고차 가격 예측에서 주행거리 데이터에 결측값이 30% 섞여 있거나, 입력 오류로 "-50000km" 같은 값이 그대로 들어간다면 그 어떤 알고리즘도 이를 극복하기 어려워요. 실무에서는 흔히 <b>모델링 자체보다 좋은 피처를 만드는 데 더 많은 시간이 든다</b>고 말할 정도로 Feature Engineering의 비중이 커요.</p>
+  </div>
+  <p>반대로 말하면, 동일한 알고리즘(예: 선형회귀)을 쓰더라도 <b>피처를 얼마나 잘 가공했는가</b>에 따라 예측 성능(오차율 등)이 크게 달라질 수 있어요. 이것이 이번 강의 전체가 Feature Engineering이라는 주제 하나에 집중하는 이유예요.</p>
+
+  <h3>3) 데이터 분석/ML 파이프라인에서 Feature Engineering의 위치</h3>
+  <p>Feature Engineering은 파이프라인의 한가운데, 즉 <b>데이터 수집·탐색적 데이터 분석(EDA) 이후 ~ 모델 학습 이전</b> 단계에 위치해요.</p>
+  <div class="formula"><div class="expr">① 데이터 수집 → ② EDA(탐색적 데이터 분석) → ③ <b>Feature Engineering</b> → ④ 모델 학습 → ⑤ 평가·배포</div><div class="cap">③ Feature Engineering은 EDA를 통해 파악한 데이터의 문제점(결측·이상치·분포 등)을 실제로 고치고 다듬는 실행 단계</div></div>
+  <ul class="b">
+  <li><b>① 데이터 수집</b> — 중고차 매물 사이트, 정비 이력 DB 등에서 원본 데이터를 모은다.</li>
+  <li><b>② EDA</b> — 결측값이 어느 컬럼에 얼마나 있는지, 이상치가 있는지, 변수 간 분포·상관관계는 어떤지 파악한다.</li>
+  <li><b>③ Feature Engineering</b> — EDA에서 발견한 문제를 실제로 처리(결측값 대체, 이상치 처리, 스케일링, 인코딩, 파생 변수 생성 등)한다.</li>
+  <li><b>④ 모델 학습</b> — 가공된 feature를 입력으로 모델을 학습시킨다.</li>
+  <li><b>⑤ 평가·배포</b> — 모델 성능을 검증하고 실제 서비스에 반영한다.</li>
+  </ul>
+  <div class="note">🔑 EDA와 Feature Engineering은 한 번에 끝나지 않고 <b>반복(iterative)</b>되는 경우가 많아요. 모델을 한번 학습시켜본 뒤 성능이 기대에 못 미치면, 다시 EDA로 돌아가 "어떤 피처를 더 다듬어야 할지" 점검하고 Feature Engineering을 다시 수행하는 순환 구조가 실전에서는 흔해요.</div>
+
+  <h3>4) 좋은 Feature Engineering이 모델 성능에 미치는 실질적 영향</h3>
+  <p>같은 데이터, 같은 알고리즘이라도 Feature Engineering의 품질에 따라 결과가 크게 달라질 수 있어요. 중고차 가격 예측을 예로 들면 다음과 같은 차이가 실무에서 흔히 관찰돼요.</p>
+  <table class="t"><thead><tr><th>상황</th><th>Feature Engineering 미흡</th><th>Feature Engineering 충실</th></tr></thead>
+  <tbody>
+  <tr><td>결측값 처리</td><td>결측 행을 그대로 두거나 무작정 삭제 → 학습 데이터 손실, 일부 모델은 에러 발생</td><td>패턴을 파악해 적절히 대체 → 데이터 손실 최소화</td></tr>
+  <tr><td>이상치 처리</td><td>입력 오류(예: 주행거리 음수)를 그대로 학습에 사용 → 회귀선이 왜곡됨</td><td>오류·극단값을 식별해 적절히 처리 → 안정적인 학습</td></tr>
+  <tr><td>스케일 차이</td><td>주행거리(수만~수십만)와 연식(0~20) 스케일이 뒤섞임 → 거리 기반 모델이 주행거리에 과도하게 좌우됨</td><td>스케일링 적용 → 변수 간 공정한 비교 가능</td></tr>
+  <tr><td>범주형 처리</td><td>브랜드를 임의의 정수로 인코딩(순서 의미 왜곡) → 잘못된 순서 관계 학습</td><td>목적에 맞는 인코딩 선택 → 범주 정보를 올바르게 반영</td></tr>
+  </tbody></table>
+  <div class="cp"><div class="cphead">✔ 1장 핵심 요약</div><ul>
+  <li>Feature Engineering은 원본 데이터를 모델이 잘 학습할 수 있는 형태의 변수로 가공하는 과정이다.</li>
+  <li>"Garbage In, Garbage Out" — 아무리 좋은 알고리즘도 나쁜 피처로는 좋은 성능을 낼 수 없다.</li>
+  <li>파이프라인상 데이터 수집·EDA 이후, 모델 학습 이전 단계에 위치하며 EDA와 반복적으로 순환한다.</li>
+  <li>같은 알고리즘이라도 피처 품질에 따라 실질적인 성능 차이가 크게 발생한다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s2" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">2.</span> 결측값 처리</h2>
+  </div>
+  <p class="subtitle">결측값이 문제가 되는 이유 · 제거 vs 대체(평균/중앙값/최빈값) vs 보간법 · MCAR·MAR·MNAR · 상황별 처리 전략 선택 기준</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 결측값(missing value)은 그냥 "빈칸"이 아니라, 방치하면 모델을 아예 학습시킬 수 없거나 통계량을 왜곡시키는 <b>실질적인 문제</b>예요. 무조건 지우는 것도, 무조건 채워 넣는 것도 정답이 아니고, <b>왜 결측이 발생했는지</b>를 먼저 파악한 뒤 상황에 맞는 전략을 골라야 해요.</div></div>
+
+  <h3>1) 결측값이 왜 문제인가</h3>
+  <p>중고차 매물 데이터를 예로 들면, "사고이력"이나 "이전 소유자 수" 같은 컬럼은 판매자가 입력하지 않아 비어 있는 경우가 흔해요. 이런 결측값을 그대로 두면 다음과 같은 문제가 생겨요.</p>
+  <ul class="b">
+  <li><b>일부 모델은 결측값(NaN) 입력 시 에러가 발생</b>한다 — 예를 들어 scikit-learn의 선형회귀나 SVM 등 다수의 모델은 입력에 NaN이 있으면 학습 자체가 불가능하다.</li>
+  <li><b>평균·표준편차·상관계수 등 통계 계산이 왜곡</b>된다 — 결측을 무시하고 계산하면 실제 분포를 반영하지 못한 값이 나올 수 있다.</li>
+  <li><b>단순 삭제 시 정보 손실</b>이 발생한다 — 결측이 있는 행을 통째로 지우면, 그 행에 담긴 다른 유효한 정보(주행거리, 브랜드 등)까지 함께 사라진다.</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">결측값이 섞인 중고차 데이터 예시</div><pre><code>   브랜드   주행거리_km   사고이력   연식
+0  현대     45000        없음       3
+1  기아     NaN          있음       5
+2  현대     87000        NaN       7
+3  BMW     NaN          NaN       4
+
+# df.mean()으로 주행거리 평균을 구하면
+# NaN인 1, 3번 행은 계산에서 자동 제외되어
+# "실제로 존재했다면 평균을 낮췄을 수도, 높였을 수도 있는" 값이 빠진 채 평균이 계산됨</code></pre></div>
+
+  <h3>2) 결측 발생 패턴 — MCAR / MAR / MNAR</h3>
+  <p>결측값을 어떻게 처리할지 정하기 전에, <b>왜 결측이 생겼는지</b> 그 패턴을 이해하는 것이 중요해요. 크게 세 가지로 구분해요.</p>
+  <table class="t"><thead><tr><th>패턴</th><th>의미</th><th>중고차 데이터 예시</th></tr></thead>
+  <tbody>
+  <tr><td><b>MCAR</b><br>(Missing Completely At Random, 완전무작위결측)</td><td>결측 발생이 다른 어떤 변수와도 관련 없이 순전히 무작위로 발생</td><td>매물 등록 시스템의 일시적 오류로 무작위 매물의 "색상" 필드가 누락됨</td></tr>
+  <tr><td><b>MAR</b><br>(Missing At Random, 무작위결측)</td><td>결측 발생이 <b>관측된 다른 변수</b>와 관련이 있음(결측 자체 값과는 무관)</td><td>오래된 연식(예: 10년 이상)의 매물일수록 "정비 이력" 입력이 누락되는 경향(연식이라는 관측 변수와 연관)</td></tr>
+  <tr><td><b>MNAR</b><br>(Missing Not At Random, 비무작위결측)</td><td>결측 발생이 <b>결측된 값 그 자체</b>와 관련이 있음</td><td>사고 이력이 있는 판매자가 불리한 정보를 의도적으로 비워둠(결측 여부가 "사고이력이 있다"는 값 자체와 직결)</td></tr>
+  </tbody></table>
+  <div class="note">🔑 MNAR은 특히 주의가 필요해요. 결측 자체가 정보를 담고 있기 때문에, 단순히 평균으로 채워버리면 "사고 이력을 숨기려는 매물"이라는 중요한 신호가 사라져버릴 수 있어요. 이 경우 "결측 여부 자체를 새로운 feature(결측 플래그)로 만드는 것"도 좋은 전략이 될 수 있어요.</div>
+
+  <h3>3) 처리 전략 — 제거 vs 대체 vs 보간법</h3>
+  <table class="t"><thead><tr><th>전략</th><th>방법</th><th>장점</th><th>주의할 점</th></tr></thead>
+  <tbody>
+  <tr><td><b>제거(Deletion)</b></td><td>결측이 있는 행 또는 컬럼 전체를 삭제</td><td>구현이 간단하고 왜곡 위험이 낮음</td><td>결측 비율이 크면 데이터 손실이 커짐. MCAR일 때만 비교적 안전</td></tr>
+  <tr><td><b>평균/중앙값 대체</b></td><td>수치형 변수를 평균(mean) 또는 중앙값(median)으로 채움</td><td>계산이 간단하고 직관적</td><td>이상치가 많으면 평균 대신 중앙값이 더 안전. 변수의 분산을 인위적으로 줄임</td></tr>
+  <tr><td><b>최빈값 대체</b></td><td>범주형 변수를 가장 빈번한 값(mode)으로 채움</td><td>범주형 변수에 적합</td><td>특정 범주로 쏠릴 수 있어 다양성이 줄어듦</td></tr>
+  <tr><td><b>보간법(Interpolation)</b></td><td>주변 값(앞뒤 순서·시간 흐름)을 이용해 추정</td><td>시계열·순서가 있는 데이터에서 자연스러운 추정 가능</td><td>순서/시간 정보가 없는 데이터엔 적용하기 어려움</td></tr>
+  </tbody></table>
+  <div class="sqlbox"><div class="sqlhead">pandas — 결측값 처리 예시</div><pre><code>import pandas as pd
+
+# 1) 결측이 있는 행 제거
+df_dropped = df.dropna(subset=["주행거리_km"])
+
+# 2) 수치형 컬럼 - 중앙값으로 대체 (이상치에 덜 민감)
+df["주행거리_km"] = df["주행거리_km"].fillna(df["주행거리_km"].median())
+
+# 3) 범주형 컬럼 - 최빈값으로 대체
+df["사고이력"] = df["사고이력"].fillna(df["사고이력"].mode()[0])
+
+# 4) 순서가 있는 데이터 - 선형 보간
+df["가격_시계열"] = df["가격_시계열"].interpolate(method="linear")</code></pre></div>
+
+  <h3>4) 상황별 처리 전략 선택 기준</h3>
+  <p>정답이 정해진 공식은 없지만, 실무에서는 대체로 다음 기준으로 판단해요.</p>
+  <ul class="b">
+  <li><b>결측 비율이 매우 낮다(예: 1~2%)</b> — 어떤 방법을 써도 전체 결과에 큰 영향이 없으므로, 간단히 제거하거나 대체해도 무방한 경우가 많다.</li>
+  <li><b>결측 비율이 높다(예: 50% 이상)</b> — 해당 컬럼 자체를 사용할지부터 재검토해야 한다. 무리하게 채우면 대부분이 "가짜 값"이 되어 오히려 노이즈가 된다.</li>
+  <li><b>MCAR로 추정된다</b> — 제거해도 편향이 생기지 않으므로 상대적으로 자유롭게 제거/대체를 선택할 수 있다.</li>
+  <li><b>MAR로 추정된다</b> — 관련된 다른 변수(예: 연식)를 활용한 조건부 대체(그룹별 평균 등)가 단순 전체 평균 대체보다 낫다.</li>
+  <li><b>MNAR로 추정된다</b> — 결측 자체가 신호이므로, 결측 여부를 별도 feature(플래그)로 만들어 정보를 보존하는 것을 고려한다.</li>
+  </ul>
+  <div class="callout deep"><span class="ctitle">🔎 심화 — "결측 플래그"로 정보를 보존하는 방법</span>
+  <p>결측값을 평균으로 채우더라도, "원래 결측이었는지"를 나타내는 이진 변수(예: <code>사고이력_결측여부</code>)를 별도로 추가하면 모델이 "이 값은 원래 결측이었다"는 정보까지 함께 학습할 수 있어요. 특히 MNAR 상황처럼 결측 여부 자체가 중요한 신호일 때 유용한 기법이에요.</p>
+  </div>
+  <div class="cp"><div class="cphead">✔ 2장 핵심 요약</div><ul>
+  <li>결측값은 모델 에러, 통계 왜곡, 정보 손실 등 실질적인 문제를 일으킨다.</li>
+  <li>처리 전략은 제거, 평균/중앙값/최빈값 대체, 보간법 중에서 데이터 특성에 맞게 선택한다.</li>
+  <li>결측 패턴은 MCAR·MAR·MNAR로 구분되며, 특히 MNAR은 결측 자체가 정보를 담고 있어 신중해야 한다.</li>
+  <li>결측 비율과 발생 패턴을 함께 고려해 전략을 선택하고, 필요하면 결측 플래그로 정보를 보존한다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s3" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">3.</span> 이상치 처리</h2>
+  </div>
+  <p class="subtitle">IQR 규칙 · Z-score 기준 · 처리 전략 4가지 비교(제거/대체/변환/유지) · 정보인가 오류인가 판단의 중요성</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 이상치(outlier)는 나머지 데이터와 뚜렷하게 동떨어진 값이에요. 문제는 이상치를 <b>"무조건 나쁜 것"으로 여겨 무작정 지우면 안 된다</b>는 점이에요. 입력 오류로 생긴 이상치인지, 아니면 실제로 존재하는 극단적인 사례(진짜 정보)인지를 먼저 구분하는 판단이 처리 방법 선택보다 더 중요해요.</div></div>
+
+  <h3>1) 이상치 탐지 방법 — IQR 규칙과 Z-score</h3>
+  <p>중고차 데이터의 "주행거리_km" 컬럼을 예로, 대표적인 두 가지 탐지 방법을 살펴봐요.</p>
+  <div class="formula"><div class="expr">IQR = Q3 &minus; Q1 &nbsp;&nbsp;|&nbsp;&nbsp; 하한 = Q1 &minus; 1.5&times;IQR &nbsp;&nbsp; 상한 = Q3 + 1.5&times;IQR</div><div class="cap">1사분위수(Q1)와 3사분위수(Q3) 사이의 범위(IQR)를 기준으로 정상 범위를 벗어나면 이상치로 판단</div></div>
+  <div class="formula"><div class="expr">Z = (x &minus; &mu;) / &sigma;</div><div class="cap">평균(&mu;)에서 표준편차(&sigma;) 몇 배만큼 떨어져 있는지를 나타내며, 보통 |Z| &gt; 3이면 이상치로 판단</div></div>
+  <div class="sqlbox"><div class="sqlhead">pandas — IQR·Z-score 기반 이상치 탐지</div><pre><code>import pandas as pd
+import numpy as np
+
+# 1) IQR 규칙
+Q1 = df["주행거리_km"].quantile(0.25)
+Q3 = df["주행거리_km"].quantile(0.75)
+IQR = Q3 - Q1
+lower = Q1 - 1.5 * IQR
+upper = Q3 + 1.5 * IQR
+outliers_iqr = df[(df["주행거리_km"] &lt; lower) | (df["주행거리_km"] &gt; upper)]
+
+# 2) Z-score 기준
+mean, std = df["주행거리_km"].mean(), df["주행거리_km"].std()
+df["z_score"] = (df["주행거리_km"] - mean) / std
+outliers_z = df[df["z_score"].abs() &gt; 3]</code></pre></div>
+  <table class="t"><thead><tr><th>구분</th><th>IQR 규칙</th><th>Z-score 기준</th></tr></thead>
+  <tbody>
+  <tr><td>기준</td><td>사분위수(중앙값 중심) 기반</td><td>평균·표준편차 기반</td></tr>
+  <tr><td>정규분포 가정</td><td>필요 없음</td><td>정규분포에 가까울 때 더 신뢰도 높음</td></tr>
+  <tr><td>극단값에 대한 민감도</td><td>비교적 강건(robust)</td><td>평균·표준편차 자체가 극단값에 영향받기 쉬움</td></tr>
+  </tbody></table>
+
+  <h3>2) 처리 전략 4가지 비교</h3>
+  <table class="t"><thead><tr><th>전략</th><th>방법</th><th>언제 쓰는가</th></tr></thead>
+  <tbody>
+  <tr><td><b>제거</b></td><td>이상치가 포함된 행을 데이터셋에서 삭제</td><td>이상치가 명백한 <b>입력 오류</b>이고, 개수가 적어 삭제해도 데이터 손실이 크지 않을 때</td></tr>
+  <tr><td><b>대체</b><br>(평균/중앙값/경계값)</td><td>이상치를 평균·중앙값 또는 IQR 상하한 경계값(capping)으로 바꿔치기</td><td>이상치를 완전히 버리긴 아깝지만, 극단값이 모델 학습을 크게 왜곡시킬 때(윈저라이징winsorizing 방식과 유사)</td></tr>
+  <tr><td><b>로그·제곱근 변환</b></td><td>변수 전체에 로그(log) 또는 제곱근(sqrt) 변환을 적용해 값의 편차를 압축</td><td>변수 자체가 원래 오른쪽으로 긴 꼬리(right-skewed) 분포를 가질 때(가격, 주행거리처럼 자연스럽게 큰 값이 존재하는 경우)</td></tr>
+  <tr><td><b>그대로 유지</b></td><td>탐지는 하되 값은 변경하지 않음</td><td>이상치가 오류가 아니라 <b>실제로 의미 있는 극단 사례</b>일 때(예: 초저주행 신차급 중고차)</td></tr>
+  </tbody></table>
+  <div class="sqlbox"><div class="sqlhead">경계값 대체(Capping)와 로그 변환 예시</div><pre><code># 경계값(capping) 대체 - IQR 상하한을 벗어나는 값을 경계값으로 클리핑
+df["주행거리_km"] = df["주행거리_km"].clip(lower=lower, upper=upper)
+
+# 로그 변환 - 오른쪽으로 긴 꼬리 분포를 압축
+df["가격_log"] = np.log1p(df["가격"])   # log(1+x)로 0 값도 안전하게 처리</code></pre></div>
+
+  <h3>3) 이상치가 실제 정보인지 입력 오류인지 — 판단이 왜 중요한가</h3>
+  <p>같은 "이상치"라도 원인에 따라 완전히 다르게 다뤄야 해요. 아래 두 사례를 비교해보면 그 차이가 명확해져요.</p>
+  <div class="callout deep"><span class="ctitle">🔎 사례 비교 — 입력 오류 vs 진짜 정보</span>
+  <p><b>사례 A(입력 오류)</b>: 주행거리가 "-15000km"로 기록되어 있다. 물리적으로 불가능한 값이므로 이는 데이터 입력 과정의 오류일 가능성이 매우 높다 → 제거하거나 결측으로 처리 후 재추정하는 것이 타당하다.</p>
+  <p><b>사례 B(진짜 정보)</b>: 연식은 5년인데 주행거리가 "3000km"로 극히 낮다. 언뜻 이상치처럼 보이지만, 실제로 거의 운행하지 않은 "가정용 세컨카"나 "전시 차량"일 수 있고, 이는 오히려 <b>가격을 높이는 매우 유의미한 정보</b>다 → 삭제하면 안 되고 그대로 유지하거나 오히려 별도 feature(초저주행 플래그)로 강조하는 것이 낫다.</p>
+  </div>
+  <div class="note">🔑 이상치를 기계적으로 탐지 규칙(IQR, Z-score)에만 의존해 처리하면 사례 B 같은 값진 정보를 잃어버릴 수 있어요. 반드시 도메인 지식(중고차 시장 맥락)과 함께 "이 값이 왜 극단적인가"를 확인하는 과정이 필요해요.</div>
+  <div class="cp"><div class="cphead">✔ 3장 핵심 요약</div><ul>
+  <li>이상치는 IQR 규칙(사분위수 기반) 또는 Z-score 기준(평균·표준편차 기반)으로 탐지한다.</li>
+  <li>처리 전략은 제거, 평균/중앙값/경계값 대체, 로그·제곱근 변환, 그대로 유지 중 상황에 맞게 선택한다.</li>
+  <li>이상치가 입력 오류인지 실제 의미 있는 극단 사례인지 판단하는 것이 처리 방법 선택보다 더 중요하다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s4" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">4.</span> Feature Scaling</h2>
+  </div>
+  <p class="subtitle">스케일링이 필요한 이유 · 정규화(Min-Max) vs 표준화(Standardization) · 스케일링이 중요한 모델 vs 불필요한 모델</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 중고차 데이터에서 "주행거리"는 수만~수십만 단위인데 "연식"은 0~20 정도의 작은 범위예요. 이렇게 <b>변수마다 스케일(단위·범위)이 다르면</b>, 거리 계산이나 경사하강법을 쓰는 모델이 스케일이 큰 변수에만 과도하게 휘둘릴 수 있어요. <b>Feature Scaling</b>은 이런 변수들을 비슷한 범위로 맞춰주는 작업이에요.</div></div>
+
+  <h3>1) 스케일링이 필요한 이유</h3>
+  <p>중고차 데이터에서 "주행거리_km"(예: 0~200,000)와 "연식"(예: 0~20)을 그대로 함께 사용하면, 두 변수의 숫자 범위 차이가 100,000배 가까이 나요. 이때 다음과 같은 문제가 생겨요.</p>
+  <ul class="b">
+  <li><b>거리 기반 알고리즘이 스케일 차이에 민감</b>하다 — KNN, K-Means 등은 유클리드 거리를 계산하는데, 스케일이 큰 변수(주행거리)가 거리 계산을 사실상 독점해버려서 스케일이 작은 변수(연식)의 영향력이 거의 사라진다.</li>
+  <li><b>경사하강법(Gradient Descent) 기반 학습이 스케일 차이에 민감</b>하다 — 신경망, 로지스틱/선형회귀 등을 경사하강법으로 학습할 때, 변수 스케일이 크게 다르면 손실 함수의 등고선이 길쭉하게 왜곡되어 수렴이 느려지거나 불안정해진다.</li>
+  </ul>
+  <div class="note">🔑 스케일링은 "값을 다르게 만드는 것"이 아니라, 각 변수가 모델 학습에서 <b>공정하게 반영되도록 상대적인 크기만 조정</b>하는 작업이에요. 변수 간의 순서나 분포 형태 자체는 유지돼요(로그 변환처럼 분포 형태를 바꾸는 것과는 목적이 다름).</div>
+
+  <h3>2) 정규화(Min-Max Scaling) — 0~1 범위로 압축</h3>
+  <p>정규화는 데이터의 최솟값을 0, 최댓값을 1로 맞추고 그 사이 값들을 비례적으로 배치하는 방식이에요.</p>
+  <div class="formula"><div class="expr">x&#8217; = (x &minus; x<sub>min</sub>) / (x<sub>max</sub> &minus; x<sub>min</sub>)</div><div class="cap">모든 값이 0~1 사이로 변환된다. 최솟값·최댓값이 명확한 범위를 가질 때 직관적</div></div>
+  <div class="sqlbox"><div class="sqlhead">scikit-learn — MinMaxScaler</div><pre><code>from sklearn.preprocessing import MinMaxScaler
+
+scaler = MinMaxScaler()
+df["주행거리_scaled"] = scaler.fit_transform(df[["주행거리_km"]])
+# 예: 주행거리 87,500km -&gt; 0.42 (전체 범위 내 상대적 위치)</code></pre></div>
+
+  <h3>3) 표준화(Standardization / Z-score) — 평균 0, 표준편차 1</h3>
+  <p>표준화는 데이터를 평균이 0, 표준편차가 1이 되도록 변환하는 방식이에요. 이상치의 영향을 정규화보다 상대적으로 덜 받는다는 특징이 있어요.</p>
+  <div class="formula"><div class="expr">x&#8217; = (x &minus; &mu;) / &sigma;</div><div class="cap">&mu;는 평균, &sigma;는 표준편차 — 변환된 값은 "평균에서 표준편차 몇 배만큼 떨어져 있는지"를 나타냄</div></div>
+  <div class="sqlbox"><div class="sqlhead">scikit-learn — StandardScaler</div><pre><code>from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+df["주행거리_standardized"] = scaler.fit_transform(df[["주행거리_km"]])
+# 예: 평균보다 표준편차 1.2배 높은 주행거리 -&gt; 1.2</code></pre></div>
+
+  <h3>4) 정규화 vs 표준화 비교</h3>
+  <table class="t"><thead><tr><th>구분</th><th>정규화(Min-Max Scaling)</th><th>표준화(Standardization)</th></tr></thead>
+  <tbody>
+  <tr><td>변환 결과 범위</td><td>고정된 범위(보통 0~1)</td><td>범위 고정 없음(평균 0, 표준편차 1)</td></tr>
+  <tr><td>이상치 영향</td><td>이상치에 민감(최댓값·최솟값 자체가 왜곡될 수 있음)</td><td>상대적으로 덜 민감(평균·표준편차 기반)</td></tr>
+  <tr><td>주로 쓰이는 상황</td><td>값의 범위가 명확히 제한적이거나, 신경망 입력처럼 고정 범위가 필요할 때</td><td>변수 분포가 정규분포에 가깝거나, 선형모델·PCA 등에 사용할 때</td></tr>
+  </tbody></table>
+
+  <h3>5) 스케일링이 중요한 모델 vs 상대적으로 불필요한 모델</h3>
+  <div class="cp"><div class="cphead">✔ 스케일링이 중요한 모델</div><ul>
+  <li><b>KNN</b> — 거리 계산이 예측 결과를 직접 결정하므로 스케일 차이에 매우 민감하다.</li>
+  <li><b>SVM</b> — 마진(margin)을 계산할 때 거리 개념을 사용해 스케일 영향을 크게 받는다.</li>
+  <li><b>신경망(Neural Network)</b> — 경사하강법 기반 학습이라 스케일이 다르면 수렴 속도·안정성이 떨어진다.</li>
+  <li><b>선형회귀(정규화/Regularization 적용 시)</b> — Ridge, Lasso처럼 계수 크기에 패널티를 주는 정규화 회귀는 변수 스케일이 다르면 패널티가 불공평하게 적용된다.</li>
+  </ul></div>
+  <div class="callout deep"><span class="ctitle">🔎 심화 — 트리 기반 모델은 왜 스케일링이 상대적으로 불필요한가</span>
+  <p>Decision Tree, Random Forest, Gradient Boosting(XGBoost, LightGBM 등) 같은 <b>트리 기반 모델</b>은 변수의 절대적인 크기가 아니라, 특정 임계값(threshold)을 기준으로 데이터를 분기(split)하는 방식으로 학습해요. 예를 들어 "주행거리_km &gt; 80000"이라는 분기 조건은 주행거리를 0~1로 정규화하든 원래 단위(km)로 두든 <b>분기가 만들어내는 데이터 분할 결과 자체는 동일</b>해요. 그래서 트리 기반 모델은 스케일링을 생략해도 성능에 미치는 영향이 거의 없는 경우가 많아요.</p>
+  </div>
+  <div class="cp"><div class="cphead">✔ 4장 핵심 요약</div><ul>
+  <li>거리 기반 알고리즘·경사하강법 기반 학습은 변수 스케일 차이에 민감해 스케일링이 필요하다.</li>
+  <li>정규화(Min-Max)는 0~1 범위로, 표준화(Standardization)는 평균 0·표준편차 1로 변환한다.</li>
+  <li>KNN·SVM·신경망·정규화 선형회귀는 스케일링이 중요하고, 트리 기반 모델은 상대적으로 불필요하다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s5" data-day="1">
+  <div class="sec-head">
+    <span class="day-badge day1">Day 1</span>
+    <h2><span class="num">5.</span> 범주형 변수 인코딩(Encoding)</h2>
+  </div>
+  <p class="subtitle">Label Encoding vs One-Hot Encoding vs Target Encoding · Target Encoding의 Data Leakage 주의 · 범주 개수가 많을 때의 그룹핑 전략</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: "브랜드", "색상" 같은 범주형(categorical) 변수는 대부분의 모델이 문자열 그대로는 처리하지 못해요. 그래서 숫자로 바꿔주는 <b>인코딩(Encoding)</b>이 필요한데, 방식에 따라 순서 의미를 부여하거나(Label), 순서 없이 펼치거나(One-Hot), 아예 target 값의 통계로 대체하기도(Target) 해요. 특히 Target Encoding은 잘못 쓰면 <b>Data Leakage(정보 누출)</b>로 이어질 수 있어 주의가 필요해요.</div></div>
+
+  <h3>1) Label Encoding — 순서형 변수에 적합</h3>
+  <p>Label Encoding은 각 범주에 정수를 하나씩 순서대로 부여하는 방식이에요. 범주 사이에 <b>자연스러운 순서(order)가 있는 변수</b>에 적합해요.</p>
+  <div class="sqlbox"><div class="sqlhead">scikit-learn — LabelEncoder (순서형 변수: 차량 등급)</div><pre><code>from sklearn.preprocessing import LabelEncoder
+
+# "차량등급"은 낮음 &lt; 보통 &lt; 높음 &lt; 프리미엄 순서가 실제로 존재하는 순서형 변수
+le = LabelEncoder()
+df["차량등급_encoded"] = le.fit_transform(df["차량등급"])
+# 낮음-&gt;0, 보통-&gt;1, 높음-&gt;2, 프리미엄-&gt;3</code></pre></div>
+  <div class="note">🔑 주의: "브랜드"처럼 순서가 없는 명목형(nominal) 변수에 Label Encoding을 그대로 쓰면, 모델이 "현대(0) &lt; 기아(1) &lt; BMW(2)"처럼 존재하지 않는 크기·순서 관계를 실제로 있는 것처럼 학습해버릴 수 있어요. 이는 흔한 실수 중 하나예요.</div>
+
+  <h3>2) One-Hot Encoding — 명목형 변수에 적합</h3>
+  <p>One-Hot Encoding은 각 범주를 독립적인 이진(0/1) 컬럼으로 펼치는 방식이에요. 순서 관계를 만들지 않기 때문에 명목형 변수에 적합해요.</p>
+  <div class="sqlbox"><div class="sqlhead">pandas — get_dummies (명목형 변수: 브랜드)</div><pre><code>pd.get_dummies(df["브랜드"], prefix="브랜드")
+
+#    브랜드_현대  브랜드_기아  브랜드_BMW
+# 0      1           0          0
+# 1      0           1          0
+# 2      0           0          1</code></pre></div>
+  <p>다만 브랜드가 수십~수백 개로 많아지면 그만큼 컬럼 수도 함께 늘어나는 <b>차원 증가(고차원화) 문제</b>가 생겨요. 컬럼이 지나치게 많아지면 학습이 느려지고, 데이터가 희소(sparse)해져 모델이 패턴을 학습하기 어려워질 수 있어요.</p>
+
+  <h3>3) Target Encoding — 범주를 target 평균값으로 대체</h3>
+  <p>Target Encoding은 각 범주를 해당 범주에 속한 데이터들의 <b>target(예측 대상) 평균값</b>으로 대체하는 방식이에요. 범주 개수가 매우 많을 때(예: 수백 개의 세부 모델명) One-Hot Encoding 대신 유용하게 쓰여요.</p>
+  <div class="sqlbox"><div class="sqlhead">Target Encoding 개념 예시 — 브랜드별 평균 가격으로 대체</div><pre><code># target: 가격(만원)
+   브랜드   가격
+0  현대     1800
+1  현대     2200
+2  기아     1600
+3  BMW     4500
+
+# 브랜드별 평균 가격
+brand_mean = df.groupby("브랜드")["가격"].mean()
+# 현대: 2000, 기아: 1600, BMW: 4500
+
+df["브랜드_encoded"] = df["브랜드"].map(brand_mean)</code></pre></div>
+
+  <h3>4) Target Encoding의 함정 — Data Leakage 주의</h3>
+  <p>Target Encoding에서 가장 조심해야 할 것은 <b>Data Leakage(정보 누출)</b>예요. 인코딩에 쓰는 target 평균을 <b>전체 데이터(Train+Test)로 계산하면 절대 안 되고, 반드시 Train 데이터만으로 계산</b>해야 해요.</p>
+  <div class="callout myth"><span class="ctitle">⚠️ 왜 위험한가 — 구체적 예시</span>
+  <p>중고차 가격을 예측하는 모델을 만든다고 해보자. "브랜드"를 Target Encoding할 때, 전체 데이터(Train 800건 + Test 200건)를 합쳐서 "브랜드별 평균 가격"을 계산했다고 가정한다. 이렇게 계산된 평균에는 <b>Test 데이터의 실제 가격 정보가 이미 섞여 들어가 있다.</b> 즉 모델이 Train 데이터로 학습하는 시점에, Test 데이터의 정답(target) 정보 일부를 간접적으로 미리 들여다본 셈이 된다. 그 결과 검증 단계에서는 성능이 비정상적으로 높게 나오지만, 실제 운영 환경(진짜 미래의 새 매물)에 배포하면 이런 "누설된 정보"가 없으므로 성능이 뚝 떨어지는 문제가 생긴다.</p>
+  </div>
+  <div class="sqlbox"><div class="sqlhead">올바른 방식 — Train 데이터로만 평균을 계산해 Test에 적용</div><pre><code>from sklearn.model_selection import train_test_split
+
+train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
+
+# 반드시 Train 데이터만으로 브랜드별 평균 가격을 계산
+brand_mean_from_train = train_df.groupby("브랜드")["가격"].mean()
+
+# 같은 매핑을 Train, Test 모두에 동일하게 적용
+train_df["브랜드_encoded"] = train_df["브랜드"].map(brand_mean_from_train)
+test_df["브랜드_encoded"]  = test_df["브랜드"].map(brand_mean_from_train)
+
+# Test에만 있던 새로운 브랜드는 매핑값이 없으므로(NaN),
+# Train 전체 평균 등으로 별도 대체(fallback) 처리가 필요
+overall_mean = train_df["가격"].mean()
+test_df["브랜드_encoded"] = test_df["브랜드_encoded"].fillna(overall_mean)</code></pre></div>
+  <div class="note">🔑 실전에서는 여기서 한 걸음 더 나아가, Train 데이터 안에서도 K-Fold 교차검증 방식으로 평균을 계산하는 <b>Out-of-Fold Target Encoding</b> 기법을 쓰기도 해요. Train 내부에서조차 "자기 자신의 target이 자신의 인코딩 값 계산에 포함되는" 미세한 leakage를 막기 위한 방법이에요.</div>
+
+  <h3>5) 세 방식 비교</h3>
+  <table class="t"><thead><tr><th>방식</th><th>적합한 변수 유형</th><th>장점</th><th>주의할 점</th></tr></thead>
+  <tbody>
+  <tr><td><b>Label Encoding</b></td><td>순서형(ordinal) — 등급, 학년 등</td><td>컬럼 수가 늘지 않음, 구현 간단</td><td>명목형 변수에 쓰면 없는 순서 관계를 학습시킴</td></tr>
+  <tr><td><b>One-Hot Encoding</b></td><td>명목형(nominal) — 브랜드, 색상 등, 범주 개수 적을 때</td><td>순서 왜곡 없음, 해석이 직관적</td><td>범주 개수가 많아지면 차원(컬럼 수)이 급격히 증가</td></tr>
+  <tr><td><b>Target Encoding</b></td><td>범주 개수가 매우 많은 명목형 변수</td><td>차원 증가 없이 범주 정보를 압축, 예측력 높은 인코딩 가능</td><td>Train 데이터로만 계산하지 않으면 Data Leakage 발생</td></tr>
+  </tbody></table>
+
+  <h3>6) 범주 개수가 매우 많을 때의 대응 — 그룹핑</h3>
+  <p>One-Hot Encoding이 부담스러울 만큼 범주 개수가 많다면(예: 세부 모델명이 수백 개), 인코딩 방식을 바꾸는 것 외에 <b>범주 자체를 줄이는 그룹핑</b> 전략도 함께 고려할 수 있어요.</p>
+  <ul class="b">
+  <li><b>의미 기반 그룹핑</b> — 도메인 지식을 활용해 유사한 범주끼리 묶는다. 예: 수십 개의 세부 모델명을 "소형차/준중형/중형/대형/SUV" 같은 상위 차급으로 재분류.</li>
+  <li><b>빈도 기반 그룹핑</b> — 등장 빈도가 높은 상위 N개 범주만 유지하고, 나머지 희귀 범주는 모두 "기타(Other)"로 묶는다.</li>
+  </ul>
+  <div class="sqlbox"><div class="sqlhead">pandas — 빈도 기반 그룹핑(상위 N개 유지, 나머지는 기타로 통합)</div><pre><code>top_n = 10
+top_brands = df["브랜드"].value_counts().nlargest(top_n).index
+
+df["브랜드_grouped"] = df["브랜드"].where(df["브랜드"].isin(top_brands), "기타")
+# 등장 빈도 상위 10개 브랜드는 그대로 유지하고,
+# 나머지 희귀 브랜드는 모두 "기타"라는 하나의 범주로 통합</code></pre></div>
+  <div class="callout goal"><span class="ctitle">🎯 실무 관점 — 인코딩 방식 선택 요약</span>
+  <p>순서가 있으면 Label Encoding, 범주 개수가 적고 순서가 없으면 One-Hot Encoding, 범주 개수가 아주 많으면 그룹핑 또는(Train 데이터만으로 신중하게 계산한) Target Encoding을 우선 고려하는 흐름이 실무에서 자주 쓰이는 판단 순서예요.</p>
+  </div>
+  <div class="cp"><div class="cphead">✔ 5장 핵심 요약</div><ul>
+  <li>Label Encoding은 순서형 변수에, One-Hot Encoding은 명목형 변수(범주 적을 때)에 적합하다.</li>
+  <li>Target Encoding은 범주를 target 평균값으로 대체해 범주가 많을 때 유용하지만, 반드시 Train 데이터로만 평균을 계산해야 Data Leakage를 피할 수 있다.</li>
+  <li>범주 개수가 매우 많을 때는 의미 기반 그룹핑 또는 빈도 기반 그룹핑(상위 N개 + 기타)으로 차원을 줄일 수 있다.</li>
+  </ul></div>
+</section>
+<div class="quiz-wrap" id="quiz-day1">
+  <h2>✅ Day 1 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="1">0 / 7 정답</div>
+  <div class="quiz-q" data-qid="d1q0" data-type="ox" data-answer="true" data-exp="Garbage In, Garbage Out 원칙대로, 입력되는 피처가 부실하면 아무리 알고리즘이 뛰어나도 좋은 성능을 낼 수 없어요. 그래서 Feature Engineering이 모델링만큼(때로는 그 이상) 중요하게 다뤄집니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>"Garbage In, Garbage Out" 원칙에 따르면, 아무리 좋은 알고리즘을 쓰더라도 입력 피처의 품질이 나쁘면 좋은 모델 성능을 기대하기 어렵다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q1" data-type="ox" data-answer="false" data-exp="트리 기반 모델(Decision Tree, Random Forest, XGBoost 등)은 변수의 절대적 크기가 아니라 특정 임계값을 기준으로 분기하기 때문에 스케일링의 영향을 거의 받지 않아요. 반대로 KNN, SVM, 신경망처럼 거리 계산이나 경사하강법을 쓰는 모델은 스케일링이 중요합니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>트리 기반 모델(Random Forest, XGBoost 등)은 KNN이나 신경망만큼 Feature Scaling의 영향을 크게 받는다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q2" data-type="ox" data-answer="false" data-exp="Target Encoding에서 target 평균을 Train+Test 전체 데이터로 계산하면, Test 데이터의 정답 정보가 인코딩 값에 간접적으로 섞여 들어가는 Data Leakage가 발생해요. 반드시 Train 데이터만으로 평균을 계산하고, 그 매핑을 Test에 그대로 적용해야 합니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Target Encoding을 적용할 때, 더 정확한 값을 얻기 위해 Train과 Test 데이터를 모두 합쳐서 범주별 target 평균을 계산하는 것이 올바른 방법이다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q3" data-type="mc" data-answer="IQR 규칙" data-exp="IQR 규칙은 1사분위수(Q1)와 3사분위수(Q3) 사이 범위(IQR)를 이용해 Q1-1.5×IQR ~ Q3+1.5×IQR 범위를 벗어나는 값을 이상치로 판단하는 대표적인 이상치 탐지 방법이에요. Min-Max Scaling과 One-Hot Encoding은 각각 스케일링, 인코딩 기법으로 이상치 탐지 방법이 아닙니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>1사분위수(Q1)와 3사분위수(Q3) 사이의 범위를 이용해 이상치를 탐지하는 대표적인 방법은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="IQR 규칙">IQR 규칙</button>
+      <button class="quiz-opt" data-val="Min-Max Scaling">Min-Max Scaling</button>
+      <button class="quiz-opt" data-val="One-Hot Encoding">One-Hot Encoding</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q4" data-type="mc" data-answer="MNAR" data-exp="MNAR(Missing Not At Random)은 결측 발생 여부가 결측된 값 그 자체와 관련이 있는 패턴이에요. 예를 들어 사고 이력이 있는 판매자가 불리한 정보를 의도적으로 비워두는 경우가 이에 해당해요. MCAR은 완전 무작위, MAR은 다른 관측 변수와 관련된 결측을 뜻합니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>사고 이력이 있는 판매자가 그 사실을 감추기 위해 의도적으로 "사고이력" 값을 비워두는 경우처럼, 결측 여부가 결측된 값 자체와 관련 있는 결측 패턴은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="MCAR">MCAR</button>
+      <button class="quiz-opt" data-val="MAR">MAR</button>
+      <button class="quiz-opt" data-val="MNAR">MNAR</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q5" data-type="short" data-accept='["표준화", "Standardization", "standardization", "Z-score", "z-score", "z score"]' data-exp="표준화(Standardization)는 데이터를 평균 0, 표준편차 1이 되도록 변환하는 스케일링 기법으로 Z-score 변환이라고도 불려요. 0~1 범위로 고정하는 정규화(Min-Max Scaling)와는 다른 방식입니다.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>데이터를 평균이 0, 표준편차가 1이 되도록 변환하는 스케일링 기법의 이름은? (한글 또는 영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d1q6" data-type="short" data-accept='["Target Encoding", "target encoding", "타겟 인코딩", "타겟인코딩", "Target Encoder", "target encoder"]' data-exp="Target Encoding은 범주형 변수의 각 범주를 해당 범주에 속한 데이터의 target(예측 대상) 평균값으로 대체하는 인코딩 기법이에요. 범주 개수가 매우 많을 때 One-Hot Encoding의 차원 증가 문제를 피하면서 정보를 압축할 수 있지만, Train 데이터로만 평균을 계산해야 Data Leakage를 막을 수 있어요.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>범주형 변수의 각 범주를 그 범주에 속한 데이터들의 target 평균값으로 대체하는 인코딩 기법의 이름은? (영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+
+<div class="day-header" id="day2"><h1>Day 2 — Feature Creation·Selection과 Feature Store</h1><p>파생 변수 생성부터 도메인 기반 Feature Creation, 통계/ML 기반 Feature Selection, Feature Store까지</p></div>
+
+<section class="sec" id="s6" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">6.</span> Feature Creation — 파생 변수 생성 기초</h2>
+  </div>
+  <p class="subtitle">날짜/시간 컬럼에서 파생 변수 만들기 · 수치형 변수 간 상호작용·비율 변수 · 구간화(Binning) · 텍스트 컬럼에서 파생 변수 추출</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: <b>Feature Creation</b>은 이미 있는 컬럼들을 조합·가공해서 <b>모델이 더 잘 이해할 수 있는 새로운 변수를 직접 만들어내는</b> 작업이에요. Day 1에서 다룬 결측값·이상치·스케일링·인코딩이 "있는 데이터를 다듬는" 작업이었다면, Feature Creation은 "없던 데이터를 새로 만드는" 작업이라는 점에서 결이 달라요. 중고차 가격 예측 예제를 계속 이어가면서, 날짜, 수치, 텍스트 컬럼 각각에서 어떻게 의미 있는 파생 변수를 뽑아낼 수 있는지 살펴봐요.</div></div>
+
+  <h3>1) 날짜/시간 컬럼에서 파생 변수 만들기</h3>
+  <p>"등록일"처럼 날짜 자체는 모델이 그대로 학습하기 어려운 형태예요. 문자열 "2019-03-15"라는 값 자체는 숫자 크기 비교 외에는 별다른 의미를 갖지 못하지만, 여기서 <b>차량 나이, 등록 월, 요일, 계절</b> 같은 파생 변수를 뽑아내면 모델이 활용할 수 있는 정보로 바뀌어요.</p>
+  <div class="sqlbox"><div class="sqlhead">pandas — 등록일에서 날짜 기반 파생 변수 추출</div><pre><code>import pandas as pd
+
+df["등록일"] = pd.to_datetime(df["등록일"])
+오늘 = pd.Timestamp("2026-08-18")
+
+# 1) 차량 나이(연 단위) - 등록연도로부터 계산
+df["차량나이"] = 오늘.year - df["등록일"].dt.year
+
+# 2) 등록 월 / 요일 / 계절 추출
+df["등록_월"] = df["등록일"].dt.month
+df["등록_요일"] = df["등록일"].dt.dayofweek   # 0=월요일 ... 6=일요일
+
+def to_season(month):
+    if month in [3, 4, 5]:   return "봄"
+    if month in [6, 7, 8]:   return "여름"
+    if month in [9, 10, 11]: return "가을"
+    return "겨울"
+
+df["등록_계절"] = df["등록_월"].apply(to_season)</code></pre></div>
+  <p>예를 들어 "겨울에 등록된 매물이 봄에 등록된 매물보다 평균적으로 저렴하다"는 패턴이 실제로 존재한다면, 원본 "등록일" 컬럼만으로는 모델이 이 패턴을 학습하기 어렵지만 "등록_계절"이라는 파생 변수를 만들어주면 그 관계를 직접 학습할 수 있게 돼요.</p>
+
+  <h3>2) 수치형 변수 간 상호작용·비율 변수 만들기</h3>
+  <p>서로 다른 두 수치형 변수를 사칙연산으로 조합하면, 개별 변수 각각보다 훨씬 더 예측력이 높은 새로운 변수가 만들어지는 경우가 많아요. 대표적인 예가 <b>연간 평균 주행거리</b>예요.</p>
+  <div class="formula"><div class="expr">연간_평균주행거리 = 주행거리_km &divide; 차량나이</div><div class="cap">같은 총 주행거리라도 차량나이(연식)에 따라 "많이 탄 차"인지 "적게 탄 차"인지 의미가 완전히 달라짐</div></div>
+  <div class="sqlbox"><div class="sqlhead">pandas — 비율(상호작용) 변수 생성</div><pre><code># 0으로 나누기 방지를 위해 최소 1년으로 처리
+df["연간_평균주행거리"] = df["주행거리_km"] / df["차량나이"].clip(lower=1)
+
+# 예: 주행거리 87,500km, 차량나이 7년 -&gt; 연간 12,500km (평범한 수준)
+#     주행거리 87,500km, 차량나이 2년 -&gt; 연간 43,750km (매우 많이 탄 차)</code></pre></div>
+  <p>주행거리 87,500km라는 값 하나만 보면 두 매물이 똑같아 보이지만, 연간 평균 주행거리로 바꿔보면 완전히 다른 성격의 차량이라는 게 드러나요. 이렇게 <b>단독 변수보다 조합된 변수가 더 많은 정보를 담는 경우</b>가 실무에서 자주 발견돼요.</p>
+
+  <h3>3) 구간화(Binning) — 연속형 변수를 범주형으로</h3>
+  <p>Binning은 연속적인 수치형 변수를 몇 개의 구간(bin)으로 나눠 범주형처럼 다루는 기법이에요. 정보를 일부 압축하는 대신, 특정 패턴을 더 뚜렷하게 드러내거나 이상치·노이즈의 영향을 줄일 수 있어요.</p>
+  <div class="sqlbox"><div class="sqlhead">pandas — 차량나이를 구간으로 나누기</div><pre><code># 차량나이를 4개 구간으로 binning
+df["차량나이_구간"] = pd.cut(
+    df["차량나이"],
+    bins=[0, 3, 7, 12, 100],
+    labels=["신차급(0~3년)", "준신차(4~7년)", "중고(8~12년)", "노후(13년+)"]
+)</code></pre></div>
+  <ul class="b">
+  <li><b>비선형 관계를 단순화할 때 유용</b> — 가격이 차량나이와 정확히 비례하지 않고 "3년 이하 vs 3년 초과"처럼 특정 구간에서 급격히 꺾이는 패턴이 있다면, 연속값 그대로보다 구간화가 그 패턴을 더 잘 드러낼 수 있다.</li>
+  <li><b>이상치·노이즈의 영향을 완화</b> — 극단적으로 크거나 작은 값도 결국 하나의 구간으로 묶이므로, 세부 값의 미세한 오차나 튀는 값이 모델에 주는 영향이 줄어든다.</li>
+  <li><b>해석이 쉬워짐</b> — "신차급/준신차/중고/노후"처럼 사람이 이해하기 쉬운 범주로 바뀌어 보고서·대시보드에서 활용하기 좋다.</li>
+  </ul>
+  <div class="note">🔑 다만 Binning은 연속값이 가진 세밀한 정보(예: 3.2년과 3.8년의 차이)를 잃어버리는 트레이드오프가 있어요. 트리 기반 모델처럼 스스로 구간을 학습할 수 있는 모델에서는 Binning의 효과가 제한적일 수 있고, 선형모델처럼 비선형 관계를 직접 표현하지 못하는 모델에서 상대적으로 더 유용해요.</div>
+
+  <h3>4) 텍스트 컬럼에서 파생 변수 추출</h3>
+  <p>중고차 매물에는 "선루프, 통풍시트, 하이패스, 블랙박스"처럼 옵션 목록이 텍스트로 기록되는 경우가 많아요. 이 텍스트 자체를 모델에 바로 넣을 수는 없지만, 간단한 파생 변수로 정보를 추출할 수 있어요.</p>
+  <div class="sqlbox"><div class="sqlhead">pandas — 옵션 목록 텍스트에서 옵션 개수 추출</div><pre><code># 옵션 컬럼 예시: "선루프, 통풍시트, 하이패스"
+df["옵션_개수"] = df["옵션목록"].apply(lambda x: len(str(x).split(",")) if pd.notna(x) else 0)
+
+# 특정 인기 옵션 포함 여부를 이진 변수로도 추출 가능
+df["선루프_유무"] = df["옵션목록"].str.contains("선루프", na=False).astype(int)</code></pre></div>
+  <p>"옵션목록"이라는 하나의 텍스트 컬럼에서 "옵션 개수"(수치형)와 "선루프 유무"(이진형) 같은 여러 개의 파생 변수를 뽑아낼 수 있고, 이렇게 만들어진 변수들이 실제로 가격과 유의미한 상관을 보이는 경우가 많아요.</p>
+
+  <div class="cp"><div class="cphead">✔ 6장 핵심 요약</div><ul>
+  <li>Feature Creation은 기존 컬럼을 조합·가공해 새로운 변수를 만드는 작업으로, 결측·이상치 처리와는 성격이 다르다.</li>
+  <li>날짜/시간 컬럼에서는 나이, 월, 요일, 계절 등을 추출할 수 있다.</li>
+  <li>수치형 변수 간 비율·상호작용 변수(예: 연간 평균 주행거리)는 개별 변수보다 더 많은 정보를 담을 수 있다.</li>
+  <li>Binning은 연속형 변수를 구간화해 비선형 패턴을 단순화하고 노이즈 영향을 줄이지만, 세밀한 정보는 잃는다.</li>
+  <li>텍스트 컬럼에서도 개수 세기, 키워드 포함 여부 등으로 간단한 파생 변수를 추출할 수 있다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s7" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">7.</span> 도메인 지식 기반 Feature Creation</h2>
+  </div>
+  <p class="subtitle">산업·업무 도메인 이해에 기반한 파생 변수 설계 · 데이터 분석가와 업무 전문가의 협업 · 산업별 대표 파생 변수 · 중고차 도메인 적용 예시</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 6장에서 다룬 날짜·비율·구간화 같은 기법은 <b>어떤 도메인에도 기계적으로 적용 가능한 "범용 기법"</b>이었어요. 이번 장에서는 한 걸음 더 나아가, <b>해당 산업·업무를 깊이 이해해야만 떠올릴 수 있는 파생 변수</b>를 만드는 접근을 다뤄요. 좋은 파생 변수는 통계 기법만으로 나오지 않고, "이 도메인에서는 무엇이 진짜 중요한가"를 아는 사람의 관점에서 나오는 경우가 많아요.</div></div>
+
+  <h3>1) 도메인 지식 기반 Feature Creation이란</h3>
+  <p>도메인 지식 기반 Feature Creation은 특정 산업·업무 영역에 대한 전문적인 이해를 바탕으로, 단순한 사칙연산을 넘어 <b>업무적으로 의미가 통하는 파생 변수</b>를 설계하는 접근이에요. 예를 들어 "연간 평균 주행거리"는 누구나 떠올릴 수 있는 범용 비율 변수지만, "이 차량이 시세보다 얼마나 빨리 감가되고 있는가"를 나타내는 변수는 중고차 시장이 어떻게 작동하는지 아는 사람만 설계할 수 있어요.</p>
+
+  <h3>2) 데이터 분석가와 업무 전문가의 협업이 중요한 이유</h3>
+  <p>데이터 분석가는 통계·ML 기법에는 능숙하지만 특정 산업의 미묘한 업무 관행까지 알기는 어려워요. 반대로 업무 전문가(예: 중고차 딜러, 금융 심사역, 의료진)는 도메인 지식은 풍부하지만 그 지식을 "데이터로 어떻게 표현할지"는 낯설 수 있어요. 그래서 둘의 협업이 결정적이에요.</p>
+  <ul class="b">
+  <li><b>업무 전문가</b> — "실제로 중고차 딜러들은 사고 이력이 있으면 무조건 가격을 깎기보다, 사고 부위와 수리 정도에 따라 감가폭을 다르게 본다"처럼 현장에서만 알 수 있는 판단 기준을 제공한다.</li>
+  <li><b>데이터 분석가</b> — 그 판단 기준을 "사고이력_부위", "수리비_추정액" 같은 구체적인 변수와 계산식으로 번역하고, 실제 데이터로 검증 가능한 형태로 만든다.</li>
+  <li><b>협업의 결과</b> — 통계적으로 그럴듯해 보이지만 실제로는 의미 없는 변수를 피하고, 현장 감각에는 맞지만 데이터로 표현되지 않았던 지식을 모델이 학습 가능한 feature로 끌어올릴 수 있다.</li>
+  </ul>
+  <div class="callout deep"><span class="ctitle">🔎 협업 없이 분석가 혼자 만들면 생기는 문제</span>
+  <p>업무 맥락 없이 통계적으로만 접근하면, 상관관계가 높아 보이는 변수를 만들어도 실제로는 우연이거나 이미 다른 변수로 설명되는 중복 정보인 경우가 많아요. 예를 들어 "매물 등록 시각(오전/오후)"으로 파생 변수를 만들어봤자 중고차 가격과는 별 관련이 없을 가능성이 높죠. 반대로 업무 전문가가 강조하는 "동일 차종 내 상대적 저주행 여부" 같은 변수는 통계적 직관만으로는 잘 떠오르지 않지만 실제 가격 결정에 큰 영향을 줄 수 있어요.</p>
+  </div>
+
+  <h3>3) 산업별 대표 파생 변수 예시</h3>
+  <p>산업마다 오랫동안 축적된 "업계 표준" 파생 변수들이 있어요. 이런 지표들은 이미 해당 업계에서 의미가 검증된 경우가 많아 참고하기 좋아요.</p>
+  <table class="t"><thead><tr><th>산업</th><th>대표 파생 변수</th><th>설명</th></tr></thead>
+  <tbody>
+  <tr><td><b>이커머스/리테일</b></td><td>RFM<br>(Recency·Frequency·Monetary)</td><td>최근 구매일(Recency), 구매 빈도(Frequency), 총 구매 금액(Monetary)을 조합해 고객의 가치·이탈 가능성을 나타내는 지표</td></tr>
+  <tr><td><b>헬스케어</b></td><td>BMI, 혈압차이</td><td>체질량지수(체중÷신장²)로 비만도를, 수축기·이완기 혈압의 차이(맥압)로 심혈관 위험도를 나타내는 지표</td></tr>
+  <tr><td><b>금융</b></td><td>DTI(부채비율), 신용활용률</td><td>소득 대비 부채상환액 비율(DTI), 신용한도 대비 실제 사용 비율(신용활용률)로 상환 능력·리스크를 나타내는 지표</td></tr>
+  <tr><td><b>부동산</b></td><td>평당가, 역세권 거리</td><td>면적당 가격(총가격÷평수), 가장 가까운 지하철역까지의 거리로 입지 가치를 나타내는 지표</td></tr>
+  <tr><td><b>물류</b></td><td>가동률</td><td>보유 차량·설비 중 실제 운행·가동된 비율로 자원 효율성을 나타내는 지표</td></tr>
+  </tbody></table>
+
+  <h3>4) 중고차 도메인에서의 파생 변수 예시</h3>
+  <p>같은 논리를 중고차 가격 예측에 적용하면, 단순 비율을 넘어 시장 맥락이 담긴 파생 변수를 만들 수 있어요.</p>
+  <div class="formula"><div class="expr">감가율 = (신차가 &minus; 현재_시세) / 신차가 &divide; 차량나이</div><div class="cap">연식이 늘수록 가격이 얼마나 빠르게 하락하고 있는지를 "연간 감가 속도"로 표현</div></div>
+  <ul class="b">
+  <li><b>감가율(연식 대비 가격 하락 폭)</b> — 신차가 대비 현재 시세가 얼마나, 얼마나 빠르게 떨어졌는지를 나타내는 변수. 브랜드·차급마다 감가 속도가 다르기 때문에, 단순 "차량나이"보다 가격을 더 직접적으로 설명할 수 있다.</li>
+  <li><b>사고 이력당 가격 영향도</b> — 사고 이력이 있는 매물과 없는 매물의 평균 가격 차이를 사고 유형(단순 접촉/부품 교체/침수 등)별로 계산해, "사고이력_있음/없음"이라는 단순 이진 변수보다 세밀하게 가격 영향을 반영하는 변수.</li>
+  <li><b>동급 차종 대비 상대 주행거리</b> — 같은 차종·연식 그룹 내에서 이 매물의 주행거리가 상위 몇 %에 해당하는지를 계산해, 절대 주행거리보다 "이 매물이 같은 조건의 다른 매물보다 많이 탔는가"를 더 명확히 드러내는 변수.</li>
+  </ul>
+  <div class="note">🔑 이런 변수들은 단순 사칙연산으로는 잘 나오지 않고, "중고차 시장에서 실제로 가격을 결정하는 요인이 무엇인가"에 대한 업무 지식이 있어야 설계할 수 있어요. 그래서 6장의 범용 기법과 7장의 도메인 기반 접근은 상호 보완적으로 함께 쓰이는 경우가 많아요.</div>
+
+  <div class="cp"><div class="cphead">✔ 7장 핵심 요약</div><ul>
+  <li>도메인 지식 기반 Feature Creation은 산업·업무에 대한 전문적 이해를 바탕으로 의미 있는 파생 변수를 설계하는 접근이다.</li>
+  <li>데이터 분석가와 업무 전문가의 협업은 통계적으로 그럴듯하지만 무의미한 변수를 피하고, 현장 지식을 데이터로 표현하는 데 필수적이다.</li>
+  <li>이커머스의 RFM, 헬스케어의 BMI, 금융의 DTI 등 산업마다 검증된 대표 파생 변수가 존재한다.</li>
+  <li>중고차 도메인에서는 감가율, 사고 이력당 가격 영향도 같은 변수가 단순 비율보다 더 풍부한 시장 맥락을 담을 수 있다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s8" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">8.</span> Feature Selection — 통계 기반 검증</h2>
+  </div>
+  <p class="subtitle">Feature Selection이 필요한 이유 · 상관분석(연속형-연속형) · 카이제곱 검정(범주형-범주형) · p-value 해석 기본</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 6~7장에서 파생 변수를 열심히 만들었다면, 이제는 반대로 <b>어떤 변수를 실제로 모델에 넣을지 걸러내는</b> 단계예요. 변수는 많다고 무조건 좋은 게 아니라서, 통계적으로 target과 관련이 있는지부터 검증해봐요. 연속형 변수끼리는 <b>상관분석</b>, 범주형 변수끼리는 <b>카이제곱 검정</b>을 주로 사용해요.</div></div>
+
+  <h3>1) Feature Selection이 왜 필요한가</h3>
+  <p>파생 변수를 포함해 변수 개수가 많아질수록 모델이 무조건 좋아지는 것은 아니에요. 오히려 불필요한 변수가 섞이면 다음과 같은 문제가 생겨요.</p>
+  <ul class="b">
+  <li><b>과적합(Overfitting) 위험 증가</b> — target과 관련 없는 변수가 많을수록, 모델이 Train 데이터의 우연한 패턴(노이즈)까지 학습해버릴 가능성이 커진다.</li>
+  <li><b>노이즈 유입</b> — target 설명력이 거의 없는 변수는 모델 입장에서 진짜 신호를 가리는 잡음으로 작용할 수 있다.</li>
+  <li><b>연산 비용 증가</b> — 변수가 많아질수록 학습 시간, 메모리 사용량이 늘어나고, 실시간 서빙 시 지연(latency)도 커진다.</li>
+  <li><b>해석 가능성 저하</b> — 변수가 지나치게 많으면 어떤 변수가 실제로 예측에 기여하는지 파악하기 어려워진다.</li>
+  </ul>
+  <p>그래서 Feature Creation으로 후보 변수를 넉넉히 만든 뒤, Feature Selection으로 실제로 유의미한 변수만 골라내는 흐름이 실무에서 자연스러운 순서예요.</p>
+
+  <h3>2) 상관분석(Correlation) — 연속형 변수 간 관계 검증</h3>
+  <p>상관분석은 두 <b>연속형</b> 변수가 얼마나 선형적으로 함께 움직이는지를 측정해요. 예를 들어 "연간 평균 주행거리"와 "가격" 사이의 관계를 확인할 때 사용해요.</p>
+  <div class="formula"><div class="expr">-1 &le; r &le; 1</div><div class="cap">r(피어슨 상관계수)이 1에 가까우면 강한 양의 상관, -1에 가까우면 강한 음의 상관, 0에 가까우면 선형 관계가 거의 없음</div></div>
+  <div class="sqlbox"><div class="sqlhead">pandas — 연속형 변수 간 상관계수 확인</div><pre><code># 가격과 후보 변수들 간의 피어슨 상관계수
+corr = df[["가격", "연간_평균주행거리", "차량나이", "옵션_개수"]].corr()
+print(corr["가격"])
+
+# 가격             1.00
+# 연간_평균주행거리  -0.52   (많이 탈수록 가격이 낮아지는 음의 상관)
+# 차량나이           -0.68   (오래될수록 가격이 낮아지는 음의 상관)
+# 옵션_개수           0.31   (옵션이 많을수록 가격이 높아지는 양의 상관)</code></pre></div>
+  <div class="note">🔑 상관분석은 <b>선형 관계</b>만 잘 잡아내요. 두 변수가 U자형처럼 비선형적으로 강하게 관련되어 있어도 상관계수는 0에 가깝게 나올 수 있으므로, 상관계수가 낮다고 무조건 "관련 없는 변수"라고 단정하면 안 돼요.</div>
+
+  <h3>3) 카이제곱 검정(Chi-square Test) — 범주형 변수 간 관계 검증</h3>
+  <p>카이제곱 검정은 두 <b>범주형</b> 변수가 서로 독립적인지, 아니면 통계적으로 유의미한 관련이 있는지를 검증해요. 예를 들어 "브랜드"와 "사고이력 유무"가 서로 관련이 있는지(특정 브랜드에서 사고 매물 비율이 유독 높은지)를 확인할 때 사용해요.</p>
+  <div class="sqlbox"><div class="sqlhead">scipy — 카이제곱 검정(브랜드 vs 사고이력)</div><pre><code>import pandas as pd
+from scipy.stats import chi2_contingency
+
+# 교차표(contingency table) 생성
+cross_tab = pd.crosstab(df["브랜드"], df["사고이력_flag"])
+
+chi2, p_value, dof, expected = chi2_contingency(cross_tab)
+print(f"chi2={chi2:.2f}, p-value={p_value:.4f}")</code></pre></div>
+  <p>카이제곱 검정 결과는 chi2 통계량과 함께 <b>p-value</b>로 해석해요.</p>
+
+  <h3>4) p-value 해석 기본 개념</h3>
+  <p>p-value는 "두 변수가 실제로는 아무 관련이 없다(귀무가설)"고 가정했을 때, 지금 관측된 정도의 차이(혹은 그보다 더 극단적인 차이)가 우연히 나타날 확률이에요.</p>
+  <ul class="b">
+  <li><b>p-value가 작다(보통 0.05 미만)</b> — 우연이라고 보기엔 관측된 관계가 너무 뚜렷하다는 뜻 → "두 변수가 통계적으로 유의미하게 관련되어 있다"고 판단하고 해당 변수를 후보로 유지한다.</li>
+  <li><b>p-value가 크다(0.05 이상)</b> — 관측된 차이가 우연히 나타날 가능성이 충분히 있다는 뜻 → 관련성이 통계적으로 유의하지 않다고 보고 변수 제외를 고려한다.</li>
+  </ul>
+  <div class="callout myth"><span class="ctitle">⚠️ p-value에 대한 흔한 오해</span>
+  <p>p-value가 0.05보다 작다고 해서 "그 변수가 target을 예측하는 데 실질적으로 큰 영향을 준다"는 뜻은 아니에요. p-value는 관계가 <b>통계적으로 우연이 아닐 가능성</b>을 나타낼 뿐, 관계의 <b>크기(effect size)</b>를 말해주지 않아요. 특히 데이터 건수가 아주 많으면 아주 미세한 차이도 p-value가 작게 나올 수 있으므로, 상관계수 크기나 실제 업무적 의미와 함께 판단해야 해요.</p>
+  </div>
+
+  <div class="cp"><div class="cphead">✔ 8장 핵심 요약</div><ul>
+  <li>불필요한 변수는 과적합, 노이즈, 연산 비용 증가를 유발하므로 Feature Selection이 필요하다.</li>
+  <li>연속형-연속형 변수 관계는 상관분석(피어슨 상관계수)으로, 범주형-범주형 변수 관계는 카이제곱 검정으로 검증한다.</li>
+  <li>상관분석은 선형 관계만 포착하므로 낮은 상관계수가 무관함을 의미하지는 않는다.</li>
+  <li>p-value는 관계가 통계적으로 유의한지(우연이 아닌지)를 보여줄 뿐, 관계의 크기(중요도)를 말해주지 않는다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s9" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">9.</span> Feature Selection — ML 기반 검증</h2>
+  </div>
+  <p class="subtitle">Tree 기반 모델의 Feature Importance와 한계 · Permutation Importance 개념과 계산 비용 · 두 방법을 함께 쓰는 이유</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 8장의 상관분석·카이제곱 검정이 변수 하나하나를 target과 <b>독립적으로</b> 검증하는 방법이었다면, 이번 장은 실제로 <b>모델을 학습시켜본 뒤</b> "이 모델이 예측할 때 어떤 변수를 얼마나 많이 참고했는가"를 거꾸로 읽어내는 방법이에요. 대표적으로 Tree 기반 모델의 <b>Feature Importance</b>와, 모델 종류를 가리지 않는 <b>Permutation Importance</b>가 있어요.</div></div>
+
+  <h3>1) Tree 기반 모델의 Feature Importance</h3>
+  <p>Random Forest, XGBoost 같은 <b>Tree 기반 모델</b>은 학습 과정에서 각 변수가 분기(split)에 얼마나 자주, 얼마나 효과적으로 사용되었는지를 자동으로 기록해요. 이 값을 모아 변수별 중요도 점수로 제공하는 것이 Feature Importance예요.</p>
+  <div class="sqlbox"><div class="sqlhead">scikit-learn — Random Forest Feature Importance</div><pre><code>from sklearn.ensemble import RandomForestRegressor
+import pandas as pd
+
+X = df[["차량나이", "연간_평균주행거리", "옵션_개수", "감가율"]]
+y = df["가격"]
+
+model = RandomForestRegressor(n_estimators=300, random_state=42)
+model.fit(X, y)
+
+importance = pd.Series(model.feature_importances_, index=X.columns)
+print(importance.sort_values(ascending=False))
+
+# 차량나이            0.41
+# 감가율              0.33
+# 연간_평균주행거리     0.18
+# 옵션_개수            0.08</code></pre></div>
+  <div class="callout myth"><span class="ctitle">⚠️ Feature Importance의 한계 — 상관관계 높은 변수 사이의 왜곡</span>
+  <p>Tree 기반 모델의 Feature Importance는 <b>서로 상관관계가 높은 변수들 사이에서 중요도가 왜곡</b>될 수 있어요. 예를 들어 "차량나이"와 "감가율"은 서로 밀접하게 연관된 변수인데, 트리가 분기할 때 둘 중 하나만 먼저 선택되면 그 변수의 중요도만 높게 잡히고, 실제로 비슷한 정보를 담고 있는 다른 변수는 중요도가 낮게 나올 수 있어요. 즉 <b>"중요도가 낮다 = 쓸모없는 변수"라고 단정하면 안 되고</b>, 상관관계가 높은 변수 묶음 안에서의 상대적 배분 문제일 수 있다는 점을 감안해야 해요.</p>
+  </div>
+
+  <h3>2) Permutation Importance</h3>
+  <p>Permutation Importance는 <b>특정 변수의 값을 무작위로 섞은(shuffle) 뒤, 모델 성능이 얼마나 하락하는지</b>를 측정해서 그 변수의 중요도를 판단하는 방법이에요. 값을 섞으면 그 변수와 target 사이의 실제 관계가 깨지기 때문에, 성능이 크게 떨어질수록 원래 그 변수가 중요했다는 뜻이 돼요.</p>
+  <div class="formula"><div class="expr">Permutation Importance = 원본 성능 &minus; (해당 변수를 섞은 뒤의 성능)</div><div class="cap">값이 클수록(성능 하락 폭이 클수록) 해당 변수가 예측에 중요하게 기여하고 있다는 의미</div></div>
+  <div class="sqlbox"><div class="sqlhead">scikit-learn — Permutation Importance</div><pre><code>from sklearn.inspection import permutation_importance
+
+result = permutation_importance(
+    model, X, y, n_repeats=10, random_state=42, scoring="r2"
+)
+
+perm_importance = pd.Series(result.importances_mean, index=X.columns)
+print(perm_importance.sort_values(ascending=False))</code></pre></div>
+  <p>Permutation Importance는 모델 내부 구조(트리 분기 등)에 의존하지 않고, <b>모델이 무엇이든 관계없이(model-agnostic)</b> "이 변수를 지웠다고 가정했을 때 성능이 얼마나 나빠지는가"를 직접 측정한다는 장점이 있어요.</p>
+
+  <h3>3) Permutation Importance의 계산 비용이 큰 이유</h3>
+  <p>Permutation Importance는 변수 하나의 중요도를 구하기 위해, <b>그 변수를 섞은 데이터로 모델 예측을 매번 다시 수행</b>해야 해요. 게다가 셔플 자체가 무작위이므로 결과가 흔들리지 않도록 여러 번(n_repeats) 반복해서 평균을 내는 것이 일반적이에요.</p>
+  <ul class="b">
+  <li>변수 개수가 <b>N개</b>라면, 최소 N번의 예측(추론) 과정을 반복해야 한다.</li>
+  <li>결과의 안정성을 위해 각 변수마다 여러 번(예: 10회) 반복 셔플해서 평균을 내면, 전체 연산량은 <b>N × 반복 횟수</b>만큼 늘어난다.</li>
+  <li>변수 개수가 많거나 예측(추론) 자체가 무거운 모델(대규모 앙상블, 딥러닝 등)일수록 Permutation Importance 계산에 걸리는 시간이 크게 늘어난다.</li>
+  </ul>
+
+  <h3>4) 두 방법을 함께 쓰면 좋은 이유</h3>
+  <p>Feature Importance(트리 내부 통계)와 Permutation Importance(성능 하락 기반)는 서로 다른 방식으로 중요도를 측정하기 때문에, 함께 비교하면 더 신뢰할 수 있는 판단을 내릴 수 있어요.</p>
+  <table class="t"><thead><tr><th>구분</th><th>Feature Importance(Tree 기반)</th><th>Permutation Importance</th></tr></thead>
+  <tbody>
+  <tr><td>측정 방식</td><td>트리 분기에 사용된 빈도·효과 기반</td><td>변수를 섞었을 때 실제 성능 하락 폭 기반</td></tr>
+  <tr><td>모델 의존성</td><td>Tree 기반 모델에서만 사용 가능</td><td>어떤 모델에도 적용 가능(model-agnostic)</td></tr>
+  <tr><td>계산 비용</td><td>학습 과정에서 이미 계산되어 저렴함</td><td>변수마다 반복 추론이 필요해 상대적으로 비쌈</td></tr>
+  <tr><td>상관관계 높은 변수에서의 편향</td><td>왜곡되기 쉬움</td><td>여전히 영향받을 수 있으나 성능 기준이라 상대적으로 직관적</td></tr>
+  </tbody></table>
+  <div class="callout goal"><span class="ctitle">🎯 실무 관점</span>
+  <p>두 방법에서 공통적으로 중요도가 높게 나오는 변수는 신뢰도가 높은 핵심 변수로 판단할 수 있고, 한쪽에서만 높게 나오는 변수는 상관관계 왜곡이나 계산 방식의 특성을 의심하며 추가로 검토하는 것이 안전해요. 결국 한 가지 지표만 맹신하지 않고 여러 관점을 교차 검증하는 것이 Feature Selection의 핵심이에요.</p>
+  </div>
+
+  <div class="cp"><div class="cphead">✔ 9장 핵심 요약</div><ul>
+  <li>Tree 기반 모델의 Feature Importance는 분기 사용 빈도·효과를 기반으로 계산되지만, 상관관계 높은 변수 사이에서 중요도가 왜곡될 수 있다.</li>
+  <li>Permutation Importance는 변수를 무작위로 섞었을 때의 성능 하락 폭으로 중요도를 측정하며, 어떤 모델에도 적용 가능하지만 계산 비용이 크다.</li>
+  <li>두 방법을 함께 비교하면 서로의 한계를 보완해 더 신뢰할 수 있는 변수 선택이 가능하다.</li>
+  </ul></div>
+</section>
+<section class="sec" id="s10" data-day="2">
+  <div class="sec-head">
+    <span class="day-badge day2">Day 2</span>
+    <h2><span class="num">10.</span> Feature Store — 개념과 운영</h2>
+  </div>
+  <p class="subtitle">Feature Store의 정의 · Training-Serving Consistency · Feature Store가 없을 때 생기는 문제 · 데이터 사이언티스트에게 주는 이점</p>
+  <div class="tldr"><span class="icon">💡</span><div class="txt">쉽게 말하면: 지금까지 6~9장에서 만든 파생 변수들(연간 평균 주행거리, 감가율 등)을 <b>한 사람, 한 프로젝트에서만 쓰고 끝내지 않고, 여러 팀이 재사용하고 실시간 서비스에서도 동일하게 활용</b>하려면 어떻게 관리해야 할까요? 그 답이 <b>Feature Store</b>예요. Feature를 계산해서 끝나는 게 아니라, 저장하고, 관리하고, 안정적으로 서빙하는 중앙 인프라라고 보면 돼요.</div></div>
+
+  <h3>1) Feature Store란 무엇인가</h3>
+  <p><b>Feature Store</b>는 Feature Engineering을 통해 만들어진 feature들을 <b>저장·관리·서빙(serving)하는 중앙 저장소</b>예요. 여러 모델, 여러 팀이 같은 feature 정의(예: "차량나이", "연간_평균주행거리", "감가율")를 공통으로 참조하고 사용할 수 있도록 하는 인프라 계층이라고 볼 수 있어요.</p>
+  <div class="formula"><div class="expr">원본 데이터 → Feature Engineering → <b>Feature Store</b> → (Model Training / Model Serving)</div><div class="cap">한 번 계산·검증된 feature를 저장해두고, 학습 시점과 서빙 시점 모두 같은 Feature Store에서 값을 가져다 쓰는 구조</div></div>
+
+  <h3>2) 왜 Feature Store가 필요한가</h3>
+  <ul class="b">
+  <li><b>여러 팀·프로젝트 간 Feature 재사용</b> — "차량나이", "감가율" 같은 feature는 가격 예측 모델뿐 아니라 수요 예측, 이상 매물 탐지 등 다른 모델에서도 똑같이 유용할 수 있다. Feature Store에 한 번 등록해두면 다른 팀이 처음부터 다시 만들 필요 없이 그대로 가져다 쓸 수 있다.</li>
+  <li><b>Training-Serving Consistency 확보</b> — 모델을 학습(Training)할 때 계산한 feature 값과, 실제 서비스에서 예측(Serving)할 때 계산하는 feature 값이 <b>정확히 같은 로직으로 계산되도록 보장</b>한다. 이 일치를 Training-Serving Consistency라고 부른다.</li>
+  </ul>
+  <div class="callout deep"><span class="ctitle">🔎 Training-Serving Consistency가 왜 중요한가</span>
+  <p>예를 들어 "연간_평균주행거리 = 주행거리 ÷ 차량나이"라는 feature를 모델 학습 시에는 pandas 배치(batch) 코드로 계산하고, 실제 서비스(API 서버)에서는 개발자가 별도로 자바/파이썬 코드로 다시 구현했다고 해보자. 두 코드가 소수점 처리, 0으로 나누는 예외 처리 등에서 <b>미묘하게 다르게 구현</b>되면, 학습 때 모델이 본 값과 실제 서빙 때 모델에 들어가는 값이 달라진다. 모델은 학습 시점의 패턴을 기준으로 작동하기 때문에, 이런 불일치는 실제 서비스에서 <b>이유를 찾기 어려운 성능 저하</b>로 이어질 수 있다. Feature Store는 계산 로직을 한 곳에 정의해두고 Training·Serving 양쪽에서 동일하게 가져다 쓰게 함으로써 이 문제를 원천적으로 막는다.</p>
+  </div>
+
+  <h3>3) Feature Store가 없을 때 생기는 문제</h3>
+  <table class="t"><thead><tr><th>문제</th><th>구체적 상황</th></tr></thead>
+  <tbody>
+  <tr><td><b>중복 개발</b></td><td>가격 예측 팀과 수요 예측 팀이 각자 "차량나이", "감가율" 같은 동일한 feature를 독립적으로 다시 설계·구현 → 같은 일을 여러 번 반복하며 시간을 낭비</td></tr>
+  <tr><td><b>학습-서빙 로직 불일치</b></td><td>학습 시점(배치 코드)과 서빙 시점(실시간 API 코드)의 계산 로직이 미묘하게 달라짐 → Training-Serving Consistency가 깨지고, 원인 파악이 어려운 성능 저하가 발생</td></tr>
+  <tr><td><b>버전 관리 부재</b></td><td>feature 계산 로직이 언제, 어떻게 바뀌었는지 추적하기 어려워 문제 발생 시 원인 역추적이 힘듦</td></tr>
+  <tr><td><b>데이터 신뢰도 저하</b></td><td>같은 이름의 feature라도 팀마다 계산 방식이 달라, 팀 간에 결과를 비교하거나 공유할 때 혼란이 발생</td></tr>
+  </tbody></table>
+
+  <h3>4) 데이터 사이언티스트에게 주는 이점</h3>
+  <p>Feature Store가 갖춰지면, 데이터 사이언티스트는 매번 "이 feature를 어떻게 계산해서, 어떻게 학습과 서빙에 동일하게 반영할 것인가"라는 반복적인 인프라 작업에 시간을 쓰지 않아도 돼요. 이미 검증되고 등록된 feature를 가져다 쓰거나, 새로 만든 feature를 Feature Store에 등록하기만 하면 그 다음부터는 재사용·서빙이 자동으로 처리되기 때문이에요.</p>
+  <div class="cp"><div class="cphead">✔ Feature Store가 있을 때의 이점</div><ul>
+  <li>이미 검증된 feature를 재사용해 <b>모델링 자체에 더 많은 시간을 집중</b>할 수 있다.</li>
+  <li>Training-Serving Consistency가 인프라 차원에서 보장되어, 배포 후 예기치 못한 성능 저하 리스크가 줄어든다.</li>
+  <li>여러 팀이 같은 feature 정의를 공유하므로 협업과 실험 재현성이 좋아진다.</li>
+  <li>feature의 버전·이력 관리가 가능해 문제 발생 시 원인 추적이 쉬워진다.</li>
+  </ul></div>
+  <div class="note">🔑 즉 Feature Store는 "더 좋은 feature를 만드는 기법"이 아니라, 지금까지 배운 Feature Engineering의 결과물을 <b>조직 차원에서 안정적으로 재사용·운영하기 위한 인프라</b>라는 점에서, 6~9장의 기법들과는 층위가 다른 주제예요.</div>
+
+  <div class="cp"><div class="cphead">✔ 10장 핵심 요약</div><ul>
+  <li>Feature Store는 feature를 저장·관리·서빙하는 중앙 저장소다.</li>
+  <li>여러 팀 간 feature 재사용과, 학습·서빙 시점 값의 일치(Training-Serving Consistency)를 위해 필요하다.</li>
+  <li>Feature Store가 없으면 팀마다 중복 개발이 발생하고, 학습·서빙 로직이 미묘하게 달라져 성능 저하로 이어질 수 있다.</li>
+  <li>데이터 사이언티스트는 반복적인 feature 관리 작업 대신 모델링 자체에 집중할 수 있다.</li>
+  </ul></div>
+</section>
+<div class="quiz-wrap" id="quiz-day2">
+  <h2>✅ Day 2 학습 확인 퀴즈</h2>
+  <p>지금까지 배운 내용을 O/X, 객관식, 단답형으로 스스로 점검해보세요.</p>
+  <div class="quiz-score" data-day="2">0 / 7 정답</div>
+  <div class="quiz-q" data-qid="d2q0" data-type="ox" data-answer="true" data-exp="구간화(Binning)는 연속형 변수를 몇 개의 구간으로 묶어 범주형처럼 다루는 기법이에요. 특정 패턴을 뚜렷하게 드러내거나 이상치·노이즈의 영향을 줄일 수 있지만, 그 대가로 3.2년과 3.8년처럼 구간 내 세밀한 값 차이는 더 이상 구분되지 않아요.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>연속형 변수를 구간화(Binning)하면, 그 변수가 원래 갖고 있던 세밀한 정보가 일부 손실될 수 있다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q1" data-type="ox" data-answer="false" data-exp="카이제곱 검정(Chi-square Test)은 두 범주형 변수 사이의 관계(독립 여부)를 검증하는 방법이에요. 두 연속형 변수 간의 선형 관계를 측정하는 방법은 상관분석(Correlation)입니다.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>카이제곱 검정(Chi-square Test)은 두 연속형 변수 사이의 선형 관계를 측정하는 데 사용되는 방법이다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q2" data-type="ox" data-answer="true" data-exp="Permutation Importance는 특정 변수의 값을 무작위로 섞어(shuffle) 그 변수와 target 사이의 실제 관계를 인위적으로 끊은 뒤, 모델 성능이 얼마나 하락하는지를 측정해 중요도를 판단하는 model-agnostic한 방법이에요.">
+    <p class="quiz-qtext"><span class="qtype">OX</span>Permutation Importance는 특정 변수의 값을 무작위로 섞었을 때 모델 성능이 얼마나 하락하는지를 측정해 변수 중요도를 판단하는 방법이다.</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="true">O (맞다)</button>
+      <button class="quiz-opt" data-val="false">X (틀리다)</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q3" data-type="mc" data-answer="RFM" data-exp="RFM(Recency·Frequency·Monetary)은 최근 구매일, 구매 빈도, 총 구매 금액을 조합해 고객 가치·이탈 가능성을 나타내는 이커머스/리테일 도메인의 대표적인 파생 변수 조합이에요. DTI(부채비율)는 금융, BMI는 헬스케어 도메인의 대표 지표입니다.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>이커머스/리테일 도메인에서 최근 구매일·구매 빈도·총 구매 금액을 조합해 고객 가치를 나타내는 대표적인 파생 변수 조합은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="RFM">RFM</button>
+      <button class="quiz-opt" data-val="DTI">DTI(부채비율)</button>
+      <button class="quiz-opt" data-val="BMI">BMI</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q4" data-type="mc" data-answer="우연히 나타난 차이일 가능성이 낮다" data-exp="p-value는 '두 변수가 실제로는 관련이 없다'고 가정했을 때, 지금 관측된 정도의 차이가 우연히 나타날 확률이에요. p-value가 작을수록(보통 0.05 미만) 그 관계가 우연히 나타났을 가능성이 낮다는 뜻이지, 관계의 크기(effect size)를 직접 말해주지는 않아요.">
+    <p class="quiz-qtext"><span class="qtype">객관식</span>p-value가 매우 작게(예: 0.05 미만) 나왔을 때 의미하는 것으로 가장 적절한 것은?</p>
+    <div class="quiz-opts">
+      <button class="quiz-opt" data-val="우연히 나타난 차이일 가능성이 낮다">우연히 나타난 차이일 가능성이 낮다</button>
+      <button class="quiz-opt" data-val="두 변수는 완전히 무관하다">두 변수는 완전히 무관하다</button>
+      <button class="quiz-opt" data-val="표본 수가 부족하다는 뜻이다">표본 수가 부족하다는 뜻이다</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q5" data-type="short" data-accept='["Permutation Importance", "permutation importance", "퍼뮤테이션 임포턴스", "퍼뮤테이션 중요도"]' data-exp="Permutation Importance는 특정 변수의 값을 무작위로 섞었을 때 모델 성능이 얼마나 하락하는지로 변수 중요도를 계산하는 기법이에요. 모델 종류에 관계없이(model-agnostic) 적용할 수 있지만, 변수마다 반복 추론이 필요해 계산 비용이 큽니다.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>특정 변수의 값을 무작위로 섞었을 때 모델 성능이 얼마나 하락하는지를 측정해 변수 중요도를 계산하는 기법의 이름은? (영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+  <div class="quiz-q" data-qid="d2q6" data-type="short" data-accept='["Feature Store", "feature store", "피처 스토어", "피처스토어"]' data-exp="Feature Store는 feature를 저장·관리·서빙하는 중앙 저장소예요. 여러 팀·프로젝트가 동일한 feature를 재사용할 수 있게 하고, 모델 학습(Training)과 서빙(Serving) 시점의 feature 계산 로직을 일치시켜 Training-Serving Consistency를 확보하는 데 핵심적인 역할을 합니다.">
+    <p class="quiz-qtext"><span class="qtype">단답형</span>Feature를 저장·관리·서빙하는 중앙 저장소로, 여러 팀 간 재사용과 학습·서빙 시점의 값 불일치 방지에 쓰이는 인프라의 이름은? (영문)</p>
+    <div class="quiz-short">
+      <input type="text" placeholder="정답 입력...">
+      <button class="quiz-check">확인</button>
+    </div>
+    <div class="quiz-feedback"></div>
+  </div>
+</div>
+
+  </main>
+</div>
+<button class="top-btn" id="topBtn" title="맨 위로">↑</button>
+
+<script>
+  const links = document.querySelectorAll('.navlink');
+  const sections = document.querySelectorAll('.sec');
+  const searchBox = document.getElementById('searchBox');
+  const topBtn = document.getElementById('topBtn');
+
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const id = e.target.id;
+        links.forEach(l=>l.classList.toggle('active', l.getAttribute('href')==='#'+id));
+      }
+    });
+  }, {rootMargin:'-10% 0px -70% 0px'});
+  sections.forEach(s=>obs.observe(s));
+
+  searchBox.addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    sections.forEach(sec=>{
+      const text = sec.innerText.toLowerCase();
+      const match = q==='' || text.includes(q);
+      sec.style.display = match ? '' : 'none';
+    });
+    links.forEach(l=>{
+      const num = l.getAttribute('data-sec');
+      if(!num) return;
+      const sec = document.getElementById('s'+num);
+      const groupTitle = l.textContent.toLowerCase();
+      const match = q==='' || (sec && sec.innerText.toLowerCase().includes(q)) || groupTitle.includes(q);
+      l.style.display = match ? '' : 'none';
+    });
+  });
+
+  window.addEventListener('scroll', ()=>{
+    topBtn.style.display = window.scrollY > 600 ? 'block' : 'none';
+  });
+  topBtn.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'}));
+
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', ()=>{
+    document.body.classList.toggle('light');
+    const isLight = document.body.classList.contains('light');
+    themeBtn.textContent = isLight ? '🌙 다크 모드' : '☀ 라이트 모드';
+  });
+
+  // ==== Quiz logic (3회 재시도 후 해설 공개) ====
+  const MAX_ATTEMPTS = 3;
+  function expHtml(exp){
+    return exp ? '<div class="quiz-exp">💡 ' + exp + '</div>' : '';
+  }
+  document.querySelectorAll('.quiz-q[data-type="ox"], .quiz-q[data-type="mc"]').forEach(qEl=>{
+    const answer = qEl.dataset.answer;
+    const exp = qEl.dataset.exp || '';
+    const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    const fb = qEl.querySelector('.quiz-feedback');
+    let attempts = 0;
+    qEl.querySelectorAll('.quiz-opt').forEach(opt=>{
+      opt.addEventListener('click', ()=>{
+        if(qEl.classList.contains('locked') || opt.disabled) return;
+        const val = opt.dataset.val;
+        const isCorrect = (val === answer);
+        if(isCorrect){
+          qEl.classList.add('locked','answered-correct');
+          opt.classList.add('correct');
+          qEl.querySelectorAll('.quiz-opt').forEach(o=> o.setAttribute('disabled','true'));
+          fb.innerHTML = '정답이에요! 🎉' + expHtml(exp);
+          fb.className = 'quiz-feedback ok';
+          updateScore(day);
+          return;
+        }
+        attempts++;
+        opt.classList.add('incorrect');
+        opt.setAttribute('disabled','true');
+        if(attempts >= MAX_ATTEMPTS){
+          qEl.classList.add('locked');
+          qEl.querySelectorAll('.quiz-opt').forEach(o=>{
+            o.setAttribute('disabled','true');
+            if(o.dataset.val === answer) o.classList.add('correct');
+          });
+          fb.innerHTML = MAX_ATTEMPTS + '번 틀렸어요. 정답은 강조 표시된 항목이에요.' + expHtml(exp);
+        } else {
+          fb.textContent = '아쉬워요, 다시 시도해보세요. (' + attempts + '/' + MAX_ATTEMPTS + ')';
+        }
+        fb.className = 'quiz-feedback no';
+        updateScore(day);
+      });
+    });
+  });
+  document.querySelectorAll('.quiz-q[data-type="short"]').forEach(qEl=>{
+    const acceptRaw = JSON.parse(qEl.dataset.accept);
+    const accept = acceptRaw.map(a=>a.toLowerCase().trim());
+    const exp = qEl.dataset.exp || '';
+    const day = qEl.closest('.quiz-wrap').id.replace('quiz-day','');
+    const input = qEl.querySelector('input');
+    const btn = qEl.querySelector('.quiz-check');
+    const fb = qEl.querySelector('.quiz-feedback');
+    let attempts = 0;
+    function check(){
+      if(qEl.classList.contains('locked')) return;
+      const val = input.value.toLowerCase().trim();
+      const isCorrect = accept.includes(val) && val !== '';
+      if(isCorrect){
+        qEl.classList.add('locked','answered-correct');
+        fb.innerHTML = '정답이에요! 🎉' + expHtml(exp);
+        fb.className = 'quiz-feedback ok';
+        input.disabled = true; btn.disabled = true;
+        updateScore(day);
+        return;
+      }
+      attempts++;
+      if(attempts >= MAX_ATTEMPTS){
+        qEl.classList.add('locked');
+        input.disabled = true; btn.disabled = true;
+        fb.innerHTML = MAX_ATTEMPTS + '번 틀렸어요. 정답은 <b>' + acceptRaw[0] + '</b> 이에요.' + expHtml(exp);
+      } else {
+        fb.textContent = '다시 시도해보세요. (' + attempts + '/' + MAX_ATTEMPTS + ')';
+      }
+      fb.className = 'quiz-feedback no';
+    }
+    btn.addEventListener('click', check);
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); });
+  });
+  function updateScore(day){
+    const wrap = document.getElementById('quiz-day'+day);
+    if(!wrap) return;
+    const total = wrap.querySelectorAll('.quiz-q').length;
+    const correct = wrap.querySelectorAll('.quiz-q.answered-correct').length;
+    const scoreEl = wrap.querySelector('.quiz-score');
+    if(scoreEl) scoreEl.textContent = correct + ' / ' + total + ' 정답';
+  }
+</script>
+</body>
+</html>

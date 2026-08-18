@@ -19,7 +19,8 @@ site/
 │   ├── 05-llm-transformer/index.html      # 강의 5: LLM과 Transformer 아키텍처 (완료)
 │   ├── 06-springboot-restapi/index.html   # 강의 6: Java·Spring Boot·REST API (완료)
 │   ├── 07-agile-msa/index.html            # 강의 7: Agile 방법론과 MSA (완료)
-│   └── 08-sllm-finetuning/index.html      # 강의 8: sLLM 구현과 Fine-Tuning (완료)
+│   ├── 08-sllm-finetuning/index.html      # 강의 8: sLLM 구현과 Fine-Tuning (완료)
+│   └── 09-feature-engineering/index.html  # 강의 9: 실전 Feature Engineering (완료)
 ├── template/
 │   └── lecture-template.html              # 새 강의 만들 때 복사해서 쓰는 뼈대
 └── README.md                              # 이 파일
